@@ -18,6 +18,19 @@
 #include "rtwtypes.h"
 #include "datatypes.h"
 
+#define I2dm(i,j,size) (j-1)*(size[0])+(i-1)
+
+#define I3dm(i,j,k,size) ((k-1)*(size[1])+(j-1))*(size[0])+(i-1)
+/*
+inline int32_T I2d(int32_T i, int32_T j, int32_T *size)
+{
+    return (j-1)*size[0] + (i-1);
+}
+inline int32_T I3d(int32_T i, int32_T j, int32_T k, int32_T *size)
+{
+    return ((k-1)*size[1] + (j-1))*size[0] + (i-1);
+}
+*/
 extern void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensions);
 extern void emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimensions);
 extern void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
@@ -50,16 +63,18 @@ extern void emxDestroyArray_boolean_T(emxArray_boolean_T *emxArray);
 
 extern void emxEnsureCapacity(emxArray__common *emxArray, int32_T oldNumel, int32_T elementSize);
 
-extern void addColumnToArray_common(emxArray__common *emxArray, int32_T numColAdd, int32_T elementSize);
+extern void addColumnToArray_common(emxArray__common *emxArray, int32_T numColAdd, uint32_T elementSize);
 
 extern void addColumnToArray_int32_T(emxArray_int32_T *emxArray, int32_T numColAdd);
 extern void addColumnToArray_real_T(emxArray_real_T *emxArray, int32_T numColAdd);
 extern void addColumnToArray_boolean_T(emxArray_boolean_T *emxArray, int32_T numColAdd);
 
-extern void addRowToArray_common(emxArray__common *emxArray, int32_T numRowAdd, int32_T elementSize);
-
 extern void addRowToArray_int32_T(emxArray_int32_T *emxArray, int32_T numRowAdd);
 extern void addRowToArray_real_T(emxArray_real_T *emxArray, int32_T numRowAdd);
 extern void addRowToArray_boolean_T(emxArray_boolean_T *emxArray, int32_T numRowAdd);
+
+extern void printArray_int32_T(const emxArray_int32_T *emxArray);
+extern void printArray_real_T(const emxArray_real_T *emxArray);
+extern void printArray_boolean_T(const emxArray_boolean_T *emxArray);
 
 #endif

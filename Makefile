@@ -7,10 +7,11 @@ CFLAGS = -c -g -Wall
 CPPFLAGS = -Iinclude
 VPATH = src test
 
-all: test.exe
 
 test.exe: test.o libhiprop.a
 	$(CXX) -o $@ $(CPPFLAGS) test.o -L./ -lhiprop
+
+all: test.exe doc
 
 lib: libhiprop.a
 
