@@ -33,9 +33,6 @@ libhiprop.a: memutil.o
 
 tagsfile:
 	ctags src/*.c include/*.h test/*.c
-	cp tags src/
-	cp tags include/
-	cp tags test/
 clean:
 	rm -f *.o *.exe *.a
 	rm -rf doc

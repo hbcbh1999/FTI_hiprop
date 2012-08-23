@@ -357,21 +357,6 @@ void emxFree_real_T(emxArray_real_T **pEmxArray)
   }
 }
 
-void emxDestroyArray_int32_T(emxArray_int32_T *emxArray)
-{
-  emxFree_int32_T(&emxArray);
-}
-
-void emxDestroyArray_real_T(emxArray_real_T *emxArray)
-{
-  emxFree_real_T(&emxArray);
-}
-
-void emxDestroyArray_boolean_T(emxArray_boolean_T *emxArray)
-{
-    emxFree_boolean_T(&emxArray);
-}
-
 void emxEnsureCapacity(emxArray__common *emxArray, int32_T oldNumel, int32_T elementSize)
 {
   int32_T newNumel;

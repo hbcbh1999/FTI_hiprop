@@ -33,7 +33,7 @@ int main()
 
     printArray_int32_T(test);
 
-    emxDestroyArray_int32_T(test);
+    emxFree_int32_T(&test);
 
 
 
