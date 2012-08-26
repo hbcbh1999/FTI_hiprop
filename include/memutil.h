@@ -15,8 +15,7 @@
 #define __MEMUTIL_H__
 
 
-#include "rtwtypes.h"
-#include "datatypes.h"
+#include "stdafx.h"
 
 /*!
  * Compute the index of A[i][j] in a 2D array

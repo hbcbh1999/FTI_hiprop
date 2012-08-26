@@ -5,11 +5,8 @@
  * \author Yijie Zhou
  * \date 2012.08.23
  */
+#include "stdafx.h"
 #include "memutil.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensions)
 {
@@ -27,6 +24,7 @@ void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensions)
   for (i = 0; i <= loop_ub; i++) {
     emxArray->size[i] = 0;
   }
+  printf("\nTemp\n");
 }
 
 void emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimensions)

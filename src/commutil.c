@@ -1,7 +1,5 @@
+#include "stdafx.h"
 #include "commutil.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 void sendND_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm)
 {
@@ -132,7 +130,6 @@ void recvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
     MPI_Status recv_stat_1;
     MPI_Status recv_stat_2;
     MPI_Status recv_stat_3;
-
     MPI_Recv(&num_elem_regular, 1, MPI_INT, src, tag, comm, &recv_stat_1);
 
     int32_T *common_info = (int32_T *)calloc((uint32_T) num_elem_regular, sizeof(int32_T));

@@ -18,7 +18,7 @@
 #ifndef __COMMUTIL_H__
 #define __COMMUTIL_H__
 
-#include "mpi.h"
+#include "stdafx.h"
 #include "memutil.h"
 
 

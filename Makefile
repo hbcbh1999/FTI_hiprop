@@ -3,17 +3,22 @@ CXX = mpicxx
 AR  = ar
 
 # CFLAGS = -c -DNDEBUG -Wall 
-CFLAGS = -c -g -Wall
+CFLAGS = -c -H -g -Wall
 CPPFLAGS = -Iinclude
 VPATH = src test
 
 
-test.exe: test.o libhiprop.a
+test.exe: pre test.o libhiprop.a
 	$(CXX) -o $@ $(CPPFLAGS) test.o -L./ -lhiprop
 
 all: test.exe doc
 
-lib: libhiprop.a
+lib: pre libhiprop.a
+
+pre: ./include/stdafx.h.gch
+
+./include/stdafx.h.gch: ./include/stdafx.h
+	 $(CC) $(CFLAGS) $(CPPFLAGS) $<
 
 doc:
 	doxygen hiprop-doxygen-file
@@ -35,9 +40,11 @@ tagsfile:
 	ctags src/*.c include/*.h test/*.c
 clean:
 	rm -f *.o *.exe *.a
+	rm -f *.gch
 	rm -rf doc
 	rm -f tags
 	rm -f src/tags
 	rm -f include/tags
+	rm -f include/stdafx.h.gch
 	rm -f test/tags
 

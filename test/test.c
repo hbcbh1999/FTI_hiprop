@@ -6,7 +6,7 @@
  * \date 2012.08.23
  */
 
-#include <stdio.h>
+#include "stdafx.h"
 
 #include "memutil.h"
 #include "commutil.h"
