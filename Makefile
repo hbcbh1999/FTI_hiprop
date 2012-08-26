@@ -18,7 +18,7 @@ lib: libhiprop.a
 doc:
 	doxygen hiprop-doxygen-file
 
-libhiprop.a: memutil.o
+libhiprop.a: memutil.o commutil.o
 	$(AR) cru libhiprop.a $^
 	ranlib libhiprop.a
 

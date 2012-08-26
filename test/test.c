@@ -7,35 +7,55 @@
  */
 
 #include <stdio.h>
-#include "memutil.h"
 
-int main()
+#include "memutil.h"
+#include "commutil.h"
+
+int main (int argc, char *argv[])
 {
 
-    printf("\n Welcome to the test of Hi-Prop Library \n");
-
     int i,j,k;
-
     k = 1;
-    emxArray_int32_T *test = emxCreate_int32_T(4, 3);
+    int num_proc, rank;
+    int tag = 1;
 
-    for (i = 1; i <= 4; i++)
-	for (j = 1; j <=3; j++)
-	    test->data[I2dm(i,j,test->size)] = k++;
-	    
-    printArray_int32_T(test);
+    MPI_Init(&argc, &argv);
 
-    addColumnToArray_int32_T(test, 2);
-
-    printArray_int32_T(test);
-
-    addRowToArray_int32_T(test, 4);
-
-    printArray_int32_T(test);
-
-    emxFree_int32_T(&test);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 
+    if (rank == 0)
+	printf("\n Welcome to the test of Hi-Prop Library \n");
+
+
+    if (rank == 0)
+    {
+	emxArray_int32_T *test = emxCreate_int32_T(4, 3);
+	for (i = 1; i <= 4; i++)
+	    for (j = 1; j <=3; j++)
+		test->data[I2dm(i,j,test->size)] = k++;
+
+	printf("\nIn proc 0, before sending, the array is:\n");
+    	printArray_int32_T(test);
+    	addColumnToArray_int32_T(test, 2);
+    	addRowToArray_int32_T(test, 4);
+	send2D_int32_T(test, 1, tag, MPI_COMM_WORLD);
+    	emxFree_int32_T(&test);
+    }
+    else if (rank == 1)
+    {
+	emxArray_int32_T *test_recv;
+
+	recv2D_int32_T(&test_recv, 0, tag, MPI_COMM_WORLD);
+
+	printf("\nIn proc 1, after receiving, the array is:\n");
+
+	printArray_int32_T(test_recv);
+    }
+
+
+    MPI_Finalize();
 
     return 0;
 }
