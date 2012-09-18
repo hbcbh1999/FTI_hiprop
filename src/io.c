@@ -52,7 +52,7 @@ int FindString(
  */
 extern int ReadPolyMeshVtk3d(
 	const char *name,
-	hiPropMesh* mesh)
+	hiPropMesh *mesh)
 {
     FILE* file = fopen(name, "r");
     int i, j;
@@ -119,7 +119,7 @@ extern int ReadPolyMeshVtk3d(
 }
 
 extern int WritePolyMeshVtk3d(const char* name, 
-	hiPropMesh* mesh)
+	hiPropMesh *mesh)
 {
     FILE* file;
     int i;

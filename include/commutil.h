@@ -41,4 +41,23 @@ extern void recv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, 
 extern void recv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
 extern void recv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
 
+extern void isendND_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm);
+extern void isendND_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm);
+extern void isendND_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm);
+
+
+extern void irecvND_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm);
+extern void irecvND_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
+extern void irecvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
+
+
+extern void isend2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm);
+extern void isend2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm);
+extern void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm);
+
+
+extern void irecv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm);
+extern void irecv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
+extern void irecv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
+
 #endif

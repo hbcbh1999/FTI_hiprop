@@ -9,9 +9,9 @@ CPPFLAGS = -Iinclude
 VPATH = src test
 
 test.exe: pre test.o libhiprop.a
-	$(CXX) -o $@ $(CPPFLAGS) test.o -L./ -lhiprop
+	$(CC) -g -o $@ $(CPPFLAGS) test.o -L./ -lhiprop
 test2.exe: pre test2.o libhiprop.a
-	$(CXX) -o $@ $(CPPFLAGS) test2.o -L./ -lhiprop
+	$(CC) -g -o $@ $(CPPFLAGS) test2.o -L./ -lhiprop
 
 
 all: test.exe test2.exe doc

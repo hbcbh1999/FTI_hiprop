@@ -13,9 +13,9 @@ void sendND_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm
 	common_info[i] = array_send->size[i-1];
     common_info[i] = array_send->allocatedSize;
 
-    MPI_Send(&num_elem_regular, 1, MPI_INT, dst, tag, comm);
-    MPI_Send(common_info, num_elem_regular, MPI_INT, dst, tag, comm);
-    MPI_Send(array_send->data, array_send->allocatedSize, MPI_UNSIGNED_CHAR, dst, tag, comm);
+    MPI_Send(&num_elem_regular, 1, MPI_INT, dst, tag+1, comm);
+    MPI_Send(common_info, num_elem_regular, MPI_INT, dst, tag+2, comm);
+    MPI_Send(array_send->data, array_send->allocatedSize, MPI_UNSIGNED_CHAR, dst, tag+3, comm);
 
     free((void *)common_info);
 
@@ -33,9 +33,9 @@ void sendND_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm com
 	common_info[i] = array_send->size[i-1];
     common_info[i] = array_send->allocatedSize;
 
-    MPI_Send(&num_elem_regular, 1, MPI_INT, dst, tag, comm);
-    MPI_Send(common_info, num_elem_regular, MPI_INT, dst, tag, comm);
-    MPI_Send(array_send->data, array_send->allocatedSize, MPI_INT, dst, tag, comm);
+    MPI_Send(&num_elem_regular, 1, MPI_INT, dst, tag+1, comm);
+    MPI_Send(common_info, num_elem_regular, MPI_INT, dst, tag+2, comm);
+    MPI_Send(array_send->data, array_send->allocatedSize, MPI_INT, dst, tag+3, comm);
 
     free((void *)common_info);
 }
@@ -52,9 +52,9 @@ void sendND_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm)
 	common_info[i] = array_send->size[i-1];
     common_info[i] = array_send->allocatedSize;
 
-    MPI_Send(&num_elem_regular, 1, MPI_INT, dst, tag, comm);
-    MPI_Send(common_info, num_elem_regular, MPI_INT, dst, tag, comm);
-    MPI_Send(array_send->data, array_send->allocatedSize, MPI_DOUBLE, dst, tag, comm);
+    MPI_Send(&num_elem_regular, 1, MPI_INT, dst, tag+1, comm);
+    MPI_Send(common_info, num_elem_regular, MPI_INT, dst, tag+2, comm);
+    MPI_Send(array_send->data, array_send->allocatedSize, MPI_DOUBLE, dst, tag+3, comm);
 
     free((void *)common_info);
 }
@@ -67,11 +67,11 @@ void recvND_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Com
     MPI_Status recv_stat_2;
     MPI_Status recv_stat_3;
 
-    MPI_Recv(&num_elem_regular, 1, MPI_INT, src, tag, comm, &recv_stat_1);
+    MPI_Recv(&num_elem_regular, 1, MPI_INT, src, tag+1, comm, &recv_stat_1);
 
     int32_T *common_info = (int32_T *)calloc((uint32_T) num_elem_regular, sizeof(int32_T));
 
-    MPI_Recv(common_info, num_elem_regular, MPI_INT, src, tag, comm, &recv_stat_2);
+    MPI_Recv(common_info, num_elem_regular, MPI_INT, src, tag+2, comm, &recv_stat_2);
 
     int num_dim = common_info[0];
     int num_elem = common_info[num_elem_regular-1];
@@ -83,7 +83,7 @@ void recvND_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Com
 
     emxArray_boolean_T *result = emxCreateND_boolean_T(num_dim, size);
 
-    MPI_Recv(result->data, num_elem, MPI_UNSIGNED_CHAR, src, tag, comm, &recv_stat_3);
+    MPI_Recv(result->data, num_elem, MPI_UNSIGNED_CHAR, src, tag+3, comm, &recv_stat_3);
 
     free ((void *) common_info);
     free ((void *) size);
@@ -99,11 +99,11 @@ void recvND_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm co
     MPI_Status recv_stat_2;
     MPI_Status recv_stat_3;
 
-    MPI_Recv(&num_elem_regular, 1, MPI_INT, src, tag, comm, &recv_stat_1);
+    MPI_Recv(&num_elem_regular, 1, MPI_INT, src, tag+1, comm, &recv_stat_1);
 
     int32_T *common_info = (int32_T *)calloc((uint32_T) num_elem_regular, sizeof(int32_T));
 
-    MPI_Recv(common_info, num_elem_regular, MPI_INT, src, tag, comm, &recv_stat_2);
+    MPI_Recv(common_info, num_elem_regular, MPI_INT, src, tag+2, comm, &recv_stat_2);
 
     int num_dim = common_info[0];
     int num_elem = common_info[num_elem_regular-1];
@@ -115,7 +115,7 @@ void recvND_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm co
 
     emxArray_int32_T *result = emxCreateND_int32_T(num_dim, size);
 
-    MPI_Recv(result->data, num_elem, MPI_INT, src, tag, comm, &recv_stat_3);
+    MPI_Recv(result->data, num_elem, MPI_INT, src, tag+3, comm, &recv_stat_3);
 
     free ((void *) common_info);
     free ((void *) size);
@@ -130,11 +130,11 @@ void recvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
     MPI_Status recv_stat_1;
     MPI_Status recv_stat_2;
     MPI_Status recv_stat_3;
-    MPI_Recv(&num_elem_regular, 1, MPI_INT, src, tag, comm, &recv_stat_1);
+    MPI_Recv(&num_elem_regular, 1, MPI_INT, src, tag+1, comm, &recv_stat_1);
 
     int32_T *common_info = (int32_T *)calloc((uint32_T) num_elem_regular, sizeof(int32_T));
 
-    MPI_Recv(common_info, num_elem_regular, MPI_INT, src, tag, comm, &recv_stat_2);
+    MPI_Recv(common_info, num_elem_regular, MPI_INT, src, tag+2, comm, &recv_stat_2);
 
     int num_dim = common_info[0];
     int num_elem = common_info[num_elem_regular-1];
@@ -146,7 +146,7 @@ void recvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
 
     emxArray_real_T *result = emxCreateND_real_T(num_dim, size);
 
-    MPI_Recv(result->data, num_elem, MPI_DOUBLE, src, tag, comm, &recv_stat_3);
+    MPI_Recv(result->data, num_elem, MPI_DOUBLE, src, tag+3, comm, &recv_stat_3);
 
     free ((void *) common_info);
     free ((void *) size);
@@ -156,26 +156,24 @@ void recvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
 
 void send2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm)
 {
-    /*int32_T *common_info = (int32_T *)calloc(2, sizeof(int32_T));*/
     int32_T common_info[2];
 
     common_info[0] = array_send->size[0];
     common_info[1] = array_send->size[1];
 
-    MPI_Send(common_info, 2, MPI_INT, dst, tag, comm);
-    MPI_Send(array_send->data, array_send->allocatedSize, MPI_UNSIGNED_CHAR, dst, tag, comm);
+    MPI_Send(common_info, 2, MPI_INT, dst, tag+1, comm);
+    MPI_Send(array_send->data, array_send->allocatedSize, MPI_UNSIGNED_CHAR, dst, tag+2, comm);
 }
 
 void send2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm)
 {
-    /*int32_T *common_info = (int32_T *)calloc(2, sizeof(int32_T));*/
     int32_T common_info[2];
 
     common_info[0] = array_send->size[0];
     common_info[1] = array_send->size[1];
 
-    MPI_Send(common_info, 2, MPI_INT, dst, tag, comm);
-    MPI_Send(array_send->data, array_send->allocatedSize, MPI_INT, dst, tag, comm);
+    MPI_Send(common_info, 2, MPI_INT, dst, tag+1, comm);
+    MPI_Send(array_send->data, array_send->allocatedSize, MPI_INT, dst, tag+2, comm);
 
 }
 
@@ -187,8 +185,8 @@ void send2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm)
     common_info[0] = array_send->size[0];
     common_info[1] = array_send->size[1];
 
-    MPI_Send(common_info, 2, MPI_INT, dst, tag, comm);
-    MPI_Send(array_send->data, array_send->allocatedSize, MPI_DOUBLE, dst, tag, comm);
+    MPI_Send(common_info, 2, MPI_INT, dst, tag+1, comm);
+    MPI_Send(array_send->data, array_send->allocatedSize, MPI_DOUBLE, dst, tag+2, comm);
 
 }
 void recv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm)
@@ -198,11 +196,11 @@ void recv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Com
 
     int32_T common_info[2];
 
-    MPI_Recv(common_info, 2, MPI_INT, src, tag, comm, &recv_stat_1);
+    MPI_Recv(common_info, 2, MPI_INT, src, tag+1, comm, &recv_stat_1);
 
     emxArray_boolean_T *result = emxCreate_boolean_T(common_info[0], common_info[1]);
 
-    MPI_Recv(result->data, common_info[0]*common_info[1], MPI_UNSIGNED_CHAR, src, tag, comm, &recv_stat_2);
+    MPI_Recv(result->data, common_info[0]*common_info[1], MPI_UNSIGNED_CHAR, src, tag+2, comm, &recv_stat_2);
 
     (*array_recv) = result;
 }
@@ -215,11 +213,11 @@ void recv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm co
 
     int32_T common_info[2];
 
-    MPI_Recv(common_info, 2, MPI_INT, src, tag, comm, &recv_stat_1);
+    MPI_Recv(common_info, 2, MPI_INT, src, tag+1, comm, &recv_stat_1);
 
     emxArray_int32_T *result = emxCreate_int32_T(common_info[0], common_info[1]);
 
-    MPI_Recv(result->data, common_info[0]*common_info[1], MPI_INT, src, tag, comm, &recv_stat_2);
+    MPI_Recv(result->data, common_info[0]*common_info[1], MPI_INT, src, tag+2, comm, &recv_stat_2);
 
     (*array_recv) = result;
 }
@@ -231,16 +229,12 @@ void recv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
 
     int32_T common_info[2];
 
-    MPI_Recv(common_info, 2, MPI_INT, src, tag, comm, &recv_stat_1);
+    MPI_Recv(common_info, 2, MPI_INT, src, tag+1, comm, &recv_stat_1);
 
     emxArray_real_T *result = emxCreate_real_T(common_info[0], common_info[1]);
 
-    MPI_Recv(result->data, common_info[0]*common_info[1], MPI_DOUBLE, src, tag, comm, &recv_stat_2);
+    MPI_Recv(result->data, common_info[0]*common_info[1], MPI_DOUBLE, src, tag+2, comm, &recv_stat_2);
 
     (*array_recv) = result;
 }
-
-
-
-
 
