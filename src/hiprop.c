@@ -1,56 +1,41 @@
-/*
- *	io.c
- * basic functions to read meshes and output meshes
+/*!
+ * \file hiprop.c
+ * \brief Implementation of functions in hiprop.h
+ *
+ *
+ *
+ * \author Yijie Zhou
+ * \data 2012.09.18
  *
  */
 
-/* find the string from the beginning of the file,
- * put the cursor next to the string. 
- */
-#include "datatypes.h"
-#include "memutil.h"
+#include "stdafx.h"
+#include "util.h"
+#include "hiprop.h"
 
-int FindString(
-	FILE *file,
-	const char *in_string)
+void hpInitMesh(hiPropMesh **pmesh)
 {
-    const char *s;
-    int ch;
-    long current;
-
-    if (!file)
-    {
-	printf("Cannot find file.\n");
-	return 0;
-    }
-
-    current = ftell(file);
-    s = in_string;
-    rewind(file);
-
-    while((ch = getc(file)) != EOF)
-    {
-	if (ch != *s)
-	    s = in_string;
-	else if (!*++s)
-	    break;
-    }
-    if (ch == EOF)
-    {
-	fseek(file,current,SEEK_SET);
-	printf("Cannot find the string %s\n", in_string);
-	return 0;
-    }
-    else
-	return 1;
+    hiPropMesh *mesh;
+    *pmesh = (hiPropMesh*) malloc(sizeof(hiPropMesh));
+    mesh = *pmesh;
+    mesh->ps = (emxArray_real_T *) NULL;
+    mesh->tris = (emxArray_int32_T *) NULL;
+    mesh->nor = (emxArray_real_T *) NULL;
 }
 
-/* read the vtk format of the mesh info 
- * points should be saved in double
- * mesh info should be in POLYDATA
- * we use POLYGONS to store the triangles
- */
-extern int ReadPolyMeshVtk3d(
+void hpFreeMesh(hiPropMesh **pmesh)
+{
+    if( (*pmesh)->ps != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&((*pmesh)->ps));
+    if( (*pmesh)->tris != ((emxArray_int32_T *) NULL) )
+	emxFree_int32_T(&((*pmesh)->tris));
+    if( (*pmesh)->nor != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&((*pmesh)->nor));
+
+    (*pmesh) = (hiPropMesh *)NULL;
+}
+
+int hpReadPolyMeshVtk3d(
 	const char *name,
 	hiPropMesh *mesh)
 {
@@ -62,20 +47,20 @@ extern int ReadPolyMeshVtk3d(
 
 
 
-    if (!FindString(file, "ASCII"))
+    if (!findString(file, "ASCII"))
     {
 	printf("Unknown format\n");
 	return 0;
     }
 
-    if(!FindString(file, "POINTS"))
+    if(!findString(file, "POINTS"))
     {
 	printf("Cannot find points info\n");
 	return 0;
     }
 
     fscanf(file, "%d", &num_points);
-    if (!FindString(file, "double"))
+    if (!findString(file, "double"))
     {
 	printf("points data type is not double\n");
 	return 0;
@@ -85,7 +70,7 @@ extern int ReadPolyMeshVtk3d(
     for (i = 0; i< (3*num_points); i++)
 	fscanf(file, "%lf", &pt_coord[i]);
 
-    if(!FindString(file, "POLYGONS"))
+    if(!findString(file, "POLYGONS"))
 	return 0;
 
     fscanf(file, "%d", &num_tris);
@@ -118,7 +103,7 @@ extern int ReadPolyMeshVtk3d(
 
 }
 
-extern int WritePolyMeshVtk3d(const char* name, 
+int hpWritePolyMeshVtk3d(const char* name, 
 	hiPropMesh *mesh)
 {
     FILE* file;
@@ -149,7 +134,7 @@ extern int WritePolyMeshVtk3d(const char* name,
 
 }
 
-extern int ReadUnstrMeshVtk3d(
+int hpReadUnstrMeshVtk3d(
 	const char *name,
 	hiPropMesh* mesh)
 {
@@ -167,20 +152,20 @@ extern int ReadUnstrMeshVtk3d(
 
 
 
-    if (!FindString(file, "ASCII"))
+    if (!findString(file, "ASCII"))
     {
 	printf("Unknown format\n");
 	return 0;
     }
 
-    if(!FindString(file, "POINTS"))
+    if(!findString(file, "POINTS"))
     {
 	printf("Cannot find points info\n");
 	return 0;
     }
 
     fscanf(file, "%d", &num_points);
-    if (!FindString(file, "double"))
+    if (!findString(file, "double"))
     {
 	printf("points data type is not double\n");
 	return 0;
@@ -190,7 +175,7 @@ extern int ReadUnstrMeshVtk3d(
     for (i = 0; i< (3*num_points); i++)
 	fscanf(file, "%lf", &pt_coord[i]);
 
-    if(!FindString(file, "CELLS"))
+    if(!findString(file, "CELLS"))
 	return 0;
 
     fscanf(file, "%d", &num_tris);
@@ -220,7 +205,7 @@ extern int ReadUnstrMeshVtk3d(
 
 }
 
-extern int WriteUnstrMeshVtk3d(const char* name, 
+int hpWriteUnstrMeshVtk3d(const char* name, 
 	hiPropMesh* mesh)
 {
     FILE* file;
