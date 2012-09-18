@@ -2,16 +2,19 @@ CC  = mpicc
 CXX = mpicxx
 AR  = ar
 
+
 # CFLAGS = -c -DNDEBUG -Wall 
-CFLAGS = -c -H -g -Wall
+CFLAGS = -c -g -Wall
 CPPFLAGS = -Iinclude
 VPATH = src test
 
-
 test.exe: pre test.o libhiprop.a
-	$(CXX) -o $@ $(CPPFLAGS) test.o -L./ -lhiprop
+	$(CC) -g -o $@ $(CPPFLAGS) test.o -L./ -lhiprop
+test2.exe: pre test2.o libhiprop.a
+	$(CC) -g -o $@ $(CPPFLAGS) test2.o -L./ -lhiprop
 
-all: test.exe doc
+
+all: test.exe test2.exe doc
 
 lib: pre libhiprop.a
 
@@ -23,7 +26,7 @@ pre: ./include/stdafx.h.gch
 doc:
 	doxygen hiprop-doxygen-file
 
-libhiprop.a: memutil.o commutil.o
+libhiprop.a: util.o hiprop.o
 	$(AR) cru libhiprop.a $^
 	ranlib libhiprop.a
 

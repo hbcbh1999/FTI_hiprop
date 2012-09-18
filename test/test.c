@@ -8,8 +8,8 @@
 
 #include "stdafx.h"
 
-#include "memutil.h"
-#include "commutil.h"
+#include "util.h"
+#include "hiprop.h"
 
 int main (int argc, char *argv[])
 {
