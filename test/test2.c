@@ -9,22 +9,32 @@
 
 int main(int argc, char* argv[])
 {
-    hiPropMesh mesh;
-    FILE* file = fopen(argv[1], "r");
-    if(!ReadMeshVtk3d(file, &mesh))
+    hiPropMesh *mesh;
+
+    hpInitMesh(&mesh);
+
+    if(!ReadUnstrMeshVtk3d(argv[1], mesh))
     {
-	printf("Read fail\n");
+	printf("Mesh Read fail\n");
 	return 0;
     }
 
+    int num_ps_all = mesh->ps->allocatedSize;
 
-    if(!WriteMeshVtk3d("output.vtk", &mesh))
+    int i;
+    for (i = 1; i <= num_ps_all; i++)
+	mesh->ps->data[i-1] = mesh->ps->data[i-1] + 1.0;
+
+    if(!WriteUnstrMeshVtk3d("output.vtk", mesh))
     {
-	printf("Write fail\n");
+	printf("Mesh Write fail\n");
 	return 0;
     }
-    printf("Success processor %d\n");
-    fclose(file);
+
+    hpFreeMesh(&mesh);
+
+    if (mesh == (hiPropMesh *)NULL)
+	printf("Success processor\n");
 
     return 1;
 }

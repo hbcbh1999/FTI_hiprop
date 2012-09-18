@@ -4,7 +4,7 @@ AR  = ar
 
 
 # CFLAGS = -c -DNDEBUG -Wall 
-CFLAGS = -c -H -g -Wall
+CFLAGS = -c -g -Wall
 CPPFLAGS = -Iinclude
 VPATH = src test
 
@@ -31,7 +31,7 @@ libhiprop.a: memutil.o commutil.o io.o
 	ranlib libhiprop.a
 
 %.o:%.c 
-	$(CC) $(CFLAGS)  $(CPPFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 %.o:%.cpp
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $< -o $@  

@@ -545,3 +545,24 @@ void printArray_boolean_T(const emxArray_boolean_T *emxArray)
     }
 }
 
+void hpInitMesh(hiPropMesh **pmesh)
+{
+    hiPropMesh *mesh;
+    *pmesh = (hiPropMesh*) malloc(sizeof(hiPropMesh));
+    mesh = *pmesh;
+    mesh->ps = (emxArray_real_T *) NULL;
+    mesh->tris = (emxArray_int32_T *) NULL;
+    mesh->nor = (emxArray_real_T *) NULL;
+}
+
+void hpFreeMesh(hiPropMesh **pmesh)
+{
+    if( (*pmesh)->ps != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&((*pmesh)->ps));
+    if( (*pmesh)->tris != ((emxArray_int32_T *) NULL) )
+	emxFree_int32_T(&((*pmesh)->tris));
+    if( (*pmesh)->nor != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&((*pmesh)->nor));
+
+    (*pmesh) = (hiPropMesh *)NULL;
+}
