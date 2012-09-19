@@ -13,6 +13,7 @@
 
 
 #include "stdafx.h"
+#include "metis.h"
 
 /*!
  * \brief hiProp Mesh data structure
@@ -57,12 +58,24 @@ extern int hpWritePolyMeshVtk3d(const char* name, hiPropMesh* mesh);
  */
 extern int hpReadUnstrMeshVtk3d(const char* name, hiPropMesh* mesh);
 /*!
- * Write an ascii triangular vtk file with data type UNSTRUCTURED_GRID.
+ * \brief Write an ascii triangular vtk file with data type UNSTRUCTURED_GRID.
  * \param name output file name
  * \param mesh mesh for output
  */
 extern int hpWriteUnstrMeshVtk3d(const char* name, hiPropMesh* mesh);
 
-
+/*!
+ * \brief Partition the mesh into nparts, using the routine of METIS_PartMeshDual,
+ * the partition of the mesh is based on the partition of the dual graph
+ * \param mesh mesh to partition
+ * \param nparts number of parts the mesh would be partitioned into
+ * \param tri_part the address of an array of length equal to the number of triangles, 
+ * 	the function will give the part index the triangle is partitioned into,
+ *	memory allocated inside the function
+ * \param pt_part the address of an array of length equal to the number of points, 
+ * 	the function will give the part index the point is partitioned into,
+ *	memory allocated inside the function
+ */
+extern int hpMetisDistMesh(hiPropMesh* mesh, const int nparts, int** tri_part, int** pt_part);
 
 #endif

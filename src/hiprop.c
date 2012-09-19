@@ -12,6 +12,7 @@
 #include "stdafx.h"
 #include "util.h"
 #include "hiprop.h"
+#include "metis.h"
 
 void hpInitMesh(hiPropMesh **pmesh)
 {
@@ -239,3 +240,60 @@ int hpWriteUnstrMeshVtk3d(const char* name,
 
 }
 
+int hpMetisDistMesh(hiPropMesh* mesh, const int nparts, 
+	int** tri_part, int** pt_part)
+{
+
+    //to be consistent with Metis, idx_t denote integer numbers, real_t denote floating point numbers
+
+    printf("entered hpMetisDistMesh\n");
+    int i, flag;
+    idx_t np = nparts;
+
+    idx_t ne = mesh->tris->size[0];	// number of triangles
+    idx_t nn = mesh->ps->size[0];	// number of points
+ 
+    idx_t *eptr = (idx_t*) calloc(ne+1, sizeof(idx_t));
+    idx_t *eind = (idx_t*) calloc(3*ne, sizeof(idx_t));
+
+    printf("num_tri to be partitioned = %d\n", ne);
+    printf("num_pt to be partitioned = %d\n", nn);
+
+    for(i = 0; i<ne; i++)
+    {
+	eptr[i] = 3*i;
+	eind[eptr[i]] = mesh->tris->data[I2dm(i+1,1,mesh->tris->size)];
+	eind[eptr[i]+1] = mesh->tris->data[I2dm(i+1,2,mesh->tris->size)];
+	eind[eptr[i]+2] = mesh->tris->data[I2dm(i+1,3,mesh->tris->size)];
+    }
+    eptr[ne] = 3*i;
+
+    idx_t* vwgt = NULL;
+    idx_t* vsize = NULL;
+    idx_t ncommonnodes = 2;
+    real_t* tpwgts = NULL;
+    idx_t* options = NULL;
+    idx_t objval;
+
+
+    idx_t* epart = (idx_t*) calloc(ne, sizeof(idx_t));
+    (*tri_part) = epart;
+    idx_t* npart = (idx_t*) calloc(nn, sizeof(idx_t));
+    (*pt_part) = npart;
+
+    flag = METIS_PartMeshDual(&ne, &nn, eptr, eind, vwgt, vsize,
+	    &ncommonnodes, &np, tpwgts, options, &objval, 
+	    epart, npart);
+    free(eptr);
+    free(eind);
+
+    if (flag == METIS_OK)
+    {
+    	printf("passed hpMetisDistMesh\n");
+	return 1;
+    }
+    else
+    {	printf("Metis Error!\n");
+	return 0;
+    }
+}
