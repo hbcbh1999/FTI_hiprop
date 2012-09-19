@@ -14,6 +14,17 @@
 
 #include "stdafx.h"
 
+/*!
+ * \brief hiProp Mesh data structure
+ */
+typedef struct hiPropMesh
+{
+    emxArray_real_T *ps;	/*!< point positions */
+    emxArray_int32_T *tris;	/*!< triangles */
+    emxArray_real_T *nor;	/*!< point normals */
+
+} hiPropMesh;
+
 
 /*!
  * \brief Initialize a hiProp mesh and set the initial pointer to be NULL
@@ -51,6 +62,7 @@ extern int hpReadUnstrMeshVtk3d(const char* name, hiPropMesh* mesh);
  * \param mesh mesh for output
  */
 extern int hpWriteUnstrMeshVtk3d(const char* name, hiPropMesh* mesh);
+
 
 
 #endif
