@@ -2,8 +2,6 @@
  * \file hiprop.c
  * \brief Implementation of functions in hiprop.h
  *
- *
- *
  * \author Yijie Zhou
  * \data 2012.09.18
  *
@@ -93,7 +91,7 @@ int hpReadPolyMeshVtk3d(
     (mesh->tris) = emxCreate_int32_T(num_tris, 3);
     for (i = 0; i< num_tris; i++)
 	for (j = 0; j<3; j++)
-	    mesh->tris->data[j*num_tris+i] = tri_index[i*4+(j+1)];
+	    mesh->tris->data[j*num_tris+i] = tri_index[i*4+(j+1)] + 1;
     mesh->tris->canFreeData = 1;
 
     free(pt_coord);
@@ -123,12 +121,12 @@ int hpWritePolyMeshVtk3d(const char* name,
     int num_tris = mesh->tris->size[0];
 
     fprintf(file, "POINTS %d double\n", num_points);
-    for (i = 0; i<num_points; i++)
-	fprintf(file, "%lf %lf %lf\n", points->data[i], points->data[num_points+i], points->data[2*num_points+i]);
+    for (i = 1; i <= num_points; i++)
+	fprintf(file, "%lf %lf %lf\n", points->data[I2dm(i,1,points->size)], points->data[I2dm(i,2,points->size)], points->data[I2dm(i,3,points->size)]);
 
     fprintf(file, "POLYGONS %d %d\n", num_tris, 4*num_tris);
-    for (i = 0; i<num_tris; i++)
-	fprintf(file, "3 %d %d %d\n", tris->data[i], tris->data[num_tris+i], tris->data[2*num_tris+i]);
+    for (i = 1; i <= num_tris; i++)
+	fprintf(file, "3 %d %d %d\n", tris->data[I2dm(i,1,tris->size)]-1, tris->data[I2dm(i,2,tris->size)]-1, tris->data[I2dm(i,3,tris->size)]-1);
 
     fclose(file);
     return 1;
@@ -197,7 +195,7 @@ int hpReadUnstrMeshVtk3d(
     (mesh->tris) = emxCreate_int32_T(num_tris, 3);
     for (i = 0; i< num_tris; i++)
 	for (j = 0; j<3; j++)
-	    mesh->tris->data[j*num_tris+i] = tri_index[i*4+(j+1)];
+	    mesh->tris->data[j*num_tris+i] = tri_index[i*4+(j+1)] + 1;
     free(pt_coord);
     free(tri_index);
 
@@ -225,12 +223,12 @@ int hpWriteUnstrMeshVtk3d(const char* name,
     int num_tris = mesh->tris->size[0];
 
     fprintf(file, "POINTS %d double\n", num_points);
-    for (i = 0; i<num_points; i++)
-	fprintf(file, "%lf %lf %lf\n", points->data[i], points->data[num_points+i], points->data[2*num_points+i]);
+    for (i = 1; i <= num_points; i++)
+	fprintf(file, "%lf %lf %lf\n", points->data[I2dm(i,1,points->size)], points->data[I2dm(i,2,points->size)], points->data[I2dm(i,3,points->size)]);
 
     fprintf(file, "CELLS %d %d\n", num_tris, 4*num_tris);
-    for (i = 0; i<num_tris; i++)
-	fprintf(file, "3 %d %d %d\n", tris->data[i], tris->data[num_tris+i], tris->data[2*num_tris+i]);
+    for (i = 1; i <= num_tris; i++)
+	fprintf(file, "3 %d %d %d\n", tris->data[I2dm(i,1,tris->size)]-1, tris->data[I2dm(i,2,tris->size)]-1, tris->data[I2dm(i,3,tris->size)]-1);
 
     fprintf(file, "CELL_TYPES %d\n", num_tris);
     for (i = 0; i<num_tris; i++)
@@ -262,9 +260,9 @@ int hpMetisPartMesh(hiPropMesh* mesh, const int nparts,
     for(i = 0; i<ne; i++)
     {
 	eptr[i] = 3*i;
-	eind[eptr[i]] = mesh->tris->data[I2dm(i+1,1,mesh->tris->size)];
-	eind[eptr[i]+1] = mesh->tris->data[I2dm(i+1,2,mesh->tris->size)];
-	eind[eptr[i]+2] = mesh->tris->data[I2dm(i+1,3,mesh->tris->size)];
+	eind[eptr[i]] = mesh->tris->data[I2dm(i+1,1,mesh->tris->size)] - 1;
+	eind[eptr[i]+1] = mesh->tris->data[I2dm(i+1,2,mesh->tris->size)] - 1;
+	eind[eptr[i]+2] = mesh->tris->data[I2dm(i+1,3,mesh->tris->size)] - 1;
     }
     eptr[ne] = 3*i;
 

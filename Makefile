@@ -54,4 +54,5 @@ clean:
 	rm -f include/tags
 	rm -f include/stdafx.h.gch
 	rm -f test/tags
+	rm -f *.vtk
 

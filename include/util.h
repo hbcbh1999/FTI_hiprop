@@ -46,12 +46,12 @@ extern int findString(FILE* file, const char* in_string);
  * \param j index in dimension 2 (starts from 1)
  * \param size dimension information
  */
-#define I2dm(i,j,size) (j-1)*(size[0])+(i-1) 
+#define I2dm(i,j,size) ((j-1)*(size[0])+(i-1))
 
 /*!
  * Compute the index of A[i][j][k] in a 3D array
  */
-#define I3dm(i,j,k,size) ((k-1)*(size[1])+(j-1))*(size[0])+(i-1)
+#define I3dm(i,j,k,size) (((k-1)*(size[1])+(j-1))*(size[0])+(i-1))
 /*
 inline int32_T I2d(int32_T i, int32_T j, int32_T *size)
 {
