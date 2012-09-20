@@ -14,7 +14,7 @@ VPATH = src test
 test.exe: pre test.o libhiprop.a
 	$(CC) -g -o $@ $(CPPFLAGS) test.o -L./ -lhiprop
 test2.exe: pre test2.o libhiprop.a
-	$(CC) -g -o $@ $(CPPFLAGS) test2.o -L./ -lhiprop
+	$(CC) -g -o $@ $(CPPFLAGS) test2.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
 test3.exe: pre test3.o libhiprop.a
 	$(CC) -g -o $@ $(CPPFLAGS) test3.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
 
