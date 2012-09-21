@@ -243,6 +243,8 @@ int hpMetisPartMesh(hiPropMesh* mesh, const int nparts,
 {
 
     //to be consistent with Metis, idx_t denote integer numbers, real_t denote floating point numbers
+    //in Metis, tri and points arrays all start from index 0, which is different from HiProp,
+    // so we need to convert to Metis convention, the output tri_part and pt_part are in Metis convention
 
     printf("entered hpMetisPartMesh\n");
     int i, flag;
@@ -345,6 +347,7 @@ int hpDistMesh(int root, hiPropMesh* in_mesh,
 
 	// calculate the list of global index of triangles existing on each proc
 	// tri_index[rank][i] is the global index of the ith tri on the ranked proc
+	// all indices for tris here start from 0 for easy of coding
 	int** tri_index = (int**) malloc(num_proc*sizeof(int*));
 	for(i = 0; i<num_proc; i++)
 	    tri_index[i] = (int*) malloc(num_tri[i]*sizeof(int));
@@ -362,6 +365,7 @@ int hpDistMesh(int root, hiPropMesh* in_mesh,
 	}
 
 	// construct an index table to store the local index of every point
+	// all indices start from 0 for easy of coding
 	// if pt_local[i][j] = -1, point[j] is not on proc[i], 
 	// if pt_local[i][j] = m >= 0, the local index of point[j] on proc[i] is m.
 	// looks space and time consuming, however easy to convert between globle and local index of points
@@ -370,7 +374,7 @@ int hpDistMesh(int root, hiPropMesh* in_mesh,
 	{
 	    pt_local[i] = (int*) malloc(total_num_pt * sizeof(int));
 	    for(j = 0; j<total_num_pt; j++)
-		pt_local[i][j] = -1;	//initialize to 0
+		pt_local[i][j] = -1;	//initialize to -1
 	}
 
 	// fill in pt_local table, calculate num_pt[] on each proc at the same time
@@ -378,9 +382,9 @@ int hpDistMesh(int root, hiPropMesh* in_mesh,
 	{
 	    for(j = 0; j<num_proc; j++)
 		for(k = 0; k<num_tri[j]; k++)
-		    if((in_mesh->tris->data[I2dm(tri_index[j][k]+1,1,in_mesh->tris->size)]==i)
-			    ||(in_mesh->tris->data[I2dm(tri_index[j][k]+1,2,in_mesh->tris->size)]==i)
-			    ||(in_mesh->tris->data[I2dm(tri_index[j][k]+1,3,in_mesh->tris->size)]==i))
+		    if((in_mesh->tris->data[I2dm(tri_index[j][k]+1,1,in_mesh->tris->size)]==(i+1))
+			    ||(in_mesh->tris->data[I2dm(tri_index[j][k]+1,2,in_mesh->tris->size)]==(i+1))
+			    ||(in_mesh->tris->data[I2dm(tri_index[j][k]+1,3,in_mesh->tris->size)]==(i+1)))
 		    {
 			pt_local[j][i] = num_pt[j];
 			num_pt[j]++;
@@ -396,18 +400,19 @@ int hpDistMesh(int root, hiPropMesh* in_mesh,
 	{
 	    for(j = 0; j<num_tri[i]; j++)
 	    {
-		global_index = in_mesh->tris->data[I2dm(tri_index[i][j]+1,1,in_mesh->tris->size)];
-		p_mesh[i]->tris->data[I2dm(j+1,1,p_mesh[i]->tris->size)] = pt_local[i][global_index];
+		global_index = in_mesh->tris->data[I2dm(tri_index[i][j]+1,1,in_mesh->tris->size)]-1;
+		p_mesh[i]->tris->data[I2dm(j+1,1,p_mesh[i]->tris->size)] = pt_local[i][global_index]+1;
 
-		global_index = in_mesh->tris->data[I2dm(tri_index[i][j]+1,2,in_mesh->tris->size)];
-		p_mesh[i]->tris->data[I2dm(j+1,2,p_mesh[i]->tris->size)] = pt_local[i][global_index];
+		global_index = in_mesh->tris->data[I2dm(tri_index[i][j]+1,2,in_mesh->tris->size)]-1;
+		p_mesh[i]->tris->data[I2dm(j+1,2,p_mesh[i]->tris->size)] = pt_local[i][global_index]+1;
 
-		global_index = in_mesh->tris->data[I2dm(tri_index[i][j]+1,3,in_mesh->tris->size)];
-		p_mesh[i]->tris->data[I2dm(j+1,3,p_mesh[i]->tris->size)] = pt_local[i][global_index];
+		global_index = in_mesh->tris->data[I2dm(tri_index[i][j]+1,3,in_mesh->tris->size)]-1;
+		p_mesh[i]->tris->data[I2dm(j+1,3,p_mesh[i]->tris->size)] = pt_local[i][global_index]+1;
 	    }
 	}
 
 	// pt_index is similar to tri_index
+	// indices start from 0
 	// pt_index[rank][i] is the global index of the ith point on the ranked proc
 	// constructed using pt_local
 	int** pt_index = (int**) malloc(num_proc*sizeof(int*));
