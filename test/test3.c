@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     if (rank == 0)
     {
 	char in_filename[30];
-    	sprintf(in_filename, "%s.vtk",argv[1]);
+    	sprintf(in_filename, "data/serial/%s.vtk",argv[1]);
 
     	hiPropMesh *in_mesh;	//input mesh
     	hpInitMesh(&in_mesh);
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
     char out_name[200];
 
     right_flush(rank,4,rank_str);
-    sprintf(out_name, "%s-p%s.vtk",argv[1], rank_str);
+    sprintf(out_name, "data/parallel/%s-p%s.vtk",argv[1], rank_str);
 
     if(!hpWriteUnstrMeshVtk3d(out_name, mesh))
     {
