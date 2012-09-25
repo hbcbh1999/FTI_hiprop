@@ -20,9 +20,19 @@
  */
 typedef struct hiPropMesh
 {
-    emxArray_real_T *ps;	/*!< point positions */
-    emxArray_int32_T *tris;	/*!< triangles */
-    emxArray_real_T *nor;	/*!< point normals */
+    emxArray_real_T *ps;		/*!< point positions, # of points = n */
+    emxArray_int32_T *tris;		/*!< triangles, # of triangles = m */
+    emxArray_real_T *nor;		/*!< point normals */
+    emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
+    emxArray_int32_T *ps_proc_index;	/*!< point processor index */
+    emxArray_int32_T *ps_proc_list;	/*!< point processor list */
+    emxArray_int32_T *tris_proc_index;	/*!< triangle processor index */
+    emxArray_int32_T *tris_proc_list;	/*!< triangle processor list */
+
+    emxArray_int32_T **ps_send_index;
+    emxArray_real_T **ps_send_buffer;
+    emxArray_int32_T **ps_recv_index;
+    emxArray_real_T **ps_recv_buffer;
 
 } hiPropMesh;
 
@@ -32,6 +42,22 @@ typedef struct hiPropMesh
  * \param pmesh Address of the hiProp mesh pointer
  */
 extern void hpInitMesh(hiPropMesh **pmesh);
+/*!
+ * \brief Free a hiProp mesh update info and set the pointer to be NULL
+ * \param pmesh pointer to hiProp mesh
+ */
+extern void hpFreeMeshUpdateInfo(hiPropMesh *pmesh);
+/*!
+ * \brief Free a hiProp mesh parallel info and set the pointer to be NULL
+ * \param pmesh pointer to hiProp mesh
+ */
+extern void hpFreeMeshParallelInfo(hiPropMesh *pmesh);
+
+/*!
+ * \brief Free a hiProp mesh basic info and set the pointer to be NULL
+ * \param pmesh pointer to hiProp mesh
+ */
+extern void hpFreeMeshBasicInfo(hiPropMesh *pmesh);
 
 /*!
  * \brief Free a hiProp mesh and set the pointer to be NULL
@@ -88,5 +114,21 @@ extern int hpMetisPartMesh(hiPropMesh* mesh, const int nparts, int** tri_part, i
  * \param tag tag of the communication
  */
 extern int hpDistMesh(int root, hiPropMesh* in_mesh, hiPropMesh* mesh, int* tri_part, int tag);
+
+/*!
+ * \brief Get the neighboring processor ID and fill the nb_proc list from the
+ * mesh points
+ * \param mesh parallel hiPropMesh with overlapping points and triangles
+ */
+extern void hpGetNbProcListAuto(hiPropMesh* mesh);
+
+/*!
+ * \brief Get the neighboring processor ID and fill the nb_proc list from the
+ * user given neighboring processor list
+ * \param mesh parallel hiPropMesh with overlapping points and triangles
+ * \param num_nb_proc number of neighboring processor
+ * \param in_nb_proc array of neighboring processors with length num_nb_proc
+ */
+extern void hpGetNbProcListInput(hiPropMesh* mesh, int num_nb_proc, int* in_nb_proc);
 
 #endif

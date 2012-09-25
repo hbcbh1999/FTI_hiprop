@@ -20,16 +20,87 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->ps = (emxArray_real_T *) NULL;
     mesh->tris = (emxArray_int32_T *) NULL;
     mesh->nor = (emxArray_real_T *) NULL;
+    mesh->nb_proc = (emxArray_int32_T *) NULL;
+    mesh->ps_proc_index = (emxArray_int32_T *) NULL;
+    mesh->ps_proc_list = (emxArray_int32_T *) NULL;
+    mesh->tris_proc_index = (emxArray_int32_T *) NULL;
+    mesh->tris_proc_list = (emxArray_int32_T *) NULL;
+
+    mesh->ps_send_index = (emxArray_int32_T **) NULL;
+    mesh->ps_send_buffer = (emxArray_real_T **) NULL;
+    mesh->ps_recv_index = (emxArray_int32_T **) NULL;
+    mesh->ps_recv_buffer = (emxArray_real_T **) NULL;
+}
+
+void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
+{
+    int num_nb_proc = pmesh->nb_proc->size[0];
+    int i;
+    if (pmesh->ps_send_index != ((emxArray_int32_T *) NULL) )
+    {
+	for (i = 0; i < num_nb_proc; i++)
+	{
+	    if (pmesh->ps_send_index[i] != ((emxArray_int32_T *) NULL) )
+	    {
+		emxFree_int32_T(&(pmesh->ps_send_index[i]));
+		emxFree_real_T(&(pmesh->ps_send_buffer[i]));
+	    }
+	}
+	free(pmesh->ps_send_index);
+	free(pmesh->ps_send_buffer);
+	pmesh->ps_send_index = NULL;
+	pmesh->ps_send_buffer = NULL;
+    }
+    if (pmesh->ps_recv_index != ((emxArray_int32_T *) NULL) )
+    {
+	for (i = 0; i < num_nb_proc; i++)
+	{
+	    if (pmesh->ps_recv_index[i] != ((emxArray_int32_T *) NULL) )
+	    {
+		emxFree_int32_T(&(pmesh->ps_recv_index[i]));
+		emxFree_real_T(&(pmesh->ps_recv_buffer[i]));
+	    }
+	}
+	free(pmesh->ps_recv_index);
+	free(pmesh->ps_recv_buffer);
+	pmesh->ps_recv_index = NULL;
+	pmesh->ps_recv_buffer = NULL;
+    }
+}
+
+void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
+{
+    if (pmesh->ps_proc_index != ((emxArray_int32_T *) NULL) )
+    {
+	emxFree_int32_T(&(pmesh->ps_proc_index));
+	emxFree_int32_T(&(pmesh->ps_proc_list));
+    }
+    if (pmesh->tris_proc_index != ((emxArray_int32_T *) NULL) )
+    {
+	emxFree_int32_T(&(pmesh->tris_proc_index));
+	emxFree_int32_T(&(pmesh->tris_proc_list));
+    }
+    if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
+	emxFree_int32_T(&(pmesh->nb_proc));
+}
+
+void hpFreeMeshBasicInfo(hiPropMesh *pmesh)
+{
+    if( pmesh->ps != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(pmesh->ps));
+    if( pmesh->tris != ((emxArray_int32_T *) NULL) )
+	emxFree_int32_T(&(pmesh->tris));
+    if( pmesh->nor != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(pmesh->nor));
 }
 
 void hpFreeMesh(hiPropMesh **pmesh)
 {
-    if( (*pmesh)->ps != ((emxArray_real_T *) NULL) )
-	emxFree_real_T(&((*pmesh)->ps));
-    if( (*pmesh)->tris != ((emxArray_int32_T *) NULL) )
-	emxFree_int32_T(&((*pmesh)->tris));
-    if( (*pmesh)->nor != ((emxArray_real_T *) NULL) )
-	emxFree_real_T(&((*pmesh)->nor));
+    hpFreeMeshUpdateInfo((*pmesh));
+    hpFreeMeshParallelInfo((*pmesh));
+    hpFreeMeshBasicInfo((*pmesh));
+
+    free((*pmesh));
 
     (*pmesh) = (hiPropMesh *)NULL;
 }
