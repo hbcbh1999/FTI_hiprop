@@ -21,19 +21,13 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->tris = (emxArray_int32_T *) NULL;
     mesh->nor = (emxArray_real_T *) NULL;
     mesh->nb_proc = (emxArray_int32_T *) NULL;
-    mesh->ps_proc_index = (emxArray_int32_T *) NULL;
-    mesh->ps_proc_list = (emxArray_int32_T *) NULL;
-    mesh->tris_proc_index = (emxArray_int32_T *) NULL;
-    mesh->tris_proc_list = (emxArray_int32_T *) NULL;
-
-    mesh->ps_send_index = (emxArray_int32_T **) NULL;
-    mesh->ps_send_buffer = (emxArray_real_T **) NULL;
-    mesh->ps_recv_index = (emxArray_int32_T **) NULL;
-    mesh->ps_recv_buffer = (emxArray_real_T **) NULL;
+    mesh->ps_pinfo = (hpPInfoList *) NULL;
+    mesh->tris_pinfo = (hpPInfoList *) NULL;
 }
 
 void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
 {
+    /*
     int num_nb_proc = pmesh->nb_proc->size[0];
     int i;
     if (pmesh->ps_send_index != ((emxArray_int32_T *) NULL) )
@@ -66,20 +60,26 @@ void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
 	pmesh->ps_recv_index = NULL;
 	pmesh->ps_recv_buffer = NULL;
     }
+    */
 }
 
 void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
 {
-    if (pmesh->ps_proc_index != ((emxArray_int32_T *) NULL) )
+    if (pmesh->ps_pinfo != ((hpPInfoList *) NULL) )
     {
-	emxFree_int32_T(&(pmesh->ps_proc_index));
-	emxFree_int32_T(&(pmesh->ps_proc_list));
+	if (pmesh->ps_pinfo->head != ((hpPInfoNode *) NULL) )
+	    free(pmesh->ps_pinfo->head);
+	free(pmesh->ps_pinfo);
+	pmesh->ps_pinfo = (hpPInfoList *) NULL;
     }
-    if (pmesh->tris_proc_index != ((emxArray_int32_T *) NULL) )
+    if (pmesh->tris_pinfo != ((hpPInfoList *) NULL) )
     {
-	emxFree_int32_T(&(pmesh->tris_proc_index));
-	emxFree_int32_T(&(pmesh->tris_proc_list));
+	if (pmesh->tris_pinfo->head != ((hpPInfoNode *) NULL) )
+	    free(pmesh->tris_pinfo->head);
+	free(pmesh->tris_pinfo);
+	pmesh->tris_pinfo = (hpPInfoList *) NULL;
     }
+
     if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->nb_proc));
 }
@@ -369,8 +369,8 @@ int hpMetisPartMesh(hiPropMesh* mesh, const int nparts,
     }
 }
 
-int hpDistMesh(int root, hiPropMesh* in_mesh,
-	hiPropMesh* mesh, int* tri_part,
+int hpDistMesh(int root, hiPropMesh *in_mesh,
+	hiPropMesh *mesh, int *tri_part,
 	int tag)
 {
     int i,j,k;
@@ -563,4 +563,57 @@ int hpDistMesh(int root, hiPropMesh* in_mesh,
     }
     printf("Leaving hpDistMesh proc %d\n", rank);
     return 1;
+}
+
+void hpGetNbProcListFromInput(hiPropMesh *mesh, int num_nb_proc, int *in_nb_proc)
+{
+    int i;
+    int num_nb[1];
+    num_nb[0] = num_nb_proc;
+
+    mesh->nb_proc = emxCreateND_int32_T(1, num_nb);
+    for (i = 1; i <= num_nb_proc; i++)
+	mesh->nb_proc->data[i-1] = in_nb_proc[i-1];
+
+}
+
+void hpGetNbProcListAuto(hiPropMesh *mesh)
+{
+
+}
+
+void hpInitPInfo(hiPropMesh *mesh)
+{
+    int i;
+    int num_ps = mesh->ps->size[0];
+    int num_tris = mesh->tris->size[0];
+
+    int ps_estimate = 2*num_ps;
+    int tris_estimate = 2*num_tris;
+
+    int my_rank;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+
+    mesh->ps_pinfo = (hpPInfoList *) malloc(sizeof(hpPInfoList));
+    mesh->tris_pinfo = (hpPInfoList *) malloc(sizeof(hpPInfoList));
+
+    mesh->ps_pinfo->head = (hpPInfoNode *) malloc(ps_estimate*sizeof(hpPInfoNode));
+    mesh->tris_pinfo->head = (hpPInfoNode *) malloc(tris_estimate*sizeof(hpPInfoNode));
+
+    mesh->ps_pinfo->max_len = ps_estimate;
+    mesh->tris_pinfo->max_len = tris_estimate;
+
+    for (i = 1; i <= num_ps; i++)
+    {
+	(mesh->ps_pinfo->head[i-1]).proc = my_rank;
+	(mesh->ps_pinfo->head[i-1]).lindex = i;
+	(mesh->ps_pinfo->head[i-1]).next = -1;
+    }
+
+    mesh->ps_pinfo->allocated_len = num_ps;
+    mesh->tris_pinfo->allocated_len = num_tris;
+
+
 }
