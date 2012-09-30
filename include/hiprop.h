@@ -13,6 +13,55 @@
 
 
 #include "stdafx.h"
+#include "metis.h"
+
+/*!
+ * \brief Parallel information element for each point/triangle in hiPropMesh
+ */
+
+typedef struct hpPInfoNode
+{
+    int proc;		/*!< processor ID */
+    int lindex;		/*!< local index on the corresponding proc */
+    int next;		/*!< index for the next node in the linked list, if next = -1, itis the last node for the list of this element */
+} hpPInfoNode;
+
+/*!
+ * \brief Parallel information for points/triangles in hiPropMesh
+ * \detail For each point/triangle, the parallel information is consisted of lists 
+ * of hpPInfoNodes. The lists are stored in a array which is continuous in
+ * memory. Take the parallel info for points for example, suppose # of points 
+ * is N, head[I1dm(i)] is the first elements for the i-th point,
+ * which contains the master processor ID and the local index on the master proc
+ * for the point. The list increases by itself when allocated_len > max_len. The
+ * max_lex is initialized to be 2*N and allocated_len is initialized to be N.
+ */
+
+typedef struct hpPInfoList
+{
+    hpPInfoNode *head;   /*!< pointer points to the first element of the list */
+    int allocated_len;   /*!< allocated length */	
+    int max_len;	 /*!< maximun length */
+} hpPInfoList;
+
+/*!
+ * \brief hiProp Mesh data structure
+ */
+typedef struct hiPropMesh
+{
+    emxArray_real_T *ps;		/*!< point positions, # of points = n */
+    emxArray_int32_T *tris;		/*!< triangles, # of triangles = m */
+    emxArray_real_T *nor;		/*!< point normals */
+    emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
+    hpPInfoList *ps_pinfo;		/*!< parallel information for points */
+    hpPInfoList *tris_pinfo;		/*!< parallel information for tris */
+    /*
+    emxArray_int32_T **ps_send_index;
+    emxArray_real_T **ps_send_buffer;
+    emxArray_int32_T **ps_recv_index;
+    emxArray_real_T **ps_recv_buffer;
+    */
+} hiPropMesh;
 
 
 /*!
@@ -20,6 +69,22 @@
  * \param pmesh Address of the hiProp mesh pointer
  */
 extern void hpInitMesh(hiPropMesh **pmesh);
+/*!
+ * \brief Free a hiProp mesh update info and set the pointer to be NULL
+ * \param pmesh pointer to hiProp mesh
+ */
+extern void hpFreeMeshUpdateInfo(hiPropMesh *pmesh);
+/*!
+ * \brief Free a hiProp mesh parallel info and set the pointer to be NULL
+ * \param pmesh pointer to hiProp mesh
+ */
+extern void hpFreeMeshParallelInfo(hiPropMesh *pmesh);
+
+/*!
+ * \brief Free a hiProp mesh basic info and set the pointer to be NULL
+ * \param pmesh pointer to hiProp mesh
+ */
+extern void hpFreeMeshBasicInfo(hiPropMesh *pmesh);
 
 /*!
  * \brief Free a hiProp mesh and set the pointer to be NULL
@@ -32,25 +97,66 @@ extern void hpFreeMesh(hiPropMesh **pmesh);
  * \param name input file name
  * \param mesh mesh for storing the data read from file
  */
-extern int hpReadPolyMeshVtk3d(const char* name, hiPropMesh* mesh);
+extern int hpReadPolyMeshVtk3d(const char *name, hiPropMesh *mesh);
 /*!
  * Write an ascii triangular vtk file with data type POLYGON.
  * \param name output file name
  * \param mesh mesh for output
  */
-extern int hpWritePolyMeshVtk3d(const char* name, hiPropMesh* mesh);
+extern int hpWritePolyMeshVtk3d(const char *name, hiPropMesh *mesh);
 /*!
  * Read an ascii triangular vtk file with data type UNSTURCTURED_GRID.
  * \param name input file name
  * \param mesh mesh for storing the data read from file
  */
-extern int hpReadUnstrMeshVtk3d(const char* name, hiPropMesh* mesh);
+extern int hpReadUnstrMeshVtk3d(const char *name, hiPropMesh *mesh);
 /*!
- * Write an ascii triangular vtk file with data type UNSTRUCTURED_GRID.
+ * \brief Write an ascii triangular vtk file with data type UNSTRUCTURED_GRID.
  * \param name output file name
  * \param mesh mesh for output
  */
-extern int hpWriteUnstrMeshVtk3d(const char* name, hiPropMesh* mesh);
+extern int hpWriteUnstrMeshVtk3d(const char *name, hiPropMesh *mesh);
 
+/*!
+ * \brief Partition the mesh into nparts, using the routine of METIS_PartMeshDual,
+ * the partition of the mesh is based on the partition of the dual graph,
+ * should be called in serial
+ * \param mesh mesh to partition
+ * \param nparts number of parts the mesh would be partitioned into
+ * \param tri_part the address of an array of length equal to the number of triangles, 
+ * 	the function will give the part index the triangle is partitioned into,
+ *	memory allocated inside the function
+ * \param pt_part the address of an array of length equal to the number of points, 
+ * 	the function will give the part index the point is partitioned into,
+ *	memory allocated inside the function
+ */
+extern int hpMetisPartMesh(hiPropMesh *mesh, const int nparts, int **tri_part, int **pt_part);
 
+/*!
+ * \brief Distribute the mesh according to tri_part array got in hpMetisPartMesh
+ * \param root root of the communication, it should contain in_mesh and tri_part info
+ * \param in_mesh the input mesh to be partitioned
+ * \param mesh the output mesh after partition
+ * \param tri_part the triangle partition info generated by hpMetisPartMesh
+ * \param tag tag of the communication
+ */
+extern int hpDistMesh(int root, hiPropMesh *in_mesh, hiPropMesh *mesh, int *tri_part, int tag);
+
+/*!
+ * \brief Get the neighboring processor ID and fill the nb_proc list from the
+ * mesh points
+ * \param mesh parallel hiPropMesh with overlapping points and triangles
+ */
+extern void hpGetNbProcListAuto(hiPropMesh *mesh);
+
+/*!
+ * \brief Get the neighboring processor ID and fill the nb_proc list from the
+ * user given neighboring processor list
+ * \param mesh parallel hiPropMesh with overlapping points and triangles
+ * \param num_nb_proc number of neighboring processor
+ * \param in_nb_proc array of neighboring processors with length num_nb_proc
+ */
+extern void hpGetNbProcListInput(hiPropMesh *mesh, int num_nb_proc, int *in_nb_proc);
+
+extern void hpInitPInfo(hiPropMesh *mesh);
 #endif

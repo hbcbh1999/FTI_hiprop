@@ -2,6 +2,11 @@ CC  = mpicc
 CXX = mpicxx
 AR  = ar
 
+#metis_Dir = /Users/yijiezhou/pkg/metis
+#metis_Dir = /home/Yijie/pkg/metis
+metis_Dir = ./pkg/metis
+metis_Include = -I${metis_Dir}/include
+metis_lib = -L${metis_Dir}/lib
 
 # CFLAGS = -c -DNDEBUG -Wall 
 CFLAGS = -c -g -Wall
@@ -9,12 +14,13 @@ CPPFLAGS = -Iinclude
 VPATH = src test
 
 test.exe: pre test.o libhiprop.a
-	$(CC) -g -o $@ $(CPPFLAGS) test.o -L./ -lhiprop
+	$(CC) -g -o $@ $(CPPFLAGS) test.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
 test2.exe: pre test2.o libhiprop.a
-	$(CC) -g -o $@ $(CPPFLAGS) test2.o -L./ -lhiprop
+	$(CC) -g -o $@ $(CPPFLAGS) test2.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
+test3.exe: pre test3.o libhiprop.a
+	$(CC) -g -o $@ $(CPPFLAGS) test3.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
 
-
-all: test.exe test2.exe doc
+all: test.exe test2.exe test3.exe doc
 
 lib: pre libhiprop.a
 
@@ -31,7 +37,7 @@ libhiprop.a: util.o hiprop.o
 	ranlib libhiprop.a
 
 %.o:%.c 
-	$(CC) $(CFLAGS) $(CPPFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(metis_Include) $(metis_lib) $< -o $@
 
 %.o:%.cpp
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $< -o $@  
@@ -50,4 +56,5 @@ clean:
 	rm -f include/tags
 	rm -f include/stdafx.h.gch
 	rm -f test/tags
+	rm -f *.vtk
 

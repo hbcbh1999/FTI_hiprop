@@ -30,10 +30,16 @@
 
 #include "stdafx.h"
 
+/*!
+ * \brief Transform an int number into string using certain number of digits
+ * \param n int number that is being transformed
+ * \param ndigits number of digits for the output
+ * \param in_string output string
+ */
 void right_flush(int n, int ndigits, char *in_string);
 
 /*!
- * Locate the current cursor after the searching string, if string not found,
+ * \brief Locate the current cursor after the searching string, if string not found,
  * return 0.
  * \param file file pointer
  * \param in_string string for search
@@ -41,17 +47,24 @@ void right_flush(int n, int ndigits, char *in_string);
 extern int findString(FILE* file, const char* in_string);
 
 /*!
+ * Compute the index of A[i] in a 1D array
+ * \param i index starts from 1
+ */
+#define I1dm(i) (i-1)
+
+/*!
  * Compute the index of A[i][j] in a 2D array
  * \param i index in dimension 1 (starts from 1)
  * \param j index in dimension 2 (starts from 1)
  * \param size dimension information
  */
-#define I2dm(i,j,size) (j-1)*(size[0])+(i-1) 
+#define I2dm(i,j,size) ((j-1)*(size[0])+(i-1))
 
 /*!
  * Compute the index of A[i][j][k] in a 3D array
  */
-#define I3dm(i,j,k,size) ((k-1)*(size[1])+(j-1))*(size[0])+(i-1)
+#define I3dm(i,j,k,size) (((k-1)*(size[1])+(j-1))*(size[0])+(i-1))
+
 /*
 inline int32_T I2d(int32_T i, int32_T j, int32_T *size)
 {
@@ -71,6 +84,7 @@ inline int32_T I3d(int32_T i, int32_T j, int32_T k, int32_T *size)
  * \param numDimensions number of dimensions
  */
 extern void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensions);
+
 /*!
  * \brief Initialization of a 32bit int array
  * 
@@ -79,6 +93,7 @@ extern void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensi
  * \param numDimensions number of dimensions
  */
 extern void emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimensions);
+
 /*!
  * \brief Initialization of a 64bit double array
  * 
@@ -95,6 +110,7 @@ extern void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
  * \return a pointer to the generated array
  */
 extern emxArray_int32_T *emxCreateND_int32_T(int32_T numDimensions, int32_T *size);
+
 /*!
  * \brief Create a N-dimensional 64bit double array with initial value 0
  * \param numDimensions number of dimensions
@@ -102,6 +118,7 @@ extern emxArray_int32_T *emxCreateND_int32_T(int32_T numDimensions, int32_T *siz
  * \return a pointer to the generated array
  */
 extern emxArray_real_T *emxCreateND_real_T(int32_T numDimensions, int32_T *size);
+
 /*!
  * \brief Create a N-dimensional 8bit boolean array with initial value FALSE
  * \param numDimensions number of dimensions
@@ -109,6 +126,7 @@ extern emxArray_real_T *emxCreateND_real_T(int32_T numDimensions, int32_T *size)
  * \return a pointer to the generated array
  */
 extern emxArray_boolean_T *emxCreateND_boolean_T(int32_T numDimensions, int32_T *size);
+
 /*!
  * \brief Create a 2D 32bit int array with initial value 0
  * \param rows number of rows
@@ -116,6 +134,7 @@ extern emxArray_boolean_T *emxCreateND_boolean_T(int32_T numDimensions, int32_T 
  * \return a pointer to the generated array
  */
 extern emxArray_int32_T *emxCreate_int32_T(int32_T rows, int32_T cols);
+
 /*!
  * \brief Create a 2D 64bit double array with initial value 0
  * \param rows number of rows
@@ -123,12 +142,14 @@ extern emxArray_int32_T *emxCreate_int32_T(int32_T rows, int32_T cols);
  * \return a pointer to the generated array
  */
 extern emxArray_real_T *emxCreate_real_T(int32_T rows, int32_T cols);
+
 /*!
  * \brief Create a 2D 8bit boolean array with initial value FALSE
  * \param rows number of rows
  * \param cols number of columns
  * \return a pointer to the generated array
- */extern emxArray_boolean_T *emxCreate_boolean_T(int32_T rows, int32_T cols);
+ */
+extern emxArray_boolean_T *emxCreate_boolean_T(int32_T rows, int32_T cols);
 
 /*!
  * \brief Create a wrapper for an N-dimensional 32bit int array 
@@ -140,16 +161,18 @@ extern emxArray_real_T *emxCreate_real_T(int32_T rows, int32_T cols);
  * \return a pointer to the generated array
  */
 extern emxArray_int32_T *emxCreateWrapperND_int32_T(int32_T *data, int32_T numDimensions, int32_T *size);
+
 /*!
  * \brief Create a wrapper for an N-dimensional 64bit double array 
  *
  * The data being wrapped could not be freed by calling #emxFree_real_T
  * \param data data stored in a 1D array
- * \param numDimensions number of dimensionsextern int findString(FILE* file, const char* in_string);e fr
+ * \param numDimensions number of dimensions
  * \param size size for each dimension
  * \return a pointer to the generated array
  */
 extern emxArray_real_T *emxCreateWrapperND_real_T(real_T *data, int32_T numDimensions, int32_T *size);
+
 /*!
  * \brief Create a wrapper for an N-dimensional 8bit boolean array 
  *
@@ -160,6 +183,7 @@ extern emxArray_real_T *emxCreateWrapperND_real_T(real_T *data, int32_T numDimen
  * \return a pointer to the generated array
  */
 extern emxArray_boolean_T *emxCreateWrapperND_boolean_T(boolean_T *data, int32_T numDimensions, int32_T *size);
+
 /*!
  * \brief Create a wrapper for an 2D 32bit int array 
  *
@@ -170,6 +194,7 @@ extern emxArray_boolean_T *emxCreateWrapperND_boolean_T(boolean_T *data, int32_T
  * \return a pointer to the generated array
  */
 extern emxArray_int32_T *emxCreateWrapper_int32_T(int32_T *data, int32_T rows, int32_T cols);
+
 /*!
  * \brief Create a wrapper for an 2D 64bit double array 
  *
@@ -180,6 +205,7 @@ extern emxArray_int32_T *emxCreateWrapper_int32_T(int32_T *data, int32_T rows, i
  * \return a pointer to the generated array
  */
 extern emxArray_real_T *emxCreateWrapper_real_T(real_T *data, int32_T rows, int32_T cols);
+
 /*!
  * \brief Create a wrapper for an 2D 8bit boolean array 
  *
@@ -188,7 +214,8 @@ extern emxArray_real_T *emxCreateWrapper_real_T(real_T *data, int32_T rows, int3
  * \param rows number of rows
  * \param cols number of columns
  * \return a pointer to the generated array
- */extern emxArray_boolean_T *emxCreateWrapper_boolean_T(boolean_T *data, int32_T rows, int32_T cols);
+ */
+extern emxArray_boolean_T *emxCreateWrapper_boolean_T(boolean_T *data, int32_T rows, int32_T cols);
 
 /*!
  * \brief Deallocate the memory of a 8bit boolean array
@@ -196,12 +223,14 @@ extern emxArray_real_T *emxCreateWrapper_real_T(real_T *data, int32_T rows, int3
  * \param pEmxArray address of the array being deallocated
  */
 extern void emxFree_boolean_T(emxArray_boolean_T **pEmxArray);
+
 /*!
  * \brief Deallocate the memory of a 32bit int array
  *
  * \param pEmxArray address of the array being deallocated
  */
 extern void emxFree_int32_T(emxArray_int32_T **pEmxArray);
+
 /*!
  * \brief Deallocate the memory of a 64bit double array
  *
@@ -209,60 +238,273 @@ extern void emxFree_int32_T(emxArray_int32_T **pEmxArray);
  */
 extern void emxFree_real_T(emxArray_real_T **pEmxArray);
 
+/*!
+ * \brief Function for automatically increase the array generated by codgen
+ * 
+ * \param emxArray pointer to common type array
+ * \param oldNumel old number of elements
+ * \param elementSize size of each element
+ */
 extern void emxEnsureCapacity(emxArray__common *emxArray, int32_T oldNumel, int32_T elementSize);
 
+/*!
+ * \brief Add column to common type array
+ * 
+ * \param emxArray pointer to common type array
+ * \param numColAdd number of column added
+ * \param elementSize size of each element
+ */
 extern void addColumnToArray_common(emxArray__common *emxArray, int32_T numColAdd, uint32_T elementSize);
 
+/*!
+ * \brief Add column to int array
+ * 
+ * \param emxArray pointer to int array
+ * \param numColAdd number of column added
+ */
 extern void addColumnToArray_int32_T(emxArray_int32_T *emxArray, int32_T numColAdd);
+
+/*!
+ * \brief Add column to real array
+ * 
+ * \param emxArray pointer to real array
+ * \param numColAdd number of column added
+ */
 extern void addColumnToArray_real_T(emxArray_real_T *emxArray, int32_T numColAdd);
+
+/*!
+ * \brief Add column to boolean array
+ * 
+ * \param emxArray pointer to boolean array
+ * \param numColAdd number of column added
+ */
 extern void addColumnToArray_boolean_T(emxArray_boolean_T *emxArray, int32_T numColAdd);
 
+/*!
+ * \brief Add row to int array
+ * 
+ * \param emxArray pointer to int array
+ * \param numColAdd number of row added
+ */
 extern void addRowToArray_int32_T(emxArray_int32_T *emxArray, int32_T numRowAdd);
+
+/*!
+ * \brief Add row to real array
+ * 
+ * \param emxArray pointer to real array
+ * \param numColAdd number of row added
+ */
 extern void addRowToArray_real_T(emxArray_real_T *emxArray, int32_T numRowAdd);
+
+/*!
+ * \brief Add row to boolean array
+ * 
+ * \param emxArray pointer to boolean array
+ * \param numColAdd number of row added
+ */
 extern void addRowToArray_boolean_T(emxArray_boolean_T *emxArray, int32_T numRowAdd);
 
 extern void printArray_int32_T(const emxArray_int32_T *emxArray);
 extern void printArray_real_T(const emxArray_real_T *emxArray);
 extern void printArray_boolean_T(const emxArray_boolean_T *emxArray);
 
-
+/*!
+ * \brief Block sending a N-dimensional boolean array
+ * \detail In the function we first send the common information including number
+ * of dimensions and number of elements in each dimension, then we send the data
+ * member of the array. The common info has label = tag + 1 and data info has
+ * label tag + 2.
+ *
+ * \param array_send pointer to the array being sent
+ * \param dst destination processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void sendND_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm);
+
+/*!
+ * \brief Block sending a N-dimensional int array
+ * \detail In the function we first send the common information including number
+ * of dimensions and number of elements in each dimension, then we send the data
+ * member of the array. The common info has label = tag + 1 and data info has
+ * label tag + 2.
+ *
+ * \param array_send pointer to the array being sent
+ * \param dst destination processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void sendND_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm);
+
+/*!
+ * \brief Block sending a N-dimensional double array
+ * \detail In the function we first send the common information including number
+ * of dimensions and number of elements in each dimension, then we send the data
+ * member of the array. The common info has label = tag + 1 and data info has
+ * label tag + 2.
+ *
+ * \param array_send pointer to the array being sent
+ * \param dst destination processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void sendND_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm);
 
-
+/*!
+ * \brief Block receiving a N-dimensional boolean array
+ * \detail In the function we first receive the common information including number
+ * of dimensions and number of elements in each dimension, then we create the array based
+ * on the common info and then receive the data member of the array. 
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void recvND_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm);
+
+/*!
+ * \brief Block receiving a N-dimensional int array
+ * \detail In the function we first receive the common information including number
+ * of dimensions and number of elements in each dimension, then we create the array based
+ * on the common info and then receive the data member of the array. 
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void recvND_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
+
+/*!
+ * \brief Block receiving a N-dimensional double array
+ * \detail In the function we first receive the common information including number
+ * of dimensions and number of elements in each dimension, then we create the array based
+ * on the common info and then receive the data member of the array. 
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void recvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
 
-
+/*!
+ * \brief Block sending a 2D boolean array
+ * \detail In the function we first send the row and column number, then we send the data
+ * member of the array. The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_send pointer to the array being sent
+ * \param dst destination processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void send2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm);
+
+/*!
+ * \brief Block sending a 2D int array
+ * \detail In the function we first send the row and column number, then we send the data
+ * member of the array. The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_send pointer to the array being sent
+ * \param dst destination processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void send2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm);
+
+/*!
+ * \brief Block sending a 2D double array
+ * \detail In the function we first send the row and column number, then we send the data
+ * member of the array. The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_send pointer to the array being sent
+ * \param dst destination processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void send2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm);
 
-
+/*!
+ * \brief Block receiving a 2D boolean array
+ * \detail In the function we first receive the row and column number, 
+ * then we create the array and receive the data member of the array.
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void recv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm);
+
+/*!
+ * \brief Block receiving a 2D int array
+ * \detail In the function we first receive the row and column number, 
+ * then we create the array and receive the data member of the array.
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void recv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
+
+/*!
+ * \brief Block receiving a 2D double array
+ * \detail In the function we first receive the row and column number, 
+ * then we create the array and receive the data member of the array.
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
 extern void recv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
 
-extern void isendND_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm);
-extern void isendND_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm);
-extern void isendND_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm);
+/*!
+ * \brief NonBlock receiving a 2D boolean array
+ * \detail In the function we first receive the row and column number, 
+ * then we create the array and receive the data member of the array.
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
+extern void isend2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
 
+/*!
+ * \brief NonBlock receiving a 2D int array
+ * \detail In the function we first receive the row and column number, 
+ * then we create the array and receive the data member of the array.
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
+extern void isend2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
 
-extern void irecvND_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm);
-extern void irecvND_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
-extern void irecvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
-
-
-extern void isend2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm);
-extern void isend2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm);
-extern void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm);
-
-
-extern void irecv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm);
-extern void irecv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
-extern void irecv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
+/*!
+ * \brief NonBlock receiving a 2D double array
+ * \detail In the function we first receive the row and column number, 
+ * then we create the array and receive the data member of the array.
+ * The common info has label = tag + 1 and data info has label tag + 2.
+ *
+ * \param array_recv pointer to the array being received
+ * \param dst source processor ID
+ * \param tag tag for this non blocking send
+ * \param comm MPI communicator
+ */
+extern void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
 
 
 #endif

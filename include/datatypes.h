@@ -94,17 +94,6 @@ typedef struct emxArray_boolean_T
     boolean_T canFreeData;	/*!< whether data could be freed */
 } emxArray_boolean_T;
 
-/*!
- * \brief hiProp Mesh data structure
- */
-typedef struct hiPropMesh
-{
-    emxArray_real_T *ps;	/*!< point positions */
-    emxArray_int32_T *tris;	/*!< triangles */
-    emxArray_real_T *nor;	/*!< point normals */
-
-} hiPropMesh;
-
 
 #endif
 #endif

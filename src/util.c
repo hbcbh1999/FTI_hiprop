@@ -753,36 +753,20 @@ void recvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
 
 void send2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm)
 {
-    int32_T common_info[2];
-
-    common_info[0] = array_send->size[0];
-    common_info[1] = array_send->size[1];
-
-    MPI_Send(common_info, 2, MPI_INT, dst, tag+1, comm);
+    MPI_Send(array_send->size, 2, MPI_INT, dst, tag+1, comm);
     MPI_Send(array_send->data, array_send->allocatedSize, MPI_UNSIGNED_CHAR, dst, tag+2, comm);
 }
 
 void send2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm)
 {
-    int32_T common_info[2];
-
-    common_info[0] = array_send->size[0];
-    common_info[1] = array_send->size[1];
-
-    MPI_Send(common_info, 2, MPI_INT, dst, tag+1, comm);
+    MPI_Send(array_send->size, 2, MPI_INT, dst, tag+1, comm);
     MPI_Send(array_send->data, array_send->allocatedSize, MPI_INT, dst, tag+2, comm);
 
 }
 
 void send2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm)
 {
-    /*int32_T *common_info = (int32_T *)calloc(2, sizeof(int32_T));*/
-    int32_T common_info[2];
-
-    common_info[0] = array_send->size[0];
-    common_info[1] = array_send->size[1];
-
-    MPI_Send(common_info, 2, MPI_INT, dst, tag+1, comm);
+    MPI_Send(array_send->size, 2, MPI_INT, dst, tag+1, comm);
     MPI_Send(array_send->data, array_send->allocatedSize, MPI_DOUBLE, dst, tag+2, comm);
 
 }
@@ -835,3 +819,21 @@ void recv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
     (*array_recv) = result;
 }
 
+void isend2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
+{
+    MPI_Isend(array_send->size, 2, MPI_INT, dst, tag+1, comm, req_com);
+    MPI_Isend(array_send->data, array_send->allocatedSize, MPI_UNSIGNED_CHAR, dst, tag+2, comm, req_data); 
+}
+
+
+void isend2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
+{
+    MPI_Isend(array_send->size, 2, MPI_INT, dst, tag+1, comm, req_com);
+    MPI_Isend(array_send->data, array_send->allocatedSize, MPI_INT, dst, tag+2, comm, req_data); 
+}
+
+void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
+{
+    MPI_Isend(array_send->size, 2, MPI_INT, dst, tag+1, comm, req_com);
+    MPI_Isend(array_send->data, array_send->allocatedSize, MPI_DOUBLE, dst, tag+2, comm, req_data); 
+}
