@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 
     if (rank == 0)
     {
-	char in_filename[30];
+	char in_filename[200];
     	sprintf(in_filename, "data/serial/%s.vtk",argv[1]);
 
     	hiPropMesh *in_mesh;	//input mesh

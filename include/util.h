@@ -41,6 +41,12 @@ void right_flush(int n, int ndigits, char *in_string);
 extern int findString(FILE* file, const char* in_string);
 
 /*!
+ * Compute the index of A[i] in a 1D array
+ * \param i index starts from 1
+ */
+#define I1dm(i) (i-1)
+
+/*!
  * Compute the index of A[i][j] in a 2D array
  * \param i index in dimension 1 (starts from 1)
  * \param j index in dimension 2 (starts from 1)
@@ -245,24 +251,11 @@ extern void recv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, 
 extern void recv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
 extern void recv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
 
-extern void isendND_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm);
-extern void isendND_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm);
-extern void isendND_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm);
 
-
-extern void irecvND_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm);
-extern void irecvND_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
-extern void irecvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
-
-
-extern void isend2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm);
-extern void isend2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm);
-extern void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm);
-
-
-extern void irecv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm);
-extern void irecv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm);
-extern void irecv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm);
+extern void isend2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
+extern void isend2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
+extern void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
+//extern void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
 
 
 #endif

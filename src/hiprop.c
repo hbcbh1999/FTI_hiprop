@@ -573,13 +573,81 @@ void hpGetNbProcListFromInput(hiPropMesh *mesh, int num_nb_proc, int *in_nb_proc
 
     mesh->nb_proc = emxCreateND_int32_T(1, num_nb);
     for (i = 1; i <= num_nb_proc; i++)
-	mesh->nb_proc->data[i-1] = in_nb_proc[i-1];
+	mesh->nb_proc->data[I1dm(i)] = in_nb_proc[i-1];
 
 }
 
 void hpGetNbProcListAuto(hiPropMesh *mesh)
 {
+    int i, tag_send, tag_recv, j, k;
+    int num_proc, rank;
+    double eps = 1e-14;
 
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int *nb_ptemp = (int *) calloc (num_proc-1, sizeof(int));
+    int num_nbp = 0;
+
+    MPI_Request *req_list1 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+    MPI_Request *req_list2 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+
+    
+    j = 0;
+    for (i = 0; i < num_proc; i++)
+    {
+	tag_send = i;
+	if (rank != i)
+	{
+	    isend2D_real_T(mesh->ps, i, tag_send, MPI_COMM_WORLD, &(req_list1[j]), &(req_list2[j]));
+	    j++;
+	}
+    }
+
+    for (i = 0; i < num_proc; i++)
+    {
+	emxArray_real_T *ps_recv;
+	tag_recv = rank;
+
+	if (rank != i)
+	{
+	    recv2D_real_T(&ps_recv, i, tag_recv, MPI_COMM_WORLD);
+
+	    for (j = 1; j <= mesh->ps->size[0]; j++)
+	    {
+		double current_x = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
+		double current_y = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
+		double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
+
+		for (k = 1; k <= ps_recv->size[0]; k++)
+		{
+		    if ( (fabs(current_x - ps_recv->data[I2dm(k,1,ps_recv->size)]) < eps) && 
+			 (fabs(current_y - ps_recv->data[I2dm(k,2,ps_recv->size)]) < eps) &&
+			 (fabs(current_z - ps_recv->data[I2dm(k,3,ps_recv->size)]) < eps)
+		       )
+		    {
+			nb_ptemp[num_nbp++] = i;
+			break;
+		    }
+		}
+		if (k <= ps_recv->size[0])
+		    break;
+	    }
+	    emxFree_real_T(&ps_recv);
+	}
+    }
+
+    
+    int num_nb[1];
+    num_nb[0] = num_nbp;
+
+    mesh->nb_proc = emxCreateND_int32_T(1, num_nb);
+    for (i = 1; i <= num_nbp; i++)
+	mesh->nb_proc->data[I1dm(i)] = nb_ptemp[i-1];
+    
+    free(nb_ptemp);
+    free(req_list1);
+    free(req_list2);
 }
 
 void hpInitPInfo(hiPropMesh *mesh)
@@ -607,13 +675,12 @@ void hpInitPInfo(hiPropMesh *mesh)
 
     for (i = 1; i <= num_ps; i++)
     {
-	(mesh->ps_pinfo->head[i-1]).proc = my_rank;
-	(mesh->ps_pinfo->head[i-1]).lindex = i;
-	(mesh->ps_pinfo->head[i-1]).next = -1;
+	(mesh->ps_pinfo->head[I1dm(i)]).proc = my_rank;
+	(mesh->ps_pinfo->head[I1dm(i)]).lindex = i;
+	(mesh->ps_pinfo->head[I1dm(i)]).next = -1;
     }
 
     mesh->ps_pinfo->allocated_len = num_ps;
     mesh->tris_pinfo->allocated_len = num_tris;
-
 
 }

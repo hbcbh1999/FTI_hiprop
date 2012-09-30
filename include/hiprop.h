@@ -15,18 +15,33 @@
 #include "stdafx.h"
 #include "metis.h"
 
+/*!
+ * \brief Parallel information element for each point/triangle in hiPropMesh
+ */
+
 typedef struct hpPInfoNode
 {
-    int proc;		/*!< processor number */
+    int proc;		/*!< processor ID */
     int lindex;		/*!< local index on the corresponding proc */
-    int next;		/*!< index for the next node in the linked list */
+    int next;		/*!< index for the next node in the linked list, if next = -1, itis the last node for the list of this element */
 } hpPInfoNode;
+
+/*!
+ * \brief Parallel information for points/triangles in hiPropMesh
+ * \detail For each point/triangle, the parallel information is consisted of lists 
+ * of hpPInfoNodes. The lists are stored in a array which is continuous in
+ * memory. Take the parallel info for points for example, suppose # of points 
+ * is N, head[I1dm(i)] is the first elements for the i-th point,
+ * which contains the master processor ID and the local index on the master proc
+ * for the point. The list increases by itself when allocated_len > max_len. The
+ * max_lex is initialized to be 2*N and allocated_len is initialized to be N.
+ */
 
 typedef struct hpPInfoList
 {
-    hpPInfoNode *head;    /*!< pointer points to the first element of the list */
+    hpPInfoNode *head;   /*!< pointer points to the first element of the list */
     int allocated_len;   /*!< allocated length */	
-    int max_len;	  /*!< maximun length */
+    int max_len;	 /*!< maximun length */
 } hpPInfoList;
 
 /*!
