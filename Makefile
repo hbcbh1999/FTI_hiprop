@@ -3,8 +3,8 @@ CXX = mpicxx
 AR  = ar
 
 #metis_Dir = /Users/yijiezhou/pkg/metis
-#metis_Dir = /home/Yijie/pkg/metis
-metis_Dir = ./pkg/metis
+metis_Dir = /home/Yijie/pkg/metis
+#metis_Dir = ./pkg/metis
 metis_Include = -I${metis_Dir}/include
 metis_lib = -L${metis_Dir}/lib
 
@@ -32,7 +32,7 @@ pre: ./include/stdafx.h.gch
 doc:
 	doxygen hiprop-doxygen-file
 
-libhiprop.a: util.o hiprop.o
+libhiprop.a: emx_util.o util.o hiprop.o
 	$(AR) cru libhiprop.a $^
 	ranlib libhiprop.a
 

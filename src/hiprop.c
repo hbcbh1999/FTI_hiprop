@@ -644,6 +644,12 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     mesh->nb_proc = emxCreateND_int32_T(1, num_nb);
     for (i = 1; i <= num_nbp; i++)
 	mesh->nb_proc->data[I1dm(i)] = nb_ptemp[i-1];
+
+    printf("\nI'm processor %d, I have %d neighbours. They are:\n", rank, mesh->nb_proc->size[0]);
+    for (i = 1; i <= num_nbp; i++)
+	printf("%d ", mesh->nb_proc->data[I1dm(i)]);
+    printf("\n");
+  
     
     free(nb_ptemp);
     free(req_list1);
