@@ -67,15 +67,23 @@ void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
 {
     if (pmesh->ps_pinfo != ((hpPInfoList *) NULL) )
     {
-	if (pmesh->ps_pinfo->head != ((hpPInfoNode *) NULL) )
+	if (pmesh->ps_pinfo->pdata != ((hpPInfoNode *) NULL) )
+	    free(pmesh->ps_pinfo->pdata);
+	if (pmesh->ps_pinfo->head != ((int *) NULL))
 	    free(pmesh->ps_pinfo->head);
+	if (pmesh->ps_pinfo->tail != ((int *) NULL))
+	    free(pmesh->ps_pinfo->tail);
 	free(pmesh->ps_pinfo);
 	pmesh->ps_pinfo = (hpPInfoList *) NULL;
     }
     if (pmesh->tris_pinfo != ((hpPInfoList *) NULL) )
     {
-	if (pmesh->tris_pinfo->head != ((hpPInfoNode *) NULL) )
+	if (pmesh->tris_pinfo->pdata != ((hpPInfoNode *) NULL) )
+	    free(pmesh->tris_pinfo->pdata);
+	if (pmesh->tris_pinfo->head != ((int*) NULL))
 	    free(pmesh->tris_pinfo->head);
+	if (pmesh->tris_pinfo->tail != ((int*) NULL))
+	    free(pmesh->tris_pinfo->tail);
 	free(pmesh->tris_pinfo);
 	pmesh->tris_pinfo = (hpPInfoList *) NULL;
     }
@@ -313,16 +321,18 @@ int hpMetisPartMesh(hiPropMesh* mesh, const int nparts,
 	int** tri_part, int** pt_part)
 {
 
-    //to be consistent with Metis, idx_t denote integer numbers, real_t denote floating point numbers
-    //in Metis, tri and points arrays all start from index 0, which is different from HiProp,
-    // so we need to convert to Metis convention, the output tri_part and pt_part are in Metis convention
+    /*
+    to be consistent with Metis, idx_t denote integer numbers, real_t denote floating point numbers
+    in Metis, tri and points arrays all start from index 0, which is different from HiProp,
+    so we need to convert to Metis convention, the output tri_part and pt_part are in Metis convention
+    */
 
     printf("entered hpMetisPartMesh\n");
     int i, flag;
     idx_t np = nparts;
 
-    idx_t ne = mesh->tris->size[0];	// number of triangles
-    idx_t nn = mesh->ps->size[0];	// number of points
+    idx_t ne = mesh->tris->size[0];	/* number of triangles */
+    idx_t nn = mesh->ps->size[0];	/* number of points */
  
     idx_t *eptr = (idx_t*) calloc(ne+1, sizeof(idx_t));
     idx_t *eind = (idx_t*) calloc(3*ne, sizeof(idx_t));
@@ -379,7 +389,10 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
     printf("Entered hpDistMesh proc %d, root = %d\n", rank, root);
 
-    // calculate the partitioned mesh on the root, then send to other processors
+    /* 
+     calculate the partitioned mesh on the root, 
+     then send to other processors
+    */
     if (rank == root)
     {
 	if(in_mesh==NULL)
@@ -388,16 +401,16 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    return 0;
 	}
 
-	// initialize an array of pointers to the partitioned meshes to be sent
+	/* initialize an array of pointers to the partitioned meshes to be sent */
 	hiPropMesh** p_mesh = (hiPropMesh**)malloc(num_proc*sizeof(hiPropMesh*));
 	for(i = 0; i<num_proc; i++)
 	    hpInitMesh(&p_mesh[i]);
 
-	// an array to store the number of triangles on each processor
+	/* an array to store the number of triangles on each processor */
 	int* num_tri = (int*)malloc(num_proc*sizeof(int));	
 	for(i = 0; i<num_proc; i++)
 	    num_tri[i] = 0;
-	// an array to store the number of points on each processor
+	/* an array to store the number of points on each processor */
 	int* num_pt = (int*)malloc(num_proc*sizeof(int));
 	for(i = 0; i<num_proc; i++)
 	    num_pt[i] = 0;
@@ -405,7 +418,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	int total_num_tri = in_mesh->tris->size[0];
 	int total_num_pt = in_mesh->ps->size[0];
 
-	// calculate the number of triangles on each proc
+	/* calculate the number of triangles on each proc */
 	for(i = 0; i < total_num_tri; i++)
 	    num_tri[tri_part[i]]++;
 
@@ -416,18 +429,20 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	}
 
 
-	// calculate the list of global index of triangles existing on each proc
-	// tri_index[rank][i] is the global index of the ith tri on the ranked proc
-	// all indices for tris here start from 0 for easy of coding
+	/*
+	 calculate the list of global index of triangles existing on each proc
+	 tri_index[rank][i] is the global index of the ith tri on the ranked proc
+	 all indices for tris here start from 0 for easy of coding
+	 */
 	int** tri_index = (int**) malloc(num_proc*sizeof(int*));
 	for(i = 0; i<num_proc; i++)
 	    tri_index[i] = (int*) malloc(num_tri[i]*sizeof(int));
 
-	// fill tri_index by looping over all tris
-	int* p = (int*)malloc(num_proc*sizeof(int));	// pointer to the end of the list
+	/* fill tri_index by looping over all tris */
+	int* p = (int*)malloc(num_proc*sizeof(int));	/* pointer to the end of the list */
 	for(i = 0; i< num_proc; i++)
 	    p[i] = 0;
-	int tri_rk;	// the proc rank of the current tri
+	int tri_rk;	/* the proc rank of the current tri */
 	for(i = 0; i<total_num_tri; i++)
 	{
 	    tri_rk = tri_part[i];
@@ -435,20 +450,22 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    p[tri_rk]++;
 	}
 
-	// construct an index table to store the local index of every point
-	// all indices start from 0 for easy of coding
-	// if pt_local[i][j] = -1, point[j] is not on proc[i], 
-	// if pt_local[i][j] = m >= 0, the local index of point[j] on proc[i] is m.
-	// looks space and time consuming, however easy to convert between globle and local index of points
+	/*
+	 construct an index table to store the local index of every point
+	 all indices start from 0 for easy of coding
+	 if pt_local[i][j] = -1, point[j] is not on proc[i], 
+	 if pt_local[i][j] = m >= 0, the local index of point[j] on proc[i] is m.
+	 looks space and time consuming, however easy to convert between globle and local index of points
+	*/
 	int** pt_local = (int**)malloc(num_proc*sizeof(int*));
 	for(i = 0; i<num_proc; i++)
 	{
 	    pt_local[i] = (int*) malloc(total_num_pt * sizeof(int));
 	    for(j = 0; j<total_num_pt; j++)
-		pt_local[i][j] = -1;	//initialize to -1
+		pt_local[i][j] = -1;	/* initialize to -1 */
 	}
 
-	// fill in pt_local table, calculate num_pt[] on each proc at the same time
+	/* fill in pt_local table, calculate num_pt[] on each proc at the same time */
 	for (i = 0; i<total_num_pt; i++)
 	{
 	    for(j = 0; j<num_proc; j++)
@@ -465,7 +482,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	for(i = 0; i<num_proc; i++)
 	    printf("num_pt[%d] = %d\n", i, num_pt[i]);
 
-	// fill in p_mesh[]->tris->data[] according to pt_local table
+	/* fill in p_mesh[]->tris->data[] according to pt_local table */
 	int global_index;
 	for( i = 0; i<num_proc; i++)
 	{
@@ -482,10 +499,12 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    }
 	}
 
-	// pt_index is similar to tri_index
-	// indices start from 0
-	// pt_index[rank][i] is the global index of the ith point on the ranked proc
-	// constructed using pt_local
+	/*
+	 pt_index is similar to tri_index
+	 indices start from 0
+	 pt_index[rank][i] is the global index of the ith point on the ranked proc
+	 constructed using pt_local
+	*/
 	int** pt_index = (int**) malloc(num_proc*sizeof(int*));
 	for(i = 0; i<num_proc; i++)
 	{
@@ -507,10 +526,10 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    }
 	}
 
-	// finally, get in p_mesh[]->ps, :)
+	/* finally, get in p_mesh[]->ps, :) */
 	for(i = 0; i< num_proc; i++)
 	    (p_mesh[i]->ps) = emxCreate_real_T(num_pt[i], 3);
-	// fill in p_mesh[]->ps->data with pt_index
+	/* fill in p_mesh[]->ps->data with pt_index */
 	for (i = 0; i<num_proc; i++)
 	{
 	    for(j=0; j<num_pt[i]; j++)
@@ -524,7 +543,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    }
 	}
 
-	// communication
+	/* communication */
 	for(i = 0; i<num_proc; i++)
 	{
 	    if(i==rank)
@@ -540,7 +559,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    }
 	}
 
-	// free pointers
+	/* free pointers */
 	for (i = 0; i<num_proc; i++)
 	{
 	    free(pt_index[i]);
@@ -556,7 +575,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	free(p);
     }
 
-    else	//for other proc, receive the mesh info
+    else	/*for other proc, receive the mesh info */
     {
 	recv2D_int32_T(&(mesh->tris),root, tag, MPI_COMM_WORLD);
 	recv2D_real_T(&(mesh->ps),root, tag+5, MPI_COMM_WORLD);
@@ -645,11 +664,12 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     for (i = 1; i <= num_nbp; i++)
 	mesh->nb_proc->data[I1dm(i)] = nb_ptemp[i-1];
 
+    /*
     printf("\nI'm processor %d, I have %d neighbours. They are:\n", rank, mesh->nb_proc->size[0]);
     for (i = 1; i <= num_nbp; i++)
 	printf("%d ", mesh->nb_proc->data[I1dm(i)]);
     printf("\n");
-  
+    */
     
     free(nb_ptemp);
     free(req_list1);
@@ -673,19 +693,28 @@ void hpInitPInfo(hiPropMesh *mesh)
     mesh->ps_pinfo = (hpPInfoList *) malloc(sizeof(hpPInfoList));
     mesh->tris_pinfo = (hpPInfoList *) malloc(sizeof(hpPInfoList));
 
-    mesh->ps_pinfo->head = (hpPInfoNode *) malloc(ps_estimate*sizeof(hpPInfoNode));
-    mesh->tris_pinfo->head = (hpPInfoNode *) malloc(tris_estimate*sizeof(hpPInfoNode));
+    mesh->ps_pinfo->pdata = (hpPInfoNode *) malloc(ps_estimate*sizeof(hpPInfoNode));
+    mesh->tris_pinfo->pdata = (hpPInfoNode *) malloc(tris_estimate*sizeof(hpPInfoNode));
 
     mesh->ps_pinfo->max_len = ps_estimate;
     mesh->tris_pinfo->max_len = tris_estimate;
 
     for (i = 1; i <= num_ps; i++)
     {
-	(mesh->ps_pinfo->head[I1dm(i)]).proc = my_rank;
-	(mesh->ps_pinfo->head[I1dm(i)]).lindex = i;
-	(mesh->ps_pinfo->head[I1dm(i)]).next = -1;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).proc = my_rank;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).lindex = i;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).next = -1;
+	mesh->ps_pinfo->head[I1dm(i)] = i;
+	mesh->ps_pinfo->tail[I1dm(i)] = i;
     }
-
+    for (i = 1; i <= num_tris; i++)
+    {
+	(mesh->tris_pinfo->pdata[I1dm(i)]).proc = my_rank;
+	(mesh->tris_pinfo->pdata[I1dm(i)]).lindex = i;
+	(mesh->tris_pinfo->pdata[I1dm(i)]).next = -1;
+	mesh->tris_pinfo->head[I1dm(i)] = i;
+	mesh->tris_pinfo->tail[I1dm(i)] = i;
+    }
     mesh->ps_pinfo->allocated_len = num_ps;
     mesh->tris_pinfo->allocated_len = num_tris;
 
