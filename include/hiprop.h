@@ -151,7 +151,6 @@ extern int hpDistMesh(int root, hiPropMesh *in_mesh, hiPropMesh *mesh, int *tri_
 extern void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
 	int** g2lindex, int* l2gindex, int rank);
 
-extern hpPInfoList* hpIncrementPInfoList(hpPInfoList *inlist);
 /*!
  * \brief Get the neighboring processor ID and fill the nb_proc list from the
  * mesh points

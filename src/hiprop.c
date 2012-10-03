@@ -679,11 +679,6 @@ void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
 	    mesh->nb_proc->data[k++] = j;
 }
 
-hpPInfoList* hpIncrementPInfoList(hpPInfoList *inlist)
-{
-//    hpPInfoList* outlist;
-//    inlist->max_len
-}
 
 void hpGetNbProcListFromInput(hiPropMesh *mesh, int num_nb_proc, int *in_nb_proc)
 {
