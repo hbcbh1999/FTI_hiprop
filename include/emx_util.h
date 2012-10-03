@@ -34,7 +34,7 @@ extern void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensi
  * \param numDimensions number of dimensions
  */
 extern void emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimensions);
-
+extern void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimensions);
 /*!
  * \brief Initialization of a 64bit double array
  * 
@@ -43,7 +43,7 @@ extern void emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimensions)
  * \param numDimensions number of dimensions
  */
 extern void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
-
+extern void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 /*!
  * \brief Create a N-dimensional 32bit int array with initial value 0
  * \param numDimensions number of dimensions
@@ -187,6 +187,11 @@ extern void emxFree_real_T(emxArray_real_T **pEmxArray);
  * \param elementSize size of each element
  */
 extern void emxEnsureCapacity(emxArray__common *emxArray, int32_T oldNumel, int32_T elementSize);
+
+extern void emxDestroyArray_int32_T(emxArray_int32_T *emxArray);
+extern void emxDestroyArray_real_T(emxArray_real_T *emxArray);
+extern void emxDestroyArray_boolean_T(emxArray_boolean_T *emxArray);
+
 
 
 #endif

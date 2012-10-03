@@ -336,5 +336,13 @@ extern void isend2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_
  */
 extern void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
 
+extern void b_fix(real_T *x);
+extern real_T length(const emxArray_int32_T *x);
+
+extern void determine_opposite_halfedge_tri(int32_T nv, const emxArray_int32_T *tris ,emxArray_int32_T *opphes);
+
+extern void determine_incident_halfedges(const emxArray_int32_T *elems, const emxArray_int32_T *opphes, emxArray_real_T *v2he);
+
+extern void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const emxArray_real_T *v2he, emxArray_int32_T *ngbvs, emxArray_boolean_T *vtags, emxArray_boolean_T *ftags, emxArray_int32_T *ngbfs, int32_T *nverts, int32_T *nfaces);
 
 #endif
