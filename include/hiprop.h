@@ -148,7 +148,10 @@ extern int hpMetisPartMesh(hiPropMesh *mesh, const int nparts, int **tri_part, i
  * \param tag tag of the communication
  */
 extern int hpDistMesh(int root, hiPropMesh *in_mesh, hiPropMesh *mesh, int *tri_part, int tag);
+extern void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
+	int** g2lindex, int* l2gindex, int rank);
 
+extern hpPInfoList* hpIncrementPInfoList(hpPInfoList *inlist);
 /*!
  * \brief Get the neighboring processor ID and fill the nb_proc list from the
  * mesh points
