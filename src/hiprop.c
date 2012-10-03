@@ -15,7 +15,7 @@
 void hpInitMesh(hiPropMesh **pmesh)
 {
     hiPropMesh *mesh;
-    *pmesh = (hiPropMesh*) malloc(sizeof(hiPropMesh));
+    *pmesh = (hiPropMesh*) calloc(1, sizeof(hiPropMesh));
     mesh = *pmesh;
     mesh->ps = (emxArray_real_T *) NULL;
     mesh->tris = (emxArray_int32_T *) NULL;
@@ -690,11 +690,17 @@ void hpInitPInfo(hiPropMesh *mesh)
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
 
-    mesh->ps_pinfo = (hpPInfoList *) malloc(sizeof(hpPInfoList));
-    mesh->tris_pinfo = (hpPInfoList *) malloc(sizeof(hpPInfoList));
+    mesh->ps_pinfo = (hpPInfoList *) calloc(1, sizeof(hpPInfoList));
+    mesh->tris_pinfo = (hpPInfoList *) calloc(1, sizeof(hpPInfoList));
 
-    mesh->ps_pinfo->pdata = (hpPInfoNode *) malloc(ps_estimate*sizeof(hpPInfoNode));
-    mesh->tris_pinfo->pdata = (hpPInfoNode *) malloc(tris_estimate*sizeof(hpPInfoNode));
+    mesh->ps_pinfo->pdata = (hpPInfoNode *) calloc(ps_estimate, sizeof(hpPInfoNode));
+    mesh->tris_pinfo->pdata = (hpPInfoNode *) calloc(tris_estimate, sizeof(hpPInfoNode));
+
+    mesh->ps_pinfo->head = (int *) calloc(num_ps, sizeof(int));
+    mesh->tris_pinfo->head = (int *) calloc(num_tris, sizeof(int));
+
+    mesh->ps_pinfo->tail = (int *) calloc(num_ps, sizeof(int));
+    mesh->tris_pinfo->tail = (int *) calloc(num_tris, sizeof(int));
 
     mesh->ps_pinfo->max_len = ps_estimate;
     mesh->tris_pinfo->max_len = tris_estimate;
@@ -717,5 +723,112 @@ void hpInitPInfo(hiPropMesh *mesh)
     }
     mesh->ps_pinfo->allocated_len = num_ps;
     mesh->tris_pinfo->allocated_len = num_tris;
+
+}
+
+void hpEnsurePInfoCapacity(hpPInfoList *pinfo)
+{
+    if (pinfo->allocated_len >= pinfo->max_len)
+    {
+	double len_temp = pinfo->max_len * 1.1;
+	int new_max_len = (int) (len_temp); /* Increase 10% */
+	hpPInfoNode *new_pdata = calloc(new_max_len, sizeof(hpPInfoNode));
+	memcpy(new_pdata, pinfo->pdata, pinfo->allocated_len*sizeof(hpPInfoNode));
+
+	free(pinfo->pdata);
+	pinfo->pdata = new_pdata;
+	pinfo->max_len = new_max_len;
+    }
+}
+
+void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
+{
+    int i, tag_send, tag_recv, j, k;
+    int proc_send, proc_recv;
+    int num_proc, rank;
+    double eps = 1e-14;
+
+    emxArray_real_T* ps = mesh->ps;
+    emxArray_int32_T *nb_proc = mesh->nb_proc;
+
+    hpPInfoList *ps_pinfo = mesh->ps_pinfo;
+
+
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int num_nbp = nb_proc->size[0];
+
+    MPI_Request *req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+
+    
+    for (i = 1; i <= num_nbp; i++)
+    {
+	proc_send = nb_proc->data[I1dm(i)];
+	tag_send = proc_send;
+	isend2D_real_T(ps, proc_send, tag_send, MPI_COMM_WORLD, &(req_list1[I1dm(i)]), &(req_list2[I1dm(i)]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	emxArray_real_T *ps_recv;
+	proc_recv = nb_proc->data[I1dm(i)];
+	tag_recv = rank;
+	
+	recv2D_real_T(&ps_recv, proc_recv, tag_recv, MPI_COMM_WORLD);
+
+	for (j = 1; j <= ps->size[0]; j++)
+	{
+	    double current_x = ps->data[I2dm(j,1,ps->size)];
+	    double current_y = ps->data[I2dm(j,2,ps->size)];
+	    double current_z = ps->data[I2dm(j,3,ps->size)];
+
+	    for (k = 1; k <= ps_recv->size[0]; k++)
+	    {
+		if ( (fabs(current_x - ps_recv->data[I2dm(k,1,ps_recv->size)]) < eps) && 
+			(fabs(current_y - ps_recv->data[I2dm(k,2,ps_recv->size)]) < eps) &&
+			(fabs(current_z - ps_recv->data[I2dm(k,3,ps_recv->size)]) < eps)
+		   )
+		{
+		    hpEnsurePInfoCapacity(ps_pinfo); /* first ensure list has enough space */
+		    ps_pinfo->allocated_len++; /* new node */
+		    int cur_head = ps_pinfo->head[I1dm(j)];
+		    int cur_tail = ps_pinfo->tail[I1dm(j)];
+		    int cur_master_proc = ps_pinfo->pdata[I1dm(cur_head)].proc;
+		    if (proc_recv < cur_master_proc)
+		    {
+			ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = proc_recv;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = k;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
+		    }
+		    else if (proc_recv > cur_master_proc)
+		    {
+			ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = proc_recv;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = k;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
+			ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
+		    }
+		    else
+		    {
+			printf("\n Receiving processor ID already in the PInfo list!\n");
+			exit(0);
+		    }
+		    break;
+		}
+	    }
+	}
+	emxFree_real_T(&ps_recv);
+    }
+
+    free(req_list1);
+    free(req_list2);
+
+}
+
+void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
+{
 
 }

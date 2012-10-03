@@ -3,7 +3,7 @@
  * \brief hiProp functions
  *
  * \author Yijie Zhou
- * \date 2012.09.16
+ * \date 2012.10.02
  */
 
 
@@ -38,7 +38,7 @@ typedef struct hpPInfoNode
  * i-th point, tail[I1dm(i)].next always equals to -1.
  * The list increases by itself for 10% of the entire number of points
  * when allocated_len > max_len. The max_len is initialized to be 2*N 
- * and allocated_len is initialized to be N.
+ * and allocated_len is initialized to be N. All index start from 1.
  */
 
 typedef struct hpPInfoList
@@ -165,5 +165,39 @@ extern void hpGetNbProcListAuto(hiPropMesh *mesh);
  */
 extern void hpGetNbProcListInput(hiPropMesh *mesh, int num_nb_proc, int *in_nb_proc);
 
+/*!
+ * \brief Initialize the parallel information given a mesh
+ * \detail Before communicationg, for each point i, ps_pinfo->head[I1dm(i)] =
+ * ps_pinfo->tail[I1dm(i)] = i, which means both the head and tail points to the i-th
+ * element of the pinfo list. For ps_pinfo->pdata[I1dm(i)], proc = current rank,
+ * lindex = current local index and next = -1.
+ * For tris_pinfo, a similar initialization is carried out.
+ * \param mesh hiPropMesh mesh with no parallel information.
+ */
 extern void hpInitPInfo(hiPropMesh *mesh);
+
+/*!
+ * \brief Build the parallel information for submeshes with no overlapping
+ * triangles (only with overlapping points)
+ * \detail Need a hpInitPInfo before this function
+ * \param mesh hiPropMesh mesh with no overlapping triangles
+ */
+extern void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh);
+
+/*!
+ * \brief Build the parallel information for submeshes with overlapping triangles 
+ * \detail Need a hpInitPInfo before this function
+ * \param mesh hiPropMesh mesh with overlapping triangles
+ */
+extern void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
+
+/*!
+ * \brief Utility function for automatically increase the parallel info list
+ * when full
+ * \detail When all the pre-allocated memory for this list is used up, the list
+ * automatically increase itself by 10% to include more elements
+ * \param pinfo A parallel information list
+ */
+extern void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
+
 #endif
