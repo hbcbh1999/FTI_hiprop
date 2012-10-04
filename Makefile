@@ -32,7 +32,7 @@ pre: ./include/stdafx.h.gch
 doc:
 	doxygen hiprop-doxygen-file
 
-libhiprop.a: util.o hiprop.o
+libhiprop.a: emx_util.o util.o hiprop.o
 	$(AR) cru libhiprop.a $^
 	ranlib libhiprop.a
 
@@ -57,4 +57,5 @@ clean:
 	rm -f include/stdafx.h.gch
 	rm -f test/tags
 	rm -f *.vtk
+	rm -f run-log.*
 
