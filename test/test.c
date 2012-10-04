@@ -15,6 +15,9 @@ int main (int argc, char *argv[])
 {
     int i;
     int num_proc, rank;
+    int tag = 1;
+    int root = 0;
+
 
     MPI_Init(&argc, &argv);
 
@@ -31,6 +34,37 @@ int main (int argc, char *argv[])
 
     printf("\n Welcome to the test of Hi-Prop Library from proc %d\n", rank);
 
+
+
+
+    hiPropMesh *mesh;	//mesh after partition
+    hpInitMesh(&mesh);
+
+    if (rank == 0)
+    {
+	char in_filename[200];
+    	sprintf(in_filename, "data/serial/%s.vtk",argv[1]);
+
+    	hiPropMesh *in_mesh;	//input mesh
+    	hpInitMesh(&in_mesh);
+
+    	if(!hpReadUnstrMeshVtk3d(in_filename, in_mesh))
+    	{
+	    printf("Mesh Read fail\n");
+	    return 0;
+    	}
+
+    	int* tri_part; 
+    	int* pt_part;
+
+    	hpMetisPartMesh(in_mesh, num_proc, &tri_part, &pt_part);
+	hpDistMesh(root, in_mesh, mesh, tri_part, tag);
+	hpFreeMesh(&in_mesh);
+    }
+    else
+	hpDistMesh(root, NULL, mesh, NULL, tag);
+
+/*
     hiPropMesh *mesh;
     hpInitMesh(&mesh);
 
@@ -50,8 +84,9 @@ int main (int argc, char *argv[])
 
     hpBuildPInfoNoOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
-
+*/
     MPI_Barrier(MPI_COMM_WORLD);
+
 
     //if (rank == 0)
     //{
@@ -64,10 +99,13 @@ int main (int argc, char *argv[])
 	    {
 		int cur_node = next;
 		printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
+		fflush(runlog_stream);
 		next = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
 	    }
 	    printf("\n");
 	}
+
+	
 	printf("tris pinfo of rank 0:\n");
 	for (i = 1; i <= mesh->tris->size[0]; i++)
 	{
@@ -83,7 +121,11 @@ int main (int argc, char *argv[])
 	}
     //}
 
+
+    
     hpFreeMesh(&mesh);
+
+
     printf("Success processor %d\n", rank);
     MPI_Finalize();
 

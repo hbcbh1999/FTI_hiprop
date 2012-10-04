@@ -501,13 +501,13 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    for(j = 1; j<=num_tri[i]; j++)
 	    {
 		global_index = in_mesh->tris->data[I2dm(tri_index[i][j-1],1,in_mesh->tris->size)];
-		p_mesh[i]->tris->data[I2dm(j,1,p_mesh[i]->tris->size)] = pt_local[i][global_index];
+		p_mesh[i]->tris->data[I2dm(j,1,p_mesh[i]->tris->size)] = pt_local[i][I1dm(global_index)];
 
 		global_index = in_mesh->tris->data[I2dm(tri_index[i][j-1],2,in_mesh->tris->size)];
-		p_mesh[i]->tris->data[I2dm(j,2,p_mesh[i]->tris->size)] = pt_local[i][global_index];
+		p_mesh[i]->tris->data[I2dm(j,2,p_mesh[i]->tris->size)] = pt_local[i][I1dm(global_index)];
 
 		global_index = in_mesh->tris->data[I2dm(tri_index[i][j-1],3,in_mesh->tris->size)];
-		p_mesh[i]->tris->data[I2dm(j,3,p_mesh[i]->tris->size)] = pt_local[i][global_index];
+		p_mesh[i]->tris->data[I2dm(j,3,p_mesh[i]->tris->size)] = pt_local[i][I1dm(global_index)];
 	    }
 	}
 
@@ -573,9 +573,9 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    {
 	    	send2D_int32_T(p_mesh[i]->tris, i, tag, MPI_COMM_WORLD);
 	    	send2D_real_T(p_mesh[i]->ps, i, tag+5, MPI_COMM_WORLD);
-		sendND_int32_T(p_mesh[i]->nb_proc, i, tag+10, MPI_COMM_WORLD);
-
-		MPI_Send(pt_index[i], mesh->ps->size[0], MPI_INT, i, tag+11, MPI_COMM_WORLD);
+		
+		MPI_Send(pt_index[i], p_mesh[i]->ps->size[0], MPI_INT, i, tag+10, MPI_COMM_WORLD);
+		MPI_Send(&total_num_pt, 1, MPI_INT, i, tag+11, MPI_COMM_WORLD);
 		for (j = 0; j<num_proc; j++)
 		    MPI_Send(pt_local[j], total_num_pt, MPI_INT, i, tag+12+j, MPI_COMM_WORLD);
 
@@ -603,17 +603,18 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
     {
 	recv2D_int32_T(&(mesh->tris),root, tag, MPI_COMM_WORLD);
 	recv2D_real_T(&(mesh->ps),root, tag+5, MPI_COMM_WORLD);
-	recvND_int32_T(&(mesh->nb_proc),root, tag+10, MPI_COMM_WORLD);
 
 	MPI_Status recv_stat;
+	int total_num_pt;
 	int* l2gindex = (int*) malloc(mesh->ps->size[0]*sizeof(int));
 	int** g2lindex = (int**) malloc(num_proc*sizeof(int*));
 	
-	MPI_Recv(l2gindex, mesh->ps->size[0], MPI_INT, root, tag+11, MPI_COMM_WORLD, &recv_stat);
+	MPI_Recv(l2gindex, mesh->ps->size[0], MPI_INT, root, tag+10, MPI_COMM_WORLD, &recv_stat);
+	MPI_Recv(&total_num_pt, 1, MPI_INT, root, tag+11, MPI_COMM_WORLD, &recv_stat);
 	for(i = 0; i<num_proc; i++)
 	{
-	    g2lindex[i] = (int*) malloc(mesh->ps->size[0]*sizeof(int));
-	    MPI_Recv(g2lindex[i], mesh->ps->size[0], MPI_INT, root, tag+12+i, MPI_COMM_WORLD, &recv_stat);
+	    g2lindex[i] = (int*) calloc(total_num_pt,sizeof(int));
+	    MPI_Recv(g2lindex[i], total_num_pt, MPI_INT, root, tag+12+i, MPI_COMM_WORLD, &recv_stat);
 	}
 
     	hpConstrPInfoFromGlobalLocalInfo(mesh, g2lindex, l2gindex, rank);
@@ -635,25 +636,48 @@ void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
     int ps_estimate = 2*mesh->ps->size[0];
     int num_ps = mesh->ps->size[0];
+    int num_tris = mesh->tris->size[0];
+    int tris_estimate = 2*num_tris;
     int nb_proc_size[1];
-    int j,k;
+    int i,j,k;
+    int cur_head, cur_tail;
 
     int* nb_proc_bool = (int*) malloc(num_proc*sizeof(int));
     for(j = 0; j<num_proc; j++)
 	nb_proc_bool[j] = 0;
 
-    mesh->ps_pinfo = (hpPInfoList *) malloc(sizeof(hpPInfoList));
-    mesh->ps_pinfo->pdata = (hpPInfoNode *) malloc(ps_estimate*sizeof(hpPInfoNode));
+    mesh->ps_pinfo = (hpPInfoList *) calloc(1, sizeof(hpPInfoList));
+    mesh->ps_pinfo->pdata = (hpPInfoNode *) calloc(ps_estimate, sizeof(hpPInfoNode));
     mesh->ps_pinfo->max_len = ps_estimate;
     mesh->ps_pinfo->allocated_len = num_ps;
+    mesh->ps_pinfo->head = (int *) calloc(num_ps, sizeof(int));
+    mesh->ps_pinfo->tail = (int *) calloc(num_ps, sizeof(int));
+
+
+    mesh->tris_pinfo = (hpPInfoList *) calloc(1, sizeof(hpPInfoList));
+    mesh->tris_pinfo->pdata = (hpPInfoNode *) calloc(tris_estimate, sizeof(hpPInfoNode));
+    mesh->tris_pinfo->head = (int *) calloc(num_tris, sizeof(int));
+    mesh->tris_pinfo->tail = (int *) calloc(num_tris, sizeof(int));
+    mesh->tris_pinfo->max_len = tris_estimate;
+    mesh->tris_pinfo->allocated_len = num_tris;
+
+    printf("memory allocated\n");
+
+    for (i = 1; i <= num_tris; i++)
+    {
+	(mesh->tris_pinfo->pdata[I1dm(i)]).proc = rank;
+	(mesh->tris_pinfo->pdata[I1dm(i)]).lindex = i;
+	(mesh->tris_pinfo->pdata[I1dm(i)]).next = -1;
+	mesh->tris_pinfo->head[I1dm(i)] = i;
+	mesh->tris_pinfo->tail[I1dm(i)] = i;
+    }
+
 
     for (j = 1; j <= num_ps; j++)
     {
-	mesh->ps_pinfo->head[I1dm(j)] = I1dm(j);
+	mesh->ps_pinfo->head[I1dm(j)] = j;
 	mesh->ps_pinfo->tail[I1dm(j)] = -1;	/* the list is empty */
     }
-
-    nb_proc_size[0] = 0;
 
     for(j = 1; j<=num_ps; j++)
     {
@@ -663,37 +687,47 @@ void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
 	    {
 		nb_proc_bool[k] = 1;
 		if(mesh->ps_pinfo->max_len == mesh->ps_pinfo->allocated_len)
+		    hpEnsurePInfoCapacity(mesh->ps_pinfo);
+
+		if(mesh->ps_pinfo->tail[I1dm(j)]!=-1)	/* the list is nonempty for this point */
 		{
-		    //to be implement for self increment
-		}
-		if(mesh->ps_pinfo->tail[I1dm(j)]!=-1)
-		{
-		    (mesh->ps_pinfo->pdata[mesh->ps_pinfo->tail[I1dm(j)]]).next = mesh->ps_pinfo->allocated_len;
-		    (mesh->ps_pinfo->pdata[mesh->ps_pinfo->allocated_len]).proc = k;
-		    (mesh->ps_pinfo->pdata[mesh->ps_pinfo->allocated_len]).lindex = g2lindex[k][l2gindex[j-1]-1];
-		    (mesh->ps_pinfo->pdata[mesh->ps_pinfo->allocated_len]).next = -1;
-		    mesh->ps_pinfo->tail[I1dm(j)] = mesh->ps_pinfo->allocated_len;
+		    cur_tail = mesh->ps_pinfo->tail[I1dm(j)];
 		    (mesh->ps_pinfo->allocated_len)++;
+		    (mesh->ps_pinfo->pdata[I1dm(cur_tail)]).next = mesh->ps_pinfo->allocated_len;
+		    cur_tail = mesh->ps_pinfo->allocated_len;
+		    mesh->ps_pinfo->tail[I1dm(j)] = cur_tail;
+		    (mesh->ps_pinfo->pdata[I1dm(cur_tail)]).proc = k;
+		    (mesh->ps_pinfo->pdata[I1dm(cur_tail)]).lindex = g2lindex[k][l2gindex[j-1]-1];
+		    (mesh->ps_pinfo->pdata[I1dm(cur_tail)]).next = -1;
 		}
-		else
+		else	/* the list is empty for this point */
 		{
-		    (mesh->ps_pinfo->pdata[mesh->ps_pinfo->head[I1dm(j)]]).proc = k;
-		    (mesh->ps_pinfo->pdata[mesh->ps_pinfo->head[I1dm(j)]]).lindex = g2lindex[k][l2gindex[j-1]-1];
-		    (mesh->ps_pinfo->pdata[mesh->ps_pinfo->head[I1dm(j)]]).next = -1;
+		    cur_head = mesh->ps_pinfo->head[I1dm(j)];
+		    (mesh->ps_pinfo->pdata[I1dm(cur_head)]).proc = k;
+		    (mesh->ps_pinfo->pdata[I1dm(cur_head)]).lindex = g2lindex[k][l2gindex[j-1]-1];
+		    (mesh->ps_pinfo->pdata[I1dm(cur_head)]).next = -1;
+		    mesh->ps_pinfo->tail[I1dm(j)] = cur_head;
 		}
 	    }
 	}
     }
 
+    nb_proc_size[0] = 0;
     for(j = 0; j<num_proc; j++)
+    {
+	printf("nb_proc_bool[%d] = %d\n",j,nb_proc_bool[j] );
 	nb_proc_size[0]+=nb_proc_bool[j];
+    }
     nb_proc_size[0]--;		/* to exclude itself */
+    printf("nb_proc_size = %d\n",nb_proc_size[0]);
     mesh->nb_proc = emxCreateND_int32_T(1,nb_proc_size);
 
     k=0;
     for (j = 0; j<num_proc; j++)
-	if(nb_proc_bool[j]==1)
+	if((j!=rank)&&(nb_proc_bool[j]==1))
 	    mesh->nb_proc->data[k++] = j;
+
+    printf("After hpConstrPInfoFromGlobalLocalInfo\n");
 }
 
 
