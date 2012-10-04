@@ -65,6 +65,17 @@ extern void right_flush(const int n, const int ndigits, char *in_string);
  */
 extern int findString(FILE* file, const char* in_string);
 
+/*!
+ * \brief Determine whether 2 triangles are the same base on floating point
+ * comparison
+ * \param ps1 points list 1
+ * \param tri1 triangle list 1
+ * \param tri_index1 triangle index in tri1 for comparison
+ * \param ps2 points list 2
+ * \param tri2 triangle list 2
+ * \param tri_index2 triangle index in tri2 for comparison
+ */
+
 extern boolean_T sameTriangle(const emxArray_real_T* ps1,
 			      const emxArray_int32_T* tri1,
 			      const int tri_index1,
