@@ -201,11 +201,17 @@ int hpWritePolyMeshVtk3d(const char* name,
 
     fprintf(file, "POINTS %d double\n", num_points);
     for (i = 1; i <= num_points; i++)
-	fprintf(file, "%lf %lf %lf\n", points->data[I2dm(i,1,points->size)], points->data[I2dm(i,2,points->size)], points->data[I2dm(i,3,points->size)]);
+	fprintf(file, "%lf %lf %lf\n", 
+		points->data[I2dm(i,1,points->size)],
+		points->data[I2dm(i,2,points->size)], 
+		points->data[I2dm(i,3,points->size)]);
 
     fprintf(file, "POLYGONS %d %d\n", num_tris, 4*num_tris);
     for (i = 1; i <= num_tris; i++)
-	fprintf(file, "3 %d %d %d\n", tris->data[I2dm(i,1,tris->size)]-1, tris->data[I2dm(i,2,tris->size)]-1, tris->data[I2dm(i,3,tris->size)]-1);
+	fprintf(file, "3 %d %d %d\n",
+		tris->data[I2dm(i,1,tris->size)]-1, 
+		tris->data[I2dm(i,2,tris->size)]-1, 
+		tris->data[I2dm(i,3,tris->size)]-1);
 
     fclose(file);
     return 1;
@@ -303,11 +309,17 @@ int hpWriteUnstrMeshVtk3d(const char* name,
 
     fprintf(file, "POINTS %d double\n", num_points);
     for (i = 1; i <= num_points; i++)
-	fprintf(file, "%lf %lf %lf\n", points->data[I2dm(i,1,points->size)], points->data[I2dm(i,2,points->size)], points->data[I2dm(i,3,points->size)]);
+	fprintf(file, "%lf %lf %lf\n",
+		points->data[I2dm(i,1,points->size)],
+		points->data[I2dm(i,2,points->size)],
+		points->data[I2dm(i,3,points->size)]);
 
     fprintf(file, "CELLS %d %d\n", num_tris, 4*num_tris);
     for (i = 1; i <= num_tris; i++)
-	fprintf(file, "3 %d %d %d\n", tris->data[I2dm(i,1,tris->size)]-1, tris->data[I2dm(i,2,tris->size)]-1, tris->data[I2dm(i,3,tris->size)]-1);
+	fprintf(file, "3 %d %d %d\n",
+		tris->data[I2dm(i,1,tris->size)]-1,
+		tris->data[I2dm(i,2,tris->size)]-1,
+		tris->data[I2dm(i,3,tris->size)]-1);
 
     fprintf(file, "CELL_TYPES %d\n", num_tris);
     for (i = 0; i<num_tris; i++)
@@ -322,9 +334,11 @@ int hpMetisPartMesh(hiPropMesh* mesh, const int nparts,
 {
 
     /*
-    to be consistent with Metis, idx_t denote integer numbers, real_t denote floating point numbers
-    in Metis, tri and points arrays all start from index 0, which is different from HiProp,
-    so we need to convert to Metis convention, the output tri_part and pt_part are in Metis convention
+    to be consistent with Metis, idx_t denote integer numbers, 
+    real_t denote floating point numbers in Metis, tri and points 
+    arrays all start from index 0, which is different from HiProp,
+    so we need to convert to Metis convention, the output tri_part 
+    and pt_part are in Metis convention
     */
 
     printf("entered hpMetisPartMesh\n");
@@ -434,21 +448,24 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    tri_index[i] = (int*) malloc(num_tri[i]*sizeof(int));
 
 	/* fill tri_index by looping over all tris */
-	int* p = (int*)malloc(num_proc*sizeof(int));	/* pointer to the end of the list */
+	int* p = (int*)malloc(num_proc*sizeof(int));/* pointer to the end of the list */
 	for(i = 0; i< num_proc; i++)
 	    p[i] = 0;
 	int tri_rk;	/* the proc rank of the current tri */
 	for(i = 1; i<=total_num_tri; i++)
 	{
-	    tri_rk = tri_part[i-1];	/* convert because Metis convention use index starts from 0 */
+	    tri_rk = tri_part[i-1];	/* convert because Metis 
+					   convention use index starts from 0 */
 	    tri_index[tri_rk][p[tri_rk]] = i;
 	    p[tri_rk]++;
 	}
 
-	/* construct an index table to store the local index of every point (global to local)
+	/* construct an index table to store the local index of every point 
+	 * (global to local)
 	 * if pt_local[i][j-1] = -1, point[j] is not on proc[i], 
 	 * if pt_local[i][j-1] = m >= 0, the local index of point[j] on proc[i] is m.
-	 * looks space and time consuming, however easy to convert between globle and local index of points
+	 * looks space and time consuming, however easy to convert 
+	 * between globle and local index of points
 	 */
 	int** pt_local = (int**)malloc(num_proc*sizeof(int*));
 	for(i = 0; i<num_proc; i++)
@@ -465,9 +482,9 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	{
 	    for(j = 0; j<num_proc; j++)
 		for(k = 1; k<=num_tri[j]; k++)
-		    if((in_mesh->tris->data[I2dm(tri_index[j][k-1],1,in_mesh->tris->size)]==i)
-			    ||(in_mesh->tris->data[I2dm(tri_index[j][k-1],2,in_mesh->tris->size)]==i)
-			    ||(in_mesh->tris->data[I2dm(tri_index[j][k-1],3,in_mesh->tris->size)]==i))
+		    if((in_mesh->tris->data[I2dm(tri_index[j][k-1],1,in_mesh->tris->size)]==i)||
+		       (in_mesh->tris->data[I2dm(tri_index[j][k-1],2,in_mesh->tris->size)]==i)||
+		       (in_mesh->tris->data[I2dm(tri_index[j][k-1],3,in_mesh->tris->size)]==i))
 		    {
 			pt_local[j][i-1] = num_pt[j]+1;
 			num_pt[j]++;
@@ -680,7 +697,8 @@ void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
 }
 
 
-void hpGetNbProcListFromInput(hiPropMesh *mesh, int num_nb_proc, int *in_nb_proc)
+void hpGetNbProcListFromInput(hiPropMesh *mesh, const int num_nb_proc,
+			      const int *in_nb_proc)
 {
     int i;
     int num_nb[1];
@@ -714,7 +732,8 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	tag_send = i;
 	if (rank != i)
 	{
-	    isend2D_real_T(mesh->ps, i, tag_send, MPI_COMM_WORLD, &(req_list1[j]), &(req_list2[j]));
+	    isend2D_real_T(mesh->ps, i, tag_send, MPI_COMM_WORLD,
+		    	   &(req_list1[j]), &(req_list2[j]));
 	    j++;
 	}
     }
@@ -761,7 +780,8 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	mesh->nb_proc->data[I1dm(i)] = nb_ptemp[i-1];
 
     /*
-    printf("\nI'm processor %d, I have %d neighbours. They are:\n", rank, mesh->nb_proc->size[0]);
+    printf("\nI'm processor %d, I have %d neighbours. They are:\n", 
+    rank, mesh->nb_proc->size[0]);
     for (i = 1; i <= num_nbp; i++)
 	printf("%d ", mesh->nb_proc->data[I1dm(i)]);
     printf("\n");
@@ -863,7 +883,8 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     {
 	proc_send = nb_proc->data[I1dm(i)];
 	tag_send = proc_send;
-	isend2D_real_T(ps, proc_send, tag_send, MPI_COMM_WORLD, &(req_list1[I1dm(i)]), &(req_list2[I1dm(i)]));
+	isend2D_real_T(ps, proc_send, tag_send, MPI_COMM_WORLD,
+		       &(req_list1[I1dm(i)]), &(req_list2[I1dm(i)]));
     }
 
     for (i = 1; i <= num_nbp; i++)
@@ -887,7 +908,8 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 			(fabs(current_z - ps_recv->data[I2dm(k,3,ps_recv->size)]) < eps)
 		   )
 		{
-		    hpEnsurePInfoCapacity(ps_pinfo); /* first ensure list has enough space */
+		    hpEnsurePInfoCapacity(ps_pinfo); /* first ensure 
+							list has enough space */
 		    ps_pinfo->allocated_len++; /* new node */
 		    int cur_head = ps_pinfo->head[I1dm(j)];
 		    int cur_tail = ps_pinfo->tail[I1dm(j)];
@@ -926,5 +948,145 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 {
+    int i, j, k;
+    int ps_tag_send, ps_tag_recv, tris_tag_send, tris_tag_recv;
+    int proc_send, proc_recv;
+    int num_proc, rank;
+    double eps = 1e-14;
 
+    emxArray_real_T* ps = mesh->ps;
+    emxArray_int32_T* tris = mesh->tris;
+    emxArray_int32_T *nb_proc = mesh->nb_proc;
+
+    hpPInfoList *ps_pinfo = mesh->ps_pinfo;
+    hpPInfoList *tris_pinfo = mesh->tris_pinfo;
+
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int num_nbp = nb_proc->size[0];
+
+    MPI_Request *ps_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *ps_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+
+    MPI_Request *tris_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *tris_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+
+    
+    for (i = 1; i <= num_nbp; i++)
+    {
+	proc_send = nb_proc->data[I1dm(i)];
+	ps_tag_send = proc_send;
+	tris_tag_send = proc_send + 10;
+	isend2D_real_T(ps, proc_send, ps_tag_send, MPI_COMM_WORLD,
+		       &(ps_req_list1[I1dm(i)]), &(ps_req_list2[I1dm(i)]));
+	isend2D_int32_T(tris, proc_send, tris_tag_send, MPI_COMM_WORLD, 
+			&(tris_req_list1[I1dm(i)]), &(tris_req_list2[I1dm(i)]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	emxArray_real_T *ps_recv;
+	emxArray_int32_T *tris_recv;
+	proc_recv = nb_proc->data[I1dm(i)];
+	ps_tag_recv = rank;
+	tris_tag_recv = rank + 10;
+	
+	recv2D_real_T(&ps_recv, proc_recv, ps_tag_recv, MPI_COMM_WORLD);
+	recv2D_int32_T(&tris_recv, proc_recv, tris_tag_recv, MPI_COMM_WORLD);
+
+	/* Build the pinfo for points */
+	for (j = 1; j <= ps->size[0]; j++)
+	{
+	    double current_x = ps->data[I2dm(j,1,ps->size)];
+	    double current_y = ps->data[I2dm(j,2,ps->size)];
+	    double current_z = ps->data[I2dm(j,3,ps->size)];
+
+	    for (k = 1; k <= ps_recv->size[0]; k++)
+	    {
+		if ( (fabs(current_x - ps_recv->data[I2dm(k,1,ps_recv->size)]) < eps) && 
+		     (fabs(current_y - ps_recv->data[I2dm(k,2,ps_recv->size)]) < eps) &&
+		     (fabs(current_z - ps_recv->data[I2dm(k,3,ps_recv->size)]) < eps)
+		   )
+		{
+		    hpEnsurePInfoCapacity(ps_pinfo); /* first ensure 
+							list has enough space */
+		    ps_pinfo->allocated_len++; /* new node */
+		    int cur_head = ps_pinfo->head[I1dm(j)];
+		    int cur_tail = ps_pinfo->tail[I1dm(j)];
+		    int cur_master_proc = ps_pinfo->pdata[I1dm(cur_head)].proc;
+		    if (proc_recv < cur_master_proc)
+		    {
+			ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = proc_recv;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = k;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
+		    }
+		    else if (proc_recv > cur_master_proc)
+		    {
+			ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = proc_recv;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = k;
+			ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
+			ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
+		    }
+		    else
+		    {
+			printf("\n Receiving processor ID already in the ps PInfo list!\n");
+			exit(0);
+		    }
+		    break;
+		}
+	    }
+	}
+
+	/* Build the tris pinfo */
+	for (j = 1; j <= tris->size[0]; j++)
+	{
+	    for (k = 1; k <= tris_recv->size[0]; k++)
+	    {
+		if ( sameTriangle(ps, tris, j, ps_recv, tris_recv, k, eps) )
+		{
+		    hpEnsurePInfoCapacity(tris_pinfo); /* first ensure 
+							  list has enough space */
+		    tris_pinfo->allocated_len++; /* new node */
+		    int cur_head = tris_pinfo->head[I1dm(j)];
+		    int cur_tail = tris_pinfo->tail[I1dm(j)];
+		    int cur_master_proc = tris_pinfo->pdata[I1dm(cur_head)].proc;
+		    if (proc_recv < cur_master_proc)
+		    {
+			tris_pinfo->head[I1dm(j)] = tris_pinfo->allocated_len;
+			tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = proc_recv;
+			tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = k;
+			tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = cur_head;
+		    }
+		    else if (proc_recv > cur_master_proc)
+		    {
+			tris_pinfo->tail[I1dm(j)] = tris_pinfo->allocated_len;
+			tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = proc_recv;
+			tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = k;
+			tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = -1;
+			tris_pinfo->pdata[I1dm(cur_tail)].next = tris_pinfo->allocated_len;
+		    }
+		    else
+		    {
+			printf("\n Receiving processor ID already in the tris PInfo list!\n");
+			exit(0);
+		    }
+		    break;
+		}
+	    }
+	}
+
+	emxFree_real_T(&ps_recv);
+	emxFree_int32_T(&tris_recv);
+    }
+
+    free(ps_req_list1);
+    free(ps_req_list2);
+    free(tris_req_list1);
+    free(tris_req_list1);
 }
+
+
+

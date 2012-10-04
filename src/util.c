@@ -9,7 +9,7 @@
 #include "util.h"
 
 
-void right_flush(int n, int ndigits, char *s)
+void right_flush(const int n, int ndigits, char *s)
 {
 	int i;
 
@@ -24,9 +24,7 @@ void right_flush(int n, int ndigits, char *s)
 	return;
 }
 
-int findString(
-	FILE *file,
-	const char *in_string)
+int findString(FILE *file, const char *in_string)
 {
     const char *s;
     int ch;
@@ -59,7 +57,40 @@ int findString(
 	return 1;
 }
 
-void addColumnToArray_common(emxArray__common *emxArray, int32_T numCol, uint32_T elementSize)
+boolean_T sameTriangle(const emxArray_real_T* ps1,
+		       const emxArray_int32_T* tri1,
+		       const int tri_index1,
+		       const emxArray_real_T* ps2,
+		       const emxArray_int32_T* tri2, 
+		       const int tri_index2,
+		       const double eps)
+{
+    int p11 = tri1->data[I2dm(tri_index1,1,tri1->size)];
+    int p12 = tri1->data[I2dm(tri_index1,2,tri1->size)];
+    int p13 = tri1->data[I2dm(tri_index1,3,tri1->size)];
+
+    int p21 = tri2->data[I2dm(tri_index2,1,tri2->size)];
+    int p22 = tri2->data[I2dm(tri_index2,2,tri2->size)];
+    int p23 = tri2->data[I2dm(tri_index2,3,tri2->size)];
+
+
+    if ( (fabs(ps1->data[I2dm(p11,1,ps1->size)] - ps2->data[I2dm(p21,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p11,2,ps1->size)] - ps2->data[I2dm(p21,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p11,3,ps1->size)] - ps2->data[I2dm(p21,3,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,1,ps1->size)] - ps2->data[I2dm(p22,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,2,ps1->size)] - ps2->data[I2dm(p22,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,3,ps1->size)] - ps2->data[I2dm(p22,3,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,1,ps1->size)] - ps2->data[I2dm(p23,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,2,ps1->size)] - ps2->data[I2dm(p23,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,3,ps1->size)] - ps2->data[I2dm(p23,3,ps2->size)]) < eps)
+       )
+	return 1;
+    else
+	return 0;
+}
+
+
+void addColumnToArray_common(emxArray__common *emxArray, const int32_T numCol, const uint32_T elementSize)
 {
     void *newData;
 
@@ -78,23 +109,23 @@ void addColumnToArray_common(emxArray__common *emxArray, int32_T numCol, uint32_
     emxArray->allocatedSize = numElemNew;
 }
 
-void addColumnToArray_int32_T(emxArray_int32_T *emxArray, int32_T numCol)
+void addColumnToArray_int32_T(emxArray_int32_T *emxArray, const int32_T numCol)
 {
     addColumnToArray_common( (emxArray__common *)emxArray, numCol, sizeof(int32_T) );
     emxArray->data = (int32_T *) emxArray->data;
 }
-void addColumnToArray_real_T(emxArray_real_T *emxArray, int32_T numCol)
+void addColumnToArray_real_T(emxArray_real_T *emxArray, const int32_T numCol)
 {
     addColumnToArray_common( (emxArray__common *)emxArray, numCol, sizeof(real_T) );
     emxArray->data = (real_T *) emxArray->data;
 }
-void addColumnToArray_boolean_T(emxArray_boolean_T *emxArray, int32_T numCol)
+void addColumnToArray_boolean_T(emxArray_boolean_T *emxArray, const int32_T numCol)
 {
     addColumnToArray_common( (emxArray__common *)emxArray, numCol, sizeof(boolean_T) );
     emxArray->data = (boolean_T *) emxArray->data;
 }
 
-void addRowToArray_int32_T(emxArray_int32_T *emxArray, int32_T numRow)
+void addRowToArray_int32_T(emxArray_int32_T *emxArray, const int32_T numRow)
 {
     int i;
     void *newData;
@@ -121,7 +152,7 @@ void addRowToArray_int32_T(emxArray_int32_T *emxArray, int32_T numRow)
     emxArray->data = (int32_T *) newData;
     emxArray->allocatedSize = numElemNew;
 }
-void addRowToArray_real_T(emxArray_real_T *emxArray, int32_T numRow)
+void addRowToArray_real_T(emxArray_real_T *emxArray, const int32_T numRow)
 {
     int i;
     void *newData;
@@ -148,7 +179,7 @@ void addRowToArray_real_T(emxArray_real_T *emxArray, int32_T numRow)
     emxArray->data = (real_T *) newData;
     emxArray->allocatedSize = numElemNew;
 }
-void addRowToArray_boolean_T(emxArray_boolean_T *emxArray, int32_T numRow)
+void addRowToArray_boolean_T(emxArray_boolean_T *emxArray, const int32_T numRow)
 {
     int i;
     void *newData;
@@ -210,7 +241,7 @@ void printArray_boolean_T(const emxArray_boolean_T *emxArray)
 }
 
 
-void sendND_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm)
+void sendND_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag, MPI_Comm comm)
 {
     int i;
     
@@ -230,7 +261,7 @@ void sendND_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm
 
 }
 
-void sendND_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm)
+void sendND_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag, MPI_Comm comm)
 {
     int i;
     
@@ -249,7 +280,7 @@ void sendND_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm com
     free((void *)common_info);
 }
 
-void sendND_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm)
+void sendND_real_T(const emxArray_real_T *array_send, const int dst, const int tag, MPI_Comm comm)
 {
     int i;
     
@@ -268,7 +299,7 @@ void sendND_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm)
     free((void *)common_info);
 }
 
-void recvND_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm)
+void recvND_boolean_T(emxArray_boolean_T **array_recv, const int src, const int tag, MPI_Comm comm)
 {
     int i;
     int num_elem_regular;
@@ -300,7 +331,7 @@ void recvND_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Com
     (*array_recv) = result;
 }
 
-void recvND_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm)
+void recvND_int32_T(emxArray_int32_T **array_recv, const int src, const int tag, MPI_Comm comm)
 {
     int i;
     int num_elem_regular;
@@ -332,7 +363,7 @@ void recvND_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm co
     (*array_recv) = result;
 }
 
-void recvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm)
+void recvND_real_T(emxArray_real_T **array_recv, const int src, const int tag, MPI_Comm comm)
 {
     int i;
     int num_elem_regular;
@@ -363,26 +394,26 @@ void recvND_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
     (*array_recv) = result;
 }
 
-void send2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm)
+void send2D_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag, MPI_Comm comm)
 {
     MPI_Send(array_send->size, 2, MPI_INT, dst, tag+1, comm);
     MPI_Send(array_send->data, array_send->allocatedSize, MPI_UNSIGNED_CHAR, dst, tag+2, comm);
 }
 
-void send2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm)
+void send2D_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag, MPI_Comm comm)
 {
     MPI_Send(array_send->size, 2, MPI_INT, dst, tag+1, comm);
     MPI_Send(array_send->data, array_send->allocatedSize, MPI_INT, dst, tag+2, comm);
 
 }
 
-void send2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm)
+void send2D_real_T(const emxArray_real_T *array_send, const int dst, const int tag, MPI_Comm comm)
 {
     MPI_Send(array_send->size, 2, MPI_INT, dst, tag+1, comm);
     MPI_Send(array_send->data, array_send->allocatedSize, MPI_DOUBLE, dst, tag+2, comm);
 
 }
-void recv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Comm comm)
+void recv2D_boolean_T(emxArray_boolean_T **array_recv, const int src, const int tag, MPI_Comm comm)
 {
     MPI_Status recv_stat_1;
     MPI_Status recv_stat_2;
@@ -399,7 +430,7 @@ void recv2D_boolean_T(emxArray_boolean_T **array_recv, int src, int tag, MPI_Com
 }
 
 
-void recv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm comm)
+void recv2D_int32_T(emxArray_int32_T **array_recv, const int src, const int tag, MPI_Comm comm)
 {
     MPI_Status recv_stat_1;
     MPI_Status recv_stat_2;
@@ -415,7 +446,7 @@ void recv2D_int32_T(emxArray_int32_T **array_recv, int src, int tag, MPI_Comm co
     (*array_recv) = result;
 }
 
-void recv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm)
+void recv2D_real_T(emxArray_real_T **array_recv, const int src, const int tag, MPI_Comm comm)
 {
     MPI_Status recv_stat_1;
     MPI_Status recv_stat_2;
@@ -431,20 +462,23 @@ void recv2D_real_T(emxArray_real_T **array_recv, int src, int tag, MPI_Comm comm
     (*array_recv) = result;
 }
 
-void isend2D_boolean_T(emxArray_boolean_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
+void isend2D_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag,
+		       MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
 {
     MPI_Isend(array_send->size, 2, MPI_INT, dst, tag+1, comm, req_com);
     MPI_Isend(array_send->data, array_send->allocatedSize, MPI_UNSIGNED_CHAR, dst, tag+2, comm, req_data); 
 }
 
 
-void isend2D_int32_T(emxArray_int32_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
+void isend2D_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag,
+		     MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
 {
     MPI_Isend(array_send->size, 2, MPI_INT, dst, tag+1, comm, req_com);
     MPI_Isend(array_send->data, array_send->allocatedSize, MPI_INT, dst, tag+2, comm, req_data); 
 }
 
-void isend2D_real_T(emxArray_real_T *array_send, int dst, int tag, MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
+void isend2D_real_T(const emxArray_real_T *array_send, const int dst, const int tag,
+		    MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data)
 {
     MPI_Isend(array_send->size, 2, MPI_INT, dst, tag+1, comm, req_com);
     MPI_Isend(array_send->data, array_send->allocatedSize, MPI_DOUBLE, dst, tag+2, comm, req_data); 

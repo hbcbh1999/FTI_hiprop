@@ -165,7 +165,9 @@ extern void hpGetNbProcListAuto(hiPropMesh *mesh);
  * \param num_nb_proc number of neighboring processor
  * \param in_nb_proc array of neighboring processors with length num_nb_proc
  */
-extern void hpGetNbProcListInput(hiPropMesh *mesh, int num_nb_proc, int *in_nb_proc);
+extern void hpGetNbProcListInput(hiPropMesh *mesh,
+				 const int num_nb_proc, 
+				 const int *in_nb_proc);
 
 /*!
  * \brief Initialize the parallel information given a mesh

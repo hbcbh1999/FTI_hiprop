@@ -21,14 +21,20 @@ int main (int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    char runlog_filename[200];
+    char rank_str[5];
+    right_flush(rank,4,rank_str);
+    sprintf(runlog_filename, "run-log.%s",rank_str);
+    FILE *runlog_stream;
+    if((runlog_stream = freopen(runlog_filename, "w", stdout)) == NULL)
+	exit(-1);
+
     printf("\n Welcome to the test of Hi-Prop Library from proc %d\n", rank);
 
     hiPropMesh *mesh;
     hpInitMesh(&mesh);
 
     char in_filename[200];
-    char rank_str[5];
-    right_flush(rank,4,rank_str);
     sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
@@ -47,8 +53,8 @@ int main (int argc, char *argv[])
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (rank == 0)
-    {
+    //if (rank == 0)
+    //{
 	printf("ps pinfo of rank 0:\n");
 	for (i = 1; i <= mesh->ps->size[0]; i++)
 	{
@@ -62,7 +68,20 @@ int main (int argc, char *argv[])
 	    }
 	    printf("\n");
 	}
-    }
+	printf("tris pinfo of rank 0:\n");
+	for (i = 1; i <= mesh->tris->size[0]; i++)
+	{
+	    printf("triangle %d: ", i);
+	    int next = mesh->tris_pinfo->head[I1dm(i)];
+	    while (next != -1)
+	    {
+		int cur_node = next;
+		printf("%d/%d-->", mesh->tris_pinfo->pdata[I1dm(cur_node)].proc, mesh->tris_pinfo->pdata[I1dm(cur_node)].lindex);
+		next = mesh->tris_pinfo->pdata[I1dm(cur_node)].next;
+	    }
+	    printf("\n");
+	}
+    //}
 
     hpFreeMesh(&mesh);
     printf("Success processor %d\n", rank);
