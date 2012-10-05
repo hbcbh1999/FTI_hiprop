@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 	return 0;
     }
 
-    hpFreeMesh(&mesh);
+    hpDeleteMesh(&mesh);
 
     if (mesh == (hiPropMesh *)NULL)
 	printf("Success processor %d\n", rank);

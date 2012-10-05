@@ -23,6 +23,17 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->nb_proc = (emxArray_int32_T *) NULL;
     mesh->ps_pinfo = (hpPInfoList *) NULL;
     mesh->tris_pinfo = (hpPInfoList *) NULL;
+
+    mesh->opphe = (emxArray_int32_T *) NULL;
+    mesh->inhe = (emxArray_int32_T *) NULL;
+}
+
+void hpFreeMeshAugmentInfo(hiPropMesh *pmesh)
+{
+    if (pmesh->opphe != ((emxArray_int32_T *) NULL))
+	emxFree_int32_T(&(pmesh->opphe));
+    if (pmesh->inhe != ((emxArray_int32_T *) NULL))
+	emxFree_int32_T(&(pmesh->inhe));
 }
 
 void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
@@ -65,28 +76,8 @@ void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
 
 void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
 {
-    if (pmesh->ps_pinfo != ((hpPInfoList *) NULL) )
-    {
-	if (pmesh->ps_pinfo->pdata != ((hpPInfoNode *) NULL) )
-	    free(pmesh->ps_pinfo->pdata);
-	if (pmesh->ps_pinfo->head != ((int *) NULL))
-	    free(pmesh->ps_pinfo->head);
-	if (pmesh->ps_pinfo->tail != ((int *) NULL))
-	    free(pmesh->ps_pinfo->tail);
-	free(pmesh->ps_pinfo);
-	pmesh->ps_pinfo = (hpPInfoList *) NULL;
-    }
-    if (pmesh->tris_pinfo != ((hpPInfoList *) NULL) )
-    {
-	if (pmesh->tris_pinfo->pdata != ((hpPInfoNode *) NULL) )
-	    free(pmesh->tris_pinfo->pdata);
-	if (pmesh->tris_pinfo->head != ((int*) NULL))
-	    free(pmesh->tris_pinfo->head);
-	if (pmesh->tris_pinfo->tail != ((int*) NULL))
-	    free(pmesh->tris_pinfo->tail);
-	free(pmesh->tris_pinfo);
-	pmesh->tris_pinfo = (hpPInfoList *) NULL;
-    }
+    hpDeletePInfoList(&(pmesh->ps_pinfo));
+    hpDeletePInfoList(&(pmesh->tris_pinfo));
 
     if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->nb_proc));
@@ -102,10 +93,19 @@ void hpFreeMeshBasicInfo(hiPropMesh *pmesh)
 	emxFree_real_T(&(pmesh->nor));
 }
 
-void hpFreeMesh(hiPropMesh **pmesh)
+void hpFreeMesh(hiPropMesh *pmesh)
+{
+    hpFreeMeshUpdateInfo(pmesh);
+    hpFreeMeshParallelInfo(pmesh);
+    hpFreeMeshAugmentInfo(pmesh);
+    hpFreeMeshBasicInfo(pmesh);
+}
+
+void hpDeleteMesh(hiPropMesh **pmesh)
 {
     hpFreeMeshUpdateInfo((*pmesh));
     hpFreeMeshParallelInfo((*pmesh));
+    hpFreeMeshAugmentInfo((*pmesh));
     hpFreeMeshBasicInfo((*pmesh));
 
     free((*pmesh));
@@ -113,10 +113,27 @@ void hpFreeMesh(hiPropMesh **pmesh)
     (*pmesh) = (hiPropMesh *)NULL;
 }
 
+void hpDeletePInfoList(hpPInfoList **plist)
+{
+    hpPInfoList *list = (*plist);
+    if (list != ((hpPInfoList *) NULL))
+    {
+	if (list->pdata != ((hpPInfoNode *) NULL))
+	    free(list->pdata);
+	if (list->head != ((int*) NULL))
+	    free(list->head);
+	if (list->tail != ((int*) NULL))
+	    free(list->tail);
+	free(list);
+	(*plist) = (hpPInfoList *) NULL;
+    }
+}
+
 int hpReadPolyMeshVtk3d(
 	const char *name,
 	hiPropMesh *mesh)
 {
+    hpFreeMesh(mesh);
     FILE* file = fopen(name, "r");
     int i, j;
     int num_points, num_tris, size;
@@ -222,6 +239,7 @@ int hpReadUnstrMeshVtk3d(
 	const char *name,
 	hiPropMesh* mesh)
 {
+    hpFreeMesh(mesh);
     FILE* file;
     if ( !(file = fopen(name, "r")) )
     {
@@ -397,6 +415,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	hiPropMesh *mesh, int *tri_part,
 	int tag)
 {
+    hpFreeMesh(mesh);
     int i,j,k;
     int rank, num_proc;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -579,7 +598,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 		for (j = 0; j<num_proc; j++)
 		    MPI_Send(pt_local[j], total_num_pt, MPI_INT, i, tag+12+j, MPI_COMM_WORLD);
 
-	    	hpFreeMesh(&p_mesh[i]);
+	    	hpDeleteMesh(&p_mesh[i]);
 	    }
 	}
 
@@ -700,6 +719,9 @@ void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
 void hpGetNbProcListFromInput(hiPropMesh *mesh, const int num_nb_proc,
 			      const int *in_nb_proc)
 {
+    if (mesh->nb_proc != ((emxArray_int32_T *) NULL))
+	emxFree_int32_T(&(mesh->nb_proc));
+
     int i;
     int num_nb[1];
     num_nb[0] = num_nb_proc;
@@ -712,6 +734,9 @@ void hpGetNbProcListFromInput(hiPropMesh *mesh, const int num_nb_proc,
 
 void hpGetNbProcListAuto(hiPropMesh *mesh)
 {
+    if (mesh->nb_proc != ((emxArray_int32_T *) NULL))
+	emxFree_int32_T(&(mesh->nb_proc));
+
     int i, tag_send, tag_recv, j, k;
     int num_proc, rank;
     double eps = 1e-14;
@@ -794,6 +819,9 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
 void hpInitPInfo(hiPropMesh *mesh)
 {
+    hpDeletePInfoList(&(mesh->ps_pinfo));
+    hpDeletePInfoList(&(mesh->tris_pinfo));
+
     int i;
     int num_ps = mesh->ps->size[0];
     int num_tris = mesh->tris->size[0];
@@ -1088,5 +1116,59 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     free(tris_req_list1);
 }
 
+void hpBuildOppositeHalfEdge(hiPropMesh *mesh)
+{
+    if (mesh->opphe != ((emxArray_int32_T *) NULL))
+	emxFree_int32_T(&(mesh->opphe));
+
+    int num_ps = mesh->ps->size[0];
+    int num_tris = mesh->tris->size[0];
+
+    mesh->opphe = emxCreate_int32_T(num_tris, 3);
+    
+    determine_opposite_halfedge_tri(num_ps, mesh->tris ,mesh->opphe);
+}
+
+void hpBuildIncidentHalfEdge(hiPropMesh *mesh)
+{
+    if (mesh->inhe != ((emxArray_int32_T *) NULL))
+	emxFree_int32_T(&(mesh->inhe));
+
+    int num_ps = mesh->ps->size[0];
+
+    int temp[1];
+    temp[0] = num_ps;
+
+    mesh->inhe = emxCreateND_int32_T(1, temp);
+
+    determine_incident_halfedges(mesh->tris, mesh->opphe, mesh->inhe);
+}
+
+void hpObtainNRingTris(const hiPropMesh *mesh, 
+		       const int32_T in_vid,
+		       const real_T in_ring,
+		       const int32_T in_minpnts,
+		       const int32_T max_numps,
+		       const int32_T max_numtris,
+		       emxArray_int32_T **in_ngbvs, 
+		       emxArray_boolean_T **in_vtags, 
+		       emxArray_boolean_T **in_ftags,
+		       emxArray_int32_T **in_ngbfs,
+		       int32_T *in_nverts, int32_T *in_nfaces)
+{
+    int max_b_numps[1]; max_b_numps[0] = max_numps;
+    int max_b_numtris[1]; max_b_numtris[0] = max_numtris;
+    int num_ps[1]; num_ps[0] = mesh->ps->size[0];
+    int num_tris[1]; num_tris[0] = mesh->tris->size[0];
+
+    (*in_ngbvs) = emxCreateND_int32_T(1, max_b_numps);
+    (*in_ngbfs) = emxCreateND_int32_T(1, max_b_numtris);
+
+    (*in_vtags) = emxCreateND_boolean_T(1, num_ps);
+    (*in_ftags) = emxCreateND_boolean_T(1, num_tris);
+    
+    obtain_nring_surf(in_vid, in_ring, in_minpnts, mesh->tris, mesh->opphe, mesh->inhe, (*in_ngbvs), (*in_vtags), (*in_ftags), (*in_ngbfs), in_nverts, in_nfaces);
+
+}
 
 

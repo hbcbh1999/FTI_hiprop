@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 
     	hpMetisPartMesh(in_mesh, num_proc, &tri_part, &pt_part);
 	hpDistMesh(root, in_mesh, mesh, tri_part, tag);
-	hpFreeMesh(&in_mesh);
+	hpDeleteMesh(&in_mesh);
     }
     else
 	hpDistMesh(root, NULL, mesh, NULL, tag);
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	printf("Write fail\n");
 	return 0;
     }
-    hpFreeMesh(&mesh);
+    hpDeleteMesh(&mesh);
     printf("Success for proc %d\n", rank);
 
     MPI_Finalize();
