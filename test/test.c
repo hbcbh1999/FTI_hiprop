@@ -64,6 +64,8 @@ int main (int argc, char *argv[])
     else
 	hpDistMesh(root, NULL, mesh, NULL, tag);
 
+    hpBuildPUpdateInfo(mesh);
+
 /*
     hiPropMesh *mesh;
     hpInitMesh(&mesh);

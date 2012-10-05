@@ -62,12 +62,12 @@ typedef struct hiPropMesh
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
     hpPInfoList *ps_pinfo;		/*!< parallel information for points */
     hpPInfoList *tris_pinfo;		/*!< parallel information for tris */
-    /*
+    
     emxArray_int32_T **ps_send_index;
     emxArray_real_T **ps_send_buffer;
     emxArray_int32_T **ps_recv_index;
     emxArray_real_T **ps_recv_buffer;
-    */
+    
 } hiPropMesh;
 
 
@@ -215,4 +215,12 @@ extern void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
  */
 extern void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
 
+/*!
+ * \brief Build the parallel update information for submesh 
+ * \detail This uses the ps_pinfo,
+ * so hpBuildPInfoNoOverlappingTris or hpBuildPInfoWithOverlappingTris or hpConstrPInfoFromGlobalLocalInfo
+ * should be called before this function
+ * \param mesh The submesh to build the parallel update info
+ */
+extern void hpBuildPUpdateInfo(hiPropMesh *mesh);
 #endif
