@@ -63,6 +63,9 @@ typedef struct hiPropMesh
     hpPInfoList *ps_pinfo;		/*!< parallel information for points */
     hpPInfoList *tris_pinfo;		/*!< parallel information for tris */
     
+    emxArray_int32_T *opphe;		/*!< opposite half edge */
+    emxArray_int32_T *inhe;		/*!< incident half edge */
+
     emxArray_int32_T **ps_send_index;
     emxArray_real_T **ps_send_buffer;
     emxArray_int32_T **ps_recv_index;
@@ -92,13 +95,20 @@ extern void hpFreeMeshParallelInfo(hiPropMesh *pmesh);
  * \param pmesh pointer to hiProp mesh
  */
 extern void hpFreeMeshBasicInfo(hiPropMesh *pmesh);
+extern void hpFreeMeshAugmentInfo(hiPropMesh *pmesh);
+/*!
+ * \brief Free the data of a hiProp mesh 
+ * \param pmesh hiProp mesh pointer
+ */
+extern void hpFreeMesh(hiPropMesh *pmesh);
 
 /*!
- * \brief Free a hiProp mesh and set the pointer to be NULL
- * \param pmesh Address of the hiProp mesh pointer
+ * \brief Delete a hiProp mesh and set the pointer to NULL
+ * \param pmesh address of the hiProp mesh pointer
  */
-extern void hpFreeMesh(hiPropMesh **pmesh);
+extern void hpDeleteMesh(hiPropMesh **pmesh);
 
+extern void hpDeletePInfoList(hpPInfoList **plist);
 /*!
  * Read an ascii triangular vtk file with data type POLYGON.
  * \param name input file name
@@ -223,4 +233,21 @@ extern void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
  * \param mesh The submesh to build the parallel update info
  */
 extern void hpBuildPUpdateInfo(hiPropMesh *mesh);
+extern void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
+
+extern void hpBuildIncidentHalfEdge(hiPropMesh *mesh);
+
+extern void hpObtainNRingTris(const hiPropMesh *mesh,
+			      const int32_T in_vid,
+			      const real_T in_ring,
+			      const int32_T in_minpnts,
+			      const int32_T max_numps,
+			      const int32_T max_numtris,
+			      emxArray_int32_T **in_ngbvs,
+			      emxArray_boolean_T **in_vtags,
+			      emxArray_boolean_T **in_ftags,
+			      emxArray_int32_T **in_ngbfs,
+			      int32_T *in_nverts,
+			      int32_T *in_nfaces);
+
 #endif

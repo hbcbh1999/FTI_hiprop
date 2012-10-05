@@ -123,9 +123,7 @@ int main (int argc, char *argv[])
 	}
     //}
 
-
-    
-    hpFreeMesh(&mesh);
+    hpDeleteMesh(&mesh);
 
 
     printf("Success processor %d\n", rank);
