@@ -150,7 +150,8 @@ extern int hpWriteUnstrMeshVtk3d(const char *name, hiPropMesh *mesh);
 extern int hpMetisPartMesh(hiPropMesh *mesh, const int nparts, int **tri_part, int **pt_part);
 
 /*!
- * \brief Distribute the mesh according to tri_part array got in hpMetisPartMesh
+ * \brief Distribute the mesh according to tri_part array got in hpMetisPartMesh,
+ * call hpConstrPInfoFromGlobalLocalInfo() inside, to set parallel info
  * \param root root of the communication, it should contain in_mesh and tri_part info
  * \param in_mesh the input mesh to be partitioned
  * \param mesh the output mesh after partition
@@ -158,6 +159,16 @@ extern int hpMetisPartMesh(hiPropMesh *mesh, const int nparts, int **tri_part, i
  * \param tag tag of the communication
  */
 extern int hpDistMesh(int root, hiPropMesh *in_mesh, hiPropMesh *mesh, int *tri_part, int tag);
+
+/*!
+ * \brief Construct parallel information for points assuming no overlapping triangles
+ * \param mesh the submesh to construct the parallel info
+ * \param g2lindex a (num_proc*num_total_points) matrix,
+ * g2lindex[i][I1dm(j)] is the local index of point j on proc i
+ * \param l2gindex an array of length equal to the number of points in the submesh
+ * l2gindex[I1dm(i)] is the global index of the i-th point on the submesh
+ * \param rank the rank of the current proc
+ */
 extern void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
 	int** g2lindex, int* l2gindex, int rank);
 
