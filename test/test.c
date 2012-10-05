@@ -59,7 +59,7 @@ int main (int argc, char *argv[])
 
     	hpMetisPartMesh(in_mesh, num_proc, &tri_part, &pt_part);
 	hpDistMesh(root, in_mesh, mesh, tri_part, tag);
-	hpFreeMesh(&in_mesh);
+	hpDeleteMesh(&in_mesh);
     }
     else
 	hpDistMesh(root, NULL, mesh, NULL, tag);
@@ -107,7 +107,7 @@ int main (int argc, char *argv[])
 	    printf("\n");
 	}
 
-	
+/*	
 	printf("tris pinfo of rank 0:\n");
 	for (i = 1; i <= mesh->tris->size[0]; i++)
 	{
@@ -122,6 +122,25 @@ int main (int argc, char *argv[])
 	    printf("\n");
 	}
     //}
+*/
+
+	int cur_proc, j;
+    for(i = 1; i<=mesh->nb_proc->size[0]; i++)
+    {
+	cur_proc = mesh->nb_proc->data[I1dm(i)];
+	if(cur_proc<rank)
+	{
+	    printf("point recv index with proc %d\n", cur_proc);
+	    for(j = 1; j<=mesh->ps_recv_index[cur_proc]->size[0]; j++)
+		printf("%d\n", mesh->ps_recv_index[cur_proc]->data[I1dm(j)]);
+	}
+	else
+	{
+	    printf("point send index with proc %d\n", cur_proc);
+	    for(j = 1; j<=mesh->ps_send_index[cur_proc]->size[0]; j++)
+		printf("%d\n", mesh->ps_send_index[cur_proc]->data[I1dm(j)]);
+	}
+    }
 
     hpDeleteMesh(&mesh);
 
