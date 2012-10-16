@@ -1186,12 +1186,14 @@ void hpObtainNRingTris(const hiPropMesh *mesh,
 		       const int32_T in_minpnts,
 		       const int32_T max_numps,
 		       const int32_T max_numtris,
-		       emxArray_int32_T **in_ngbvs, 
+		       emxArray_int32_T **in_ngbvs,
+		       emxArray_int32_T **in_ngbfs,
 		       emxArray_boolean_T **in_vtags, 
 		       emxArray_boolean_T **in_ftags,
-		       emxArray_int32_T **in_ngbfs,
 		       int32_T *in_nverts, int32_T *in_nfaces)
 {
+    int i;
+
     int max_b_numps[1]; max_b_numps[0] = max_numps;
     int max_b_numtris[1]; max_b_numtris[0] = max_numtris;
     int num_ps[1]; num_ps[0] = mesh->ps->size[0];
@@ -1202,7 +1204,12 @@ void hpObtainNRingTris(const hiPropMesh *mesh,
 
     (*in_vtags) = emxCreateND_boolean_T(1, num_ps);
     (*in_ftags) = emxCreateND_boolean_T(1, num_tris);
-    
+
+    for (i = 1; i <= num_ps[0]; i++)
+	(*in_vtags)->data[I1dm(i)] = false;
+    for (i = 1; i <= num_tris[0]; i++)
+	(*in_ftags)->data[I1dm(i)] = false;
+
     obtain_nring_surf(in_vid, in_ring, in_minpnts, mesh->tris, mesh->opphe, mesh->inhe, (*in_ngbvs), (*in_vtags), (*in_ftags), (*in_ngbfs), in_nverts, in_nfaces);
 
 }

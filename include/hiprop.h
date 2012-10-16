@@ -244,9 +244,9 @@ extern void hpObtainNRingTris(const hiPropMesh *mesh,
 			      const int32_T max_numps,
 			      const int32_T max_numtris,
 			      emxArray_int32_T **in_ngbvs,
+			      emxArray_int32_T **in_ngbfs,
 			      emxArray_boolean_T **in_vtags,
 			      emxArray_boolean_T **in_ftags,
-			      emxArray_int32_T **in_ngbfs,
 			      int32_T *in_nverts,
 			      int32_T *in_nfaces);
 
