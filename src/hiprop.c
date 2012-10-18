@@ -1357,3 +1357,224 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
 
     free(remoteid);	   
 }
+
+void hpCleanMeshByPinfo(hiPropMesh* mesh)
+{
+    int rank, num_proc;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    int i,j,k;
+
+    /* 1. Identify the tris to be saved */
+    int num_tri = mesh->tris->size[0];
+    int num_pt = mesh->ps->size[0];
+    int* tris_to_save = (int*)calloc(num_tri, sizeof(int));
+    int num_tri_to_save = 0;
+    int* tri_save_flag = (int*) calloc(num_tri, sizeof(int));	/* flag 1 to the tri we need to keep,
+								 * otherwise 0 */
+
+    int master, head;
+    for (i = 1; i<=num_tri; i++)
+    {
+	head = mesh->tris_pinfo->head[I1dm(i)];
+	master = mesh->tris_pinfo->pdata[I1dm(head)].proc;
+	if(master==rank)
+	{
+	    tris_to_save[num_tri_to_save] = i;
+	    num_tri_to_save++;
+	    tri_save_flag[I1dm(i)] = 1;
+	}
+	else
+	    tri_save_flag[I1dm(i)] = 0;
+    }
+
+    /* 2. make a new mesh->point array, delete the old, use pt_save_flag and pt_new_index
+     *    to do this and also to update the info on other procs later
+     */
+    int* pt_save_flag = (int*) calloc(num_pt, sizeof(int));	/* flag 1 to the point we need to keep, 
+								 * otherwise 0 */
+    int* pt_new_index = (int*) calloc(num_pt, sizeof(int));	/* if current point is to be saved,
+								 * save the new index here */
+    for (i = 0; i< num_pt; i++)
+    {
+	pt_save_flag[i] = 0;
+	pt_new_index[i] = 0;
+    }
+
+    int num_pt_to_save = 0;
+    int cur_tri;
+    int cur_pt;
+    for(i = 0; i<num_tri_to_save; i++)
+    {
+	cur_tri = tris_to_save[i];
+	for(j = 1; j<=3; j++)
+	{
+	    cur_pt = mesh->tris->data[I2dm(cur_tri,j,mesh->tris->size)];
+	    pt_save_flag[I1dm(cur_pt)] = 1;
+	}
+    }
+
+    for (i = 0; i<num_pt; i++)
+	num_pt_to_save += pt_save_flag[i];
+
+    emxArray_real_T* newpts = emxCreate_real_T(num_pt_to_save, 3);
+    cur_pt = 1;
+    for(i = 1; i<=num_pt_to_save; i++)
+    {
+	while(pt_save_flag[I1dm(cur_pt)]!=1)
+	    cur_pt++;
+
+	pt_new_index[I1dm(cur_pt)] = i;
+	for(j = 1; j<=3; j++)
+	    newpts->data[I2dm(i, j, newpts->size)] = mesh->ps->data[I2dm(cur_pt,j,mesh->ps->size)];
+    }
+
+    emxDestroyArray_real_T(mesh->ps);
+    mesh->ps = newpts;
+
+    /* 3. make a new mesh->tris array, delete the old one */
+    emxArray_int32_T* newtris = emxCreate_int32_T(num_tri_to_save, 3);
+    int p, old_p;
+    for (i = 1; i<=num_tri_to_save; i++)
+    {
+	cur_tri = tris_to_save[I1dm(i)];
+	for(j = 1; j<=3; j++)
+	{
+	    old_p = mesh->tris->data[I2dm(cur_tri, j, mesh->tris->size)];	/* old point index */
+	    p = pt_new_index[I1dm(old_p)];	/* new point index */
+	    newtris->data[I2dm(i,j,newtris->size)] = p;
+	}
+    }
+
+    emxDestroyArray_int32_T(mesh->tris);
+    mesh->tris = newtris;
+
+    /* 4. Send the pt_save_flag and pt_new_index info to all neighbour procs */
+    int num_nb_proc = mesh->nb_proc->size[0];
+    int tag[3] = {1,2,3};
+    MPI_Request request[3];
+    int dest;
+
+    for (i = 0; i<num_nb_proc; i++)
+    {
+	dest = mesh->nb_proc->data[i];
+	MPI_Isend(&num_pt,1,MPI_INT,dest,tag[0],MPI_COMM_WORLD, &request[0]);
+	MPI_Isend(pt_save_flag, num_pt, MPI_INT, dest, tag[1], MPI_COMM_WORLD, &request[1]);
+	MPI_Isend(pt_new_index, num_pt, MPI_INT, dest, tag[2], MPI_COMM_WORLD, &request[2]);
+    }
+
+    /* 5. Recv pt_save_flag and pt_new_index info from all neighbours and update mesh->ps_pinfo */
+    int num_pt_to_recv;
+    int** pt_flag = (int**) calloc(num_proc, sizeof(int*));
+    int** pt_index = (int**) calloc(num_proc, sizeof(int*));
+    int source;
+    MPI_Status status;
+
+    for(i = 0; i<num_proc; i++)
+    {
+	pt_flag[i] = (int*)NULL;
+	pt_index[i] = (int*)NULL;
+    }
+
+    for (i = 0; i<num_nb_proc; i++)
+    {
+	source = mesh->nb_proc->data[i];
+	MPI_Recv(&num_pt_to_recv, 1, MPI_INT, source, tag[0], MPI_COMM_WORLD, &status);
+	pt_flag[source] = (int*) calloc(num_pt_to_recv, sizeof(int));
+	pt_index[source] = (int*) calloc(num_pt_to_recv, sizeof(int));
+	MPI_Recv(pt_flag[source], num_pt_to_recv, MPI_INT, source, tag[1], MPI_COMM_WORLD, &status);
+	MPI_Recv(pt_index[source], num_pt_to_recv, MPI_INT, source, tag[2],MPI_COMM_WORLD, &status);
+    }
+    pt_flag[rank] = pt_save_flag;
+    pt_index[rank] = pt_new_index;
+
+    /* To make a new mesh->ps_pinfo */
+    hpPInfoList *old_ps_pinfo = mesh->ps_pinfo;
+    mesh->ps_pinfo = (hpPInfoList *)NULL;
+    hpInitPInfo(mesh);
+
+    cur_pt = 1;
+    int new_head, old_head, next_node;
+    hpPInfoNode *old_node, *new_node;
+    for(i = 1; i<=mesh->ps->size[0]; i++)
+    {
+	while(pt_save_flag[I1dm(cur_pt)]!=1)
+	    cur_pt++;
+	new_head = mesh->ps_pinfo->head[I1dm(i)];
+	old_head = old_ps_pinfo->head[I1dm(cur_pt)];
+	old_node = &(old_ps_pinfo->pdata[I1dm(old_head)]);
+	new_node = &(mesh->ps_pinfo->pdata[I1dm(new_head)]);
+
+	while(pt_flag[old_node->proc][I1dm(old_node->lindex)]==0)
+	{
+	    next_node = old_node->next;
+	    old_node = &(old_ps_pinfo->pdata[I1dm(next_node)]);
+	}
+	new_node->proc = old_node->proc;
+	new_node->lindex = pt_index[old_node->proc][I1dm(old_node->lindex)];
+	while(old_node->next!=-1)
+	{
+	    next_node = old_node->next;
+	    old_node = &(old_ps_pinfo->pdata[I1dm(next_node)]);
+	    if(pt_flag[old_node->proc][I1dm(old_node->lindex)]==0)
+		continue;
+
+	    hpEnsurePInfoCapacity(mesh->ps_pinfo);
+	    mesh->ps_pinfo->allocated_len++;
+	    new_node->next = mesh->ps_pinfo->allocated_len;
+	    new_node = &(mesh->ps_pinfo->pdata[I1dm(new_node->next)]);
+	    new_node->proc = old_node->proc;
+	    new_node->lindex = pt_index[new_node->proc][I1dm(old_node->lindex)];
+	    new_node->next = -1;
+	}
+	mesh->ps_pinfo->tail[I1dm(i)] = mesh->ps_pinfo->allocated_len;
+    }
+
+    hpDeletePInfoList(&old_ps_pinfo);
+    for(i = 0; i<num_proc; i++)
+    {
+	free(pt_flag[i]);
+	free(pt_index[i]);
+    }
+    free(pt_flag);
+    free(pt_index);
+    free(tris_to_save);
+    free(tri_save_flag);
+
+    /* 6. update nb_proc list since it might change */
+    emxDestroyArray_int32_T(mesh->nb_proc);
+    int nb_proc_size[1] = {0};
+    int* nb_proc_bool = (int*)calloc(num_proc,sizeof(int));
+    for(i = 0; i<num_proc; i++)
+	nb_proc_bool[i] = 0;
+
+    num_pt = mesh->ps->size[0];
+    int cur_head, cur_proc, cur_node;
+    for(i = 1; i<=num_pt; i++)
+    {
+	cur_head = mesh->ps_pinfo->head[I1dm(i)];
+	cur_proc = (mesh->ps_pinfo->pdata[I1dm(cur_head)]).proc;
+	nb_proc_bool[cur_proc] = 1;
+	cur_node = mesh->ps_pinfo->pdata[I1dm(cur_head)].next;
+	while(cur_node!=-1)
+	{
+	    cur_proc = mesh->ps_pinfo->pdata[I1dm(cur_node)].proc;
+	    nb_proc_bool[cur_proc] = 1;
+	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+	}
+    }
+
+    for(j = 0; j<num_proc; j++)
+	nb_proc_size[0]+=nb_proc_bool[j];
+    nb_proc_size[0]--;		/* to exclude itself */
+    mesh->nb_proc = emxCreateND_int32_T(1,nb_proc_size);
+
+    k=0;
+    for (j = 0; j<num_proc; j++)
+	if((j!=rank)&&(nb_proc_bool[j]==1))
+	    mesh->nb_proc->data[k++] = j;
+
+    /* 7. since no overlapping trianlges, free mesh->tris_pinfo */
+    hpDeletePInfoList(&(mesh->tris_pinfo));
+
+}

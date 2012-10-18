@@ -249,5 +249,12 @@ extern void hpObtainNRingTris(const hiPropMesh *mesh,
 			      emxArray_boolean_T **in_ftags,
 			      int32_T *in_nverts,
 			      int32_T *in_nfaces);
+/*!
+ * \brief Make all submeshes to be clean (no overlapping triangles).
+ * This function uses tris_pinfo and nb_proc. In the end, nb_proc is rebuilt
+ * and tris_pinfo is freed.
+ * \param mesh The submeshes to be cleaned.
+ */
+void hpCleanMeshByPinfo(hiPropMesh* mesh);
 
 #endif
