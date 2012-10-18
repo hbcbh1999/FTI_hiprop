@@ -61,6 +61,12 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
+
+
+    hpBuildNRingGhost(mesh, 2);
+    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+
+    /*
     emxArray_int32_T *ring_ps, *ring_tris;
     emxArray_boolean_T *tag_ps, *tag_tris;
     int num_ring_ps, num_ring_tris;
@@ -123,6 +129,7 @@ int main(int argc, char* argv[])
     emxFree_boolean_T((&tag_ps));
     emxFree_boolean_T((&tag_tris));
 
+    */
     /*
     printf("\n Neighbor processors : \n");
     for (i = 1; i <= mesh->nb_proc->size[0]; i++)

@@ -95,6 +95,11 @@ extern void hpFreeMeshParallelInfo(hiPropMesh *pmesh);
  * \param pmesh pointer to hiProp mesh
  */
 extern void hpFreeMeshBasicInfo(hiPropMesh *pmesh);
+
+/*!
+ * \brief Free a hiProp mesh augment info and set the pointer to be NULL
+ * \param pmesh pointer to hiProp mesh
+ */
 extern void hpFreeMeshAugmentInfo(hiPropMesh *pmesh);
 /*!
  * \brief Free the data of a hiProp mesh 
@@ -233,10 +238,45 @@ extern void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
  * \param mesh The submesh to build the parallel update info
  */
 extern void hpBuildPUpdateInfo(hiPropMesh *mesh);
+
+/*!
+ * \brief Wrapper for building the opposite half edge structure for triangular
+ * mesh
+ * \detail Fill the mesh->opphe data
+ * \param mesh hiPropMesh on this processor
+ */
 extern void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
 
+/*!
+ * \brief Wrapper for building the incident half edge structure for triangular
+ * mesh
+ * \detail Fill the mesh->inhe data
+ * \param mesh hiPropMesh on this processor
+ */
 extern void hpBuildIncidentHalfEdge(hiPropMesh *mesh);
 
+/*!
+ * \brief Wrapper for getting the n-ring neighborhood of a point
+ * \detail Give the address of pointers to array as input. Need to free the
+ * arrays afterwards. Should already have the opposite half edge and incident
+ * half edge constructed before trying to get n-ring neighborhood.
+ * \param mesh hiPropMesh on this processor
+ * \param in_vid point id to build n-ring neighborhood from (start from 1)
+ * \param in_ring number of rings
+ * \param in_minpnts minimum number of points
+ * \param max_numps maximum number of points, usually set to 128
+ * \param max_numtris maximum number of tris, usually set to 256
+ * \param in_ngbvs address of the pointer to the array for storing the output
+ * point indices
+ * \param in_ngbfs address of the pointer to the array for storing the output
+ * triangle indices
+ * \param in_vtags address of the pointer to the array for tags of points,
+ * output would be all false
+ * \param in_ftags address of the pointer to the array for tags of tris,
+ * output would be all false
+ * \param in_nverts address of the number of output points
+ * \param in_nfaces address of the number of output tris
+ */
 extern void hpObtainNRingTris(const hiPropMesh *mesh,
 			      const int32_T in_vid,
 			      const real_T in_ring,
@@ -256,5 +296,50 @@ extern void hpObtainNRingTris(const hiPropMesh *mesh,
  * \param mesh The submeshes to be cleaned.
  */
 void hpCleanMeshByPinfo(hiPropMesh* mesh);
+
+
+/*!
+ * \brief Build a n-ring ghost neighborhood on the current hiProp mesh
+ * \detail The input mesh could have ghost points and triangles. After building
+ * the n-ring ghost neighborhood, the neighbor processor information might need
+ * to be updated.
+ * \param mesh pointer to hiProp Mesh
+ * \param num_ring number of rings needed to be built
+ */
+extern void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring);
+
+extern void hpBuidBoundingBoxGhost(hiPropMesh *mesh, const emxArray_real_T *nb_box);
+
+/*!
+ * \brief Collect the n-ring neighborhood for a list of points
+ * \detail Before calling this function, mesh has to have the opposite half edge
+ * and incident half edge data. out_ps and out_tris don't need to be allocated
+ * before calling this function
+ * \param mesh pointer to a hiProp Mesh
+ * \param in_psid list of point ids on which the n-ring neighborhood need to be
+ * built
+ * \param num_ring number of rings need to be built
+ * \param out_ps address of the pointer to the output point ids
+ * \param out_tris address of the pointer to the output triangle ids
+ */
+extern void hpCollectNRingTris(const hiPropMesh *mesh,
+			       const emxArray_int32_T *in_psid,
+			       const real_T num_ring,
+			       emxArray_int32_T **out_ps,
+			       emxArray_int32_T **out_tris);
+
+/*!
+ * \brief Collect all the overlay points for all neighboring processors
+ * \detail The function collect all the overlaying point between the current
+ * processor and it's neighboring processors and store in out_psid. The array
+ * for pointers to the output point ids out_psid need to be allocated before
+ * the function being called. The array themselves do not need to be allocated.
+ * out_psid[i] is the pointer to the overlaying point array between the current
+ * processor and processor mesh->nb_proc->data[i]
+ * \param mesh pointer to a hiProp Mesh
+ * \param out_psid array of pointers to the overlaying point ids for neighboring
+ * processors.
+ */
+extern void hpCollectAllOverlayPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
 
 #endif
