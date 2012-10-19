@@ -1574,6 +1574,8 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	if((j!=rank)&&(nb_proc_bool[j]==1))
 	    mesh->nb_proc->data[k++] = j;
 
+    free(nb_proc_bool);
+
     /* 7. since no overlapping trianlges, free mesh->tris_pinfo */
     hpDeletePInfoList(&(mesh->tris_pinfo));
 
