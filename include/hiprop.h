@@ -329,7 +329,8 @@ extern void hpCollectNRingTris(const hiPropMesh *mesh,
 			       emxArray_int32_T **out_tris);
 
 /*!
- * \brief Collect all the overlay points for all neighboring processors
+ * \brief This function is a subfunction for hpBuildNRingGhost.
+ * It collect all the overlay points for all neighboring processors
  * \detail The function collect all the overlaying point between the current
  * processor and it's neighboring processors and store in out_psid. The array
  * for pointers to the output point ids out_psid need to be allocated before
@@ -341,5 +342,31 @@ extern void hpCollectNRingTris(const hiPropMesh *mesh,
  * processors.
  */
 extern void hpCollectAllOverlayPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
+
+extern void hpDebugOutput(const hiPropMesh *mesh,
+			  const emxArray_int32_T *debug_ps,
+			  const emxArray_int32_T *debug_tris,
+			  char *debug_file_name);
+
+extern void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
+				      const real_T num_ring,
+				      emxArray_int32_T **psid_proc,
+				      emxArray_int32_T **ps_ring_proc,
+				      emxArray_int32_T **tris_ring_proc,
+				      emxArray_real_T **buffer_ps,
+				      emxArray_int32_T **buffer_tris);
+
+extern void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
+					   emxArray_int32_T **ps_ring_proc,
+					   emxArray_int32_T **tris_ring_proc,
+					   int **buffer_ps_pinfo_tag,
+					   int **buffer_ps_pinfo_lindex,
+					   int **buffer_ps_pinfo_proc,
+					   int **buffer_tris_pinfo_tag,
+					   int **buffer_tris_pinfo_lindex,
+					   int **buffer_tris_pinfo_proc,
+					   int *ps_pinfo_len,
+					   int *tris_pinfo_len);
+
 
 #endif

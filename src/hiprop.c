@@ -1651,81 +1651,321 @@ void hpCollectAllOverlayPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 
 }
 
-void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
+void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
+			       const real_T num_ring,
+			       emxArray_int32_T **psid_proc,
+			       emxArray_int32_T **ps_ring_proc,
+			       emxArray_int32_T **tris_ring_proc,
+			       emxArray_real_T **buffer_ps,
+			       emxArray_int32_T **buffer_tris)
 {
-    int cur_proc;
-    MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
+    /* Get nring nb between current proc and all nb processors and
+     * updated temp pinfo for both ps and tris.
+     *
+     * Point positions stored in k_i*3 double matrices buffer_ps[i] where
+     * k = # of points in the n-ring buffer for mesh->nb_proc->data[i].
+     * Triangle indices mapped to the index for buffer_ps[i] and stored
+     * in buffer_tris[i];
+     * ps/tris temp pinfo are updated from original pinfo, adding the
+     * information where the ps/tri is being sent to
+     */
+    int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
+    int num_nb_proc = mesh->nb_proc->size[0];
     int i,j;
 
-    emxArray_int32_T **psid_proc = (emxArray_int32_T **) calloc(mesh->nb_proc->size[0], sizeof(emxArray_int32_T *));
-    hpCollectAllOverlayPs(mesh, psid_proc);
-
-    emxArray_int32_T **ps_ring_proc = (emxArray_int32_T **) calloc(mesh->nb_proc->size[0], sizeof(emxArray_int32_T *));
-    emxArray_int32_T **tris_ring_proc = (emxArray_int32_T **) calloc(mesh->nb_proc->size[0], sizeof(emxArray_int32_T *));
-
-    for (i = 1; i <= mesh->nb_proc->size[0]; i++)
+    for (i = 1; i <= num_nb_proc; i++)
     {
-	hpCollectNRingTris(mesh, psid_proc[I1dm(i)], num_ring, &(ps_ring_proc[I1dm(i)]), &(tris_ring_proc[I1dm(i)]));
+	hpCollectNRingTris(mesh, psid_proc[I1dm(i)], num_ring,
+			   &(ps_ring_proc[I1dm(i)]), &(tris_ring_proc[I1dm(i)]));
 
-	/*
-	int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
+	int num_ps_buffer = (ps_ring_proc[I1dm(i)])->size[0];
+	int num_tris_buffer = (tris_ring_proc[I1dm(i)])->size[0];
 
-	for (j = 1; j <= mesh->ps->size[0]; j++)
-	    ps_mapping[j-1] = -1;
+	
+	buffer_ps[I1dm(i)] = emxCreate_real_T(num_ps_buffer, 3);
+	buffer_tris[I1dm(i)] = emxCreate_int32_T(num_tris_buffer, 3);
 
-	for (j = 1; j <= (ps_ring_proc[I1dm(i)])->size[0]; j++)
+	for (j = 1; j <= num_ps_buffer; j++)
 	{
-	    int cur_ps_id = (ps_ring_proc[I1dm(i)])->data[I1dm(j)];
-	    ps_mapping[cur_ps_id-1] = j-1;
+	    int cur_buf_ps_index = (ps_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    (buffer_ps[I1dm(i)])->data[I2dm(j,1,(buffer_ps[I1dm(i)])->size)] =
+		mesh->ps->data[I2dm(cur_buf_ps_index,1,mesh->ps->size)];
+	    (buffer_ps[I1dm(i)])->data[I2dm(j,2,(buffer_ps[I1dm(i)])->size)] =
+		mesh->ps->data[I2dm(cur_buf_ps_index,2,mesh->ps->size)];
+	    (buffer_ps[I1dm(i)])->data[I2dm(j,3,(buffer_ps[I1dm(i)])->size)] =
+		mesh->ps->data[I2dm(cur_buf_ps_index,3,mesh->ps->size)];
+
+	    ps_mapping[I1dm(cur_buf_ps_index)] = j;
 	}
-
-
-
+	for (j = 1; j <= num_tris_buffer; j++)
+	{
+	    int cur_buf_tris_index = (tris_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    (buffer_tris[I1dm(i)])->data[I2dm(j,1,(buffer_tris[I1dm(i)])->size)] =
+		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,1,mesh->tris->size)]-1];
+	    (buffer_tris[I1dm(i)])->data[I2dm(j,2,(buffer_tris[I1dm(i)])->size)] =
+		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,2,mesh->tris->size)]-1];
+	    (buffer_tris[I1dm(i)])->data[I2dm(j,3,(buffer_tris[I1dm(i)])->size)] =
+		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,3,mesh->tris->size)]-1];
+	}
+	/************* Debugging output **********************************
 	char rank_str[5];
 	char nb_rank_str[5];
-
 	right_flush(cur_proc,4,rank_str);
 	right_flush(mesh->nb_proc->data[I1dm(i)], 4, nb_rank_str);
-
 	char debug_out_name[250];
 	sprintf(debug_out_name, "debugout-p%s-to-p%s.vtk", rank_str, nb_rank_str);
-	FILE* file = fopen(debug_out_name, "w");
+	hpDebugOutput(mesh, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)], debug_out_name);
+	******************************************************************/
+    }
+    free(ps_mapping);
 
-	fprintf(file, "# vtk DataFile Version 3.0\n");
-	fprintf(file, "Debug output by hiProp\n");
-	fprintf(file, "ASCII\n");
-	fprintf(file, "DATASET UNSTRUCTURED_GRID\n");
+}
 
-	fprintf(file, "POINTS %d double\n", (ps_ring_proc[i-1])->size[0]);
-	for (j = 1; j <= (ps_ring_proc[i-1])->size[0]; j++)
+void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
+					   emxArray_int32_T **ps_ring_proc,
+					   emxArray_int32_T **tris_ring_proc,
+					   int **buffer_ps_pinfo_tag,
+					   int **buffer_ps_pinfo_lindex,
+					   int **buffer_ps_pinfo_proc,
+					   int **buffer_tris_pinfo_tag,
+					   int **buffer_tris_pinfo_lindex,
+					   int **buffer_tris_pinfo_proc,
+					   int *ps_pinfo_len,
+					   int *tris_pinfo_len)
+{
+    /* Fill and build the temp pinfo information on each master processor 
+     * Step 1, For original pinfo, the new target processor is added as a new
+     * node with proc = new_proc_id, lindex = -1 (unknown) to the tail
+     * Step 2, Use the updated original pinfo to build the temp pinfo for MPI
+     * send
+     */
+
+    hpPInfoList *ps_pinfo = mesh->ps_pinfo;
+    hpPInfoList *tris_pinfo = mesh->tris_pinfo;
+
+    int buffer_ps_pinfo_length = 0;
+    int buffer_tris_pinfo_length = 0;
+    
+    int num_nb_proc = mesh->nb_proc->size[0];
+
+    int i,j;
+
+    /* Finish Step 1 and fill buffer_ps_pinfo_tag & buffer_tris_pinfo_tag */
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+	int num_ps_buffer = (ps_ring_proc[I1dm(i)])->size[0];
+	int num_tris_buffer = (tris_ring_proc[I1dm(i)])->size[0];
+	int target_proc_id = mesh->nb_proc->data[I1dm(i)];
+
+	buffer_ps_pinfo_tag[I1dm(i)] = (int *) calloc(num_ps_buffer+1, sizeof(int));
+	buffer_tris_pinfo_tag[I1dm(i)] = (int *) calloc(num_tris_buffer+1, sizeof(int));
+
+	buffer_ps_pinfo_tag[I1dm(i)][0] = 0;
+	buffer_tris_pinfo_tag[I1dm(i)][0] = 0;
+
+	for (j = 1; j <= num_ps_buffer; j++)
 	{
-	    int ps_id = (ps_ring_proc[i-1])->data[j-1];
-	    fprintf(file, "%lf %lf %lf\n",
-		    mesh->ps->data[I2dm(ps_id,1,mesh->ps->size)],
-		    mesh->ps->data[I2dm(ps_id,2,mesh->ps->size)],
-		    mesh->ps->data[I2dm(ps_id,3,mesh->ps->size)]);
-	}
-	fprintf(file, "CELLS %d %d\n", (tris_ring_proc[i-1])->size[0], 4*(tris_ring_proc[i-1])->size[0]);
-	for (j = 1; j <= (tris_ring_proc[i-1])->size[0]; j++)
-	{
-	    int tri_index = (tris_ring_proc[i-1])->data[I1dm(j)];
-	    fprintf(file, "3 %d %d %d\n",
-		    ps_mapping[mesh->tris->data[I2dm(tri_index,1,mesh->tris->size)]-1],
-		    ps_mapping[mesh->tris->data[I2dm(tri_index,2,mesh->tris->size)]-1],
-		    ps_mapping[mesh->tris->data[I2dm(tri_index,3,mesh->tris->size)]-1]);
+	    int num_pinfo_data = 0;
+	    unsigned char overlay_flag = 0;
+	    int cur_ps_index = (ps_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    int next_node = ps_pinfo->head[I1dm(cur_ps_index)];
+	    while(next_node != -1)
+	    {
+		num_pinfo_data++;
+		if (ps_pinfo->pdata[I1dm(next_node)].proc == target_proc_id)
+		    overlay_flag = 1;
+
+		next_node = ps_pinfo->pdata[I1dm(next_node)].next;
+	    }
+	    if (overlay_flag == 0)
+	    {
+		int cur_tail = ps_pinfo->tail[I1dm(cur_ps_index)];
+		hpEnsurePInfoCapacity(ps_pinfo);
+		int new_tail = ps_pinfo->allocated_len++;
+		ps_pinfo->pdata[I1dm(new_tail)].next = -1;
+		ps_pinfo->pdata[I1dm(new_tail)].lindex = -1;
+		ps_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
+		ps_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
+		num_pinfo_data++;
+	    }
+	    buffer_ps_pinfo_length += num_pinfo_data;
+	    buffer_ps_pinfo_tag[I1dm(i)][j] = buffer_ps_pinfo_length;
 
 	}
-	fprintf(file, "CELL_TYPES %d\n", (tris_ring_proc[i-1])->size[0]);
-	for (j = 1; j <= (tris_ring_proc[i-1])->size[0]; j++)
-	    fprintf(file, "5\n");
-	fclose(file);
-	free(ps_mapping);
-	*/
+
+	for (j = 1; j <= num_tris_buffer; j++)
+	{
+	    int num_pinfo_data = 0;
+	    unsigned char overlay_flag = 0;
+	    int cur_tri_index = (tris_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    int next_node = tris_pinfo->head[I1dm(cur_tri_index)];
+	    while(next_node != -1)
+	    {
+		num_pinfo_data++;
+		if (tris_pinfo->pdata[I1dm(next_node)].proc == target_proc_id)
+		    overlay_flag = 1;
+		
+		next_node = tris_pinfo->pdata[I1dm(next_node)].next;
+	    }
+	    if (overlay_flag == 0)
+	    {
+		int cur_tail = tris_pinfo->tail[I1dm(cur_tri_index)];
+		hpEnsurePInfoCapacity(tris_pinfo);
+		int new_tail = tris_pinfo->allocated_len++;
+		tris_pinfo->pdata[I1dm(new_tail)].next = -1;
+		tris_pinfo->pdata[I1dm(new_tail)].lindex = -1;
+		tris_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
+		tris_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
+		num_pinfo_data++;
+	    }
+	    buffer_tris_pinfo_length += num_pinfo_data;
+	    buffer_tris_pinfo_tag[I1dm(i)][j] = buffer_tris_pinfo_length;
+	}
+
+    }
+
+    (*ps_pinfo_len) = buffer_ps_pinfo_length;
+    (*tris_pinfo_len) = buffer_tris_pinfo_length;
+
+    /* Fill in the buffer_ps/tris_pinfo_lindex & buffer_ps/tris_pinfo_proc in order */
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+	int num_ps_buffer = (ps_ring_proc[I1dm(i)])->size[0];
+	int num_tris_buffer = (tris_ring_proc[I1dm(i)])->size[0];
+
+	buffer_ps_pinfo_lindex[I1dm(i)] = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
+	buffer_ps_pinfo_proc[I1dm(i)] = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
+
+	buffer_tris_pinfo_lindex[I1dm(i)] = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
+	buffer_tris_pinfo_proc[I1dm(i)] = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
+
+	int cur_ps_pinfo = 0;
+	for (j = 1; j <= num_ps_buffer; j++)
+	{
+	    int cur_ps_index = (ps_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    int next_node = ps_pinfo->head[I1dm(cur_ps_index)];
+	    while(next_node != -1)
+	    {
+		buffer_ps_pinfo_lindex[I1dm(i)][cur_ps_pinfo] = ps_pinfo->pdata[I1dm(next_node)].lindex;
+		buffer_ps_pinfo_proc[I1dm(i)][cur_ps_pinfo] = ps_pinfo->pdata[I1dm(next_node)].proc;
+		next_node = ps_pinfo->pdata[I1dm(next_node)].next;
+		cur_ps_pinfo++;
+	    }
+	}
+
+	int cur_tris_pinfo = 0;
+	for (j = 1; j <= num_tris_buffer; j++)
+	{
+	    int cur_tri_index = (tris_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    int next_node = tris_pinfo->head[I1dm(cur_tri_index)];
+	    while(next_node != -1)
+	    {
+		buffer_tris_pinfo_lindex[I1dm(i)][cur_tris_pinfo] = tris_pinfo->pdata[I1dm(next_node)].lindex;
+		buffer_tris_pinfo_proc[I1dm(i)][cur_tris_pinfo] = tris_pinfo->pdata[I1dm(next_node)].proc;
+		next_node = tris_pinfo->pdata[I1dm(next_node)].next;
+		cur_tris_pinfo++;
+	    }
+	}
     }
 }
 
 
-void hpCollectNRingTris(const hiPropMesh *mesh, const emxArray_int32_T *in_psid, const real_T num_ring, emxArray_int32_T **out_ps, emxArray_int32_T **out_tris)
+
+
+void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
+{
+    int cur_proc;
+    MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
+    int i;
+
+    int num_nb_proc = mesh->nb_proc->size[0];
+
+
+    emxArray_int32_T **psid_proc = (emxArray_int32_T **)
+	calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+
+    /* Get the overlapping points for building up n-ring neighborhood */
+    hpCollectAllOverlayPs(mesh, psid_proc);
+
+    emxArray_int32_T **ps_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+    emxArray_int32_T **tris_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+    emxArray_real_T **buffer_ps = (emxArray_real_T **) calloc(num_nb_proc, sizeof(emxArray_real_T *));
+    emxArray_int32_T **buffer_tris = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+    
+    hpBuildGhostPsTrisForSend(mesh, num_ring, psid_proc, ps_ring_proc, tris_ring_proc, buffer_ps, buffer_tris);
+
+    /* buffer_ps_pinfo_tag[I1dm(i)][I1dm(j)] to buffer_ps_pinfo_tag[I1dm(i)][I1dm(j+1)]-1
+     * are the index of pinfo_lindex & pinfo_proc for buffer_ps[I1dm(j)]
+     * buffer_ps_pinfo_lindex[I1md(i)] has all the local index (starts from 0)
+     * buffer_ps_pinfo_proc[I1dm(i)] has all the proc information (starts from
+     * 0)
+     *
+     * Same for tris*/
+
+    int ps_pinfo_length, tris_pinfo_length;
+    int **buffer_ps_pinfo_tag = (int **) calloc(num_nb_proc, sizeof(int *));
+    int **buffer_ps_pinfo_lindex = (int **) calloc(num_nb_proc, sizeof(int *));
+    int **buffer_ps_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
+
+    int **buffer_tris_pinfo_tag = (int **) calloc(num_nb_proc, sizeof(int *));
+    int **buffer_tris_pinfo_lindex = (int **) calloc(num_nb_proc, sizeof(int *));
+    int **buffer_tris_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
+
+    hpBuildGhostPsTrisPInfoForSend(mesh, ps_ring_proc, tris_ring_proc,
+	    buffer_ps_pinfo_tag, buffer_ps_pinfo_lindex, buffer_ps_pinfo_proc,
+	    buffer_tris_pinfo_tag, buffer_tris_pinfo_lindex, buffer_tris_pinfo_proc,
+	    &ps_pinfo_length, &tris_pinfo_length);
+    /* Free the buffer ps and tris index */
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+	emxFree_int32_T(&(psid_proc[I1dm(i)]));
+	emxFree_int32_T(&(ps_ring_proc[I1dm(i)]));
+	emxFree_int32_T(&(tris_ring_proc[I1dm(i)]));
+    }
+    free(psid_proc);
+    free(ps_ring_proc);
+    free(tris_ring_proc);
+
+    /* Send and Receive buffer points and tris with temp pinfo */
+
+
+
+
+    /* Free the array for send */
+
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+	emxFree_real_T(&(buffer_ps[I1dm(i)]));
+	emxFree_int32_T(&(buffer_tris[I1dm(i)]));
+	free(buffer_ps_pinfo_tag[I1dm(i)]);
+	free(buffer_ps_pinfo_lindex[I1dm(i)]);
+	free(buffer_ps_pinfo_proc[I1dm(i)]);
+
+	free(buffer_tris_pinfo_tag[I1dm(i)]);
+	free(buffer_tris_pinfo_lindex[I1dm(i)]);
+	free(buffer_tris_pinfo_proc[I1dm(i)]);
+    }
+
+    free(buffer_ps);
+    free(buffer_tris);
+    free(buffer_ps_pinfo_tag);
+    free(buffer_ps_pinfo_lindex);
+    free(buffer_ps_pinfo_proc);
+
+    free(buffer_tris_pinfo_tag);
+    free(buffer_tris_pinfo_lindex);
+    free(buffer_tris_pinfo_proc);
+
+    /* Update nb_proc information based on the new pinfo */
+
+}
+
+
+void hpCollectNRingTris(const hiPropMesh *mesh,
+			const emxArray_int32_T *in_psid,
+			const real_T num_ring,
+			emxArray_int32_T **out_ps,
+			emxArray_int32_T **out_tris)
 {
     int i, j;
 
@@ -1755,7 +1995,9 @@ void hpCollectNRingTris(const hiPropMesh *mesh, const emxArray_int32_T *in_psid,
     {
 	int cur_ps = in_psid->data[I1dm(i)];
 
-	obtain_nring_surf(cur_ps, num_ring, 0, mesh->tris, mesh->opphe, mesh->inhe, in_ngbvs, in_vtags, in_ftags, in_ngbfs, &num_ps_ring, &num_tris_ring);
+	obtain_nring_surf(cur_ps, num_ring, 0, mesh->tris, mesh->opphe,
+			  mesh->inhe, in_ngbvs, in_vtags, in_ftags, 
+			  in_ngbfs, &num_ps_ring, &num_tris_ring);
 
 	ps_flag->data[I1dm(cur_ps)] = true; /*cur_ps itself in the list */
 
@@ -1824,5 +2066,61 @@ void hpCollectNRingTris(const hiPropMesh *mesh, const emxArray_int32_T *in_psid,
 
     emxFree_boolean_T(&ps_flag);
     emxFree_boolean_T(&tris_flag);
+}
+
+
+void hpDebugOutput(const hiPropMesh *mesh, const emxArray_int32_T *debug_ps,
+		   const emxArray_int32_T *debug_tris, char *debug_file_name)
+{
+    int j;
+    /* Build ps_mapping for vtk output of debug_ps
+     * for point i in mesh->ps, the new index in the vtk output is
+     * ps_mapping[I1dm(i)]. If point i does not have a mapped value,
+     * ps_mapping[I1dm(i)] = -1.
+     */
+    int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
+
+    for (j = 1; j <= mesh->ps->size[0]; j++)
+	ps_mapping[j-1] = -1;
+
+    for (j = 1; j <= debug_ps->size[0]; j++)
+    {
+	int cur_ps_id = debug_ps->data[I1dm(j)];
+	ps_mapping[cur_ps_id-1] = j-1;
+    }
+
+    /* Write the data to vtk file */
+    FILE* file = fopen(debug_file_name, "w");
+
+    fprintf(file, "# vtk DataFile Version 3.0\n");
+    fprintf(file, "Debug output by hiProp\n");
+    fprintf(file, "ASCII\n");
+    fprintf(file, "DATASET UNSTRUCTURED_GRID\n");
+
+    fprintf(file, "POINTS %d double\n", debug_ps->size[0]);
+    for (j = 1; j <= debug_ps->size[0]; j++)
+    {
+	int ps_id = debug_ps->data[j-1];
+	fprintf(file, "%lf %lf %lf\n",
+		mesh->ps->data[I2dm(ps_id,1,mesh->ps->size)],
+		mesh->ps->data[I2dm(ps_id,2,mesh->ps->size)],
+		mesh->ps->data[I2dm(ps_id,3,mesh->ps->size)]);
+    }
+    fprintf(file, "CELLS %d %d\n", debug_tris->size[0],
+	    4*debug_tris->size[0]);
+    for (j = 1; j <= debug_tris->size[0]; j++)
+    {
+	int tri_index = debug_tris->data[I1dm(j)];
+	fprintf(file, "3 %d %d %d\n",
+		ps_mapping[mesh->tris->data[I2dm(tri_index,1,mesh->tris->size)]-1],
+		ps_mapping[mesh->tris->data[I2dm(tri_index,2,mesh->tris->size)]-1],
+		ps_mapping[mesh->tris->data[I2dm(tri_index,3,mesh->tris->size)]-1]);
+
+    }
+    fprintf(file, "CELL_TYPES %d\n", debug_tris->size[0]);
+    for (j = 1; j <= debug_tris->size[0]; j++)
+	fprintf(file, "5\n");
+    fclose(file);
+    free(ps_mapping);
 }
 
