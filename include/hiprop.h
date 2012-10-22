@@ -368,5 +368,14 @@ extern void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   int *ps_pinfo_len,
 					   int *tris_pinfo_len);
 
+extern void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
+					emxArray_real_T **bps,
+					emxArray_int32_T **btris,
+					int **ppinfot,
+					int **ppinfol,
+					int **ppinfop,
+					int **tpinfot,
+					int **tpinfol,
+					int **tpinfop);
 
 #endif
