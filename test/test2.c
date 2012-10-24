@@ -53,18 +53,15 @@ int main(int argc, char* argv[])
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
 
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
-
-
     hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
+
 
     /*
     emxArray_int32_T *ring_ps, *ring_tris;

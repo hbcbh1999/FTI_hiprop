@@ -783,10 +783,17 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     int *nb_ptemp = (int *) calloc (num_proc-1, sizeof(int));
     int num_nbp = 0;
 
-    MPI_Request *req_list1 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
-    MPI_Request *req_list2 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+    MPI_Request *send_req_list1 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+    MPI_Request *send_req_list2 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
 
-    
+    MPI_Status *send_status_list1 = (MPI_Status *) malloc( (num_proc-1)*sizeof(MPI_Status) );
+    MPI_Status *send_status_list2 = (MPI_Status *) malloc( (num_proc-1)*sizeof(MPI_Status) );
+
+    MPI_Request *recv_req_list = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+
+    /* Stores the received array size */
+    int *common_info = (int *) calloc( (num_proc)*2, sizeof(int));
+
     j = 0;
     for (i = 0; i < num_proc; i++)
     {
@@ -794,42 +801,61 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	if (rank != i)
 	{
 	    isend2D_real_T(mesh->ps, i, tag_send, MPI_COMM_WORLD,
-		    	   &(req_list1[j]), &(req_list2[j]));
+		    	   &(send_req_list1[j]), &(send_req_list2[j]));
 	    j++;
 	}
     }
 
+    j = 0;
     for (i = 0; i < num_proc; i++)
     {
-	emxArray_real_T *ps_recv;
 	tag_recv = rank;
 
 	if (rank != i)
 	{
-	    recv2D_real_T(&ps_recv, i, tag_recv, MPI_COMM_WORLD);
-
-	    for (j = 1; j <= mesh->ps->size[0]; j++)
-	    {
-		double current_x = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
-		double current_y = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
-		double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
-
-		for (k = 1; k <= ps_recv->size[0]; k++)
-		{
-		    if ( (fabs(current_x - ps_recv->data[I2dm(k,1,ps_recv->size)]) < eps) && 
-			 (fabs(current_y - ps_recv->data[I2dm(k,2,ps_recv->size)]) < eps) &&
-			 (fabs(current_z - ps_recv->data[I2dm(k,3,ps_recv->size)]) < eps)
-		       )
-		    {
-			nb_ptemp[num_nbp++] = i;
-			break;
-		    }
-		}
-		if (k <= ps_recv->size[0])
-		    break;
-	    }
-	    emxFree_real_T(&ps_recv);
+	    MPI_Irecv(&(common_info[2*i]), 2, MPI_INT, i, tag_recv+1, MPI_COMM_WORLD, &(recv_req_list[j]));
+	    j++;
 	}
+    }
+
+    for (i = 0; i < num_proc-1; i++)
+    {
+	emxArray_real_T *ps_recv;
+	tag_recv = rank;
+	MPI_Status recv_status1;
+	MPI_Status recv_status2;
+	int recv_index;
+	int source_id;
+
+	MPI_Waitany(num_proc-1, recv_req_list, &recv_index, &recv_status1);
+
+	source_id = recv_status1.MPI_SOURCE;
+
+	ps_recv = emxCreate_real_T(common_info[2*source_id], common_info[2*source_id+1]);
+
+	MPI_Recv(ps_recv->data, common_info[2*source_id]*common_info[2*source_id+1], MPI_DOUBLE, source_id, tag_recv+2, MPI_COMM_WORLD, &recv_status2);
+
+	for (j = 1; j <= mesh->ps->size[0]; j++)
+	{
+	    double current_x = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
+	    double current_y = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
+	    double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
+
+	    for (k = 1; k <= ps_recv->size[0]; k++)
+	    {
+		if ( (fabs(current_x - ps_recv->data[I2dm(k,1,ps_recv->size)]) < eps) && 
+			(fabs(current_y - ps_recv->data[I2dm(k,2,ps_recv->size)]) < eps) &&
+			(fabs(current_z - ps_recv->data[I2dm(k,3,ps_recv->size)]) < eps)
+			)
+		{
+		    nb_ptemp[num_nbp++] = source_id;
+		    break;
+		}
+	    }
+	    if (k <= ps_recv->size[0])
+		break;
+	}
+	emxFree_real_T(&ps_recv);
     }
 
     
@@ -840,17 +866,19 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     for (i = 1; i <= num_nbp; i++)
 	mesh->nb_proc->data[I1dm(i)] = nb_ptemp[i-1];
 
-    /*
-    printf("\nI'm processor %d, I have %d neighbours. They are:\n", 
-    rank, mesh->nb_proc->size[0]);
-    for (i = 1; i <= num_nbp; i++)
-	printf("%d ", mesh->nb_proc->data[I1dm(i)]);
-    printf("\n");
-    */
-    
     free(nb_ptemp);
-    free(req_list1);
-    free(req_list2);
+    free(recv_req_list);
+    free(common_info);
+
+    MPI_Waitall(num_proc-1, send_req_list1, send_status_list1);
+    MPI_Waitall(num_proc-1, send_req_list2, send_status_list2);
+
+    free(send_req_list1);
+    free(send_req_list2);
+    free(send_status_list1);
+    free(send_status_list2);
+
+
 }
 
 void hpInitPInfo(hiPropMesh *mesh)
@@ -939,25 +967,48 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
     int num_nbp = nb_proc->size[0];
 
-    MPI_Request *req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
-    MPI_Request *req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *send_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *send_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
 
+    MPI_Status *send_status_list1 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+    MPI_Status *send_status_list2 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+
+    MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
+
+    /* Stores the received array size */
+
+    int *recv_size = (int *) calloc ( 2*num_nbp, sizeof(int));
     
     for (i = 1; i <= num_nbp; i++)
     {
 	proc_send = nb_proc->data[I1dm(i)];
 	tag_send = proc_send;
 	isend2D_real_T(ps, proc_send, tag_send, MPI_COMM_WORLD,
-		       &(req_list1[I1dm(i)]), &(req_list2[I1dm(i)]));
+		       &(send_req_list1[I1dm(i)]), &(send_req_list2[I1dm(i)]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	proc_recv = nb_proc->data[I1dm(i)];
+	tag_recv = rank;
+	MPI_Irecv(&(recv_size[2*I1dm(i)]), 2, MPI_INT, proc_recv, tag_recv+1, MPI_COMM_WORLD, &(recv_req_list[I1dm(i)]));
     }
 
     for (i = 1; i <= num_nbp; i++)
     {
 	emxArray_real_T *ps_recv;
-	proc_recv = nb_proc->data[I1dm(i)];
 	tag_recv = rank;
+	MPI_Status recv_status1;
+	MPI_Status recv_status2;
+	int recv_index;
 	
-	recv2D_real_T(&ps_recv, proc_recv, tag_recv, MPI_COMM_WORLD);
+	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status1);
+
+	proc_recv = recv_status1.MPI_SOURCE;
+
+	ps_recv = emxCreate_real_T(recv_size[2*recv_index], recv_size[2*recv_index+1]);
+
+	MPI_Recv(ps_recv->data, recv_size[2*recv_index]*recv_size[2*recv_index+1], MPI_DOUBLE, proc_recv, tag_recv+2, MPI_COMM_WORLD, &recv_status2);
 
 	for (j = 1; j <= ps->size[0]; j++)
 	{
@@ -1005,8 +1056,16 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	emxFree_real_T(&ps_recv);
     }
 
-    free(req_list1);
-    free(req_list2);
+    free(recv_size);
+    free(recv_req_list);
+
+    MPI_Waitall(num_nbp, send_req_list1, send_status_list1);
+    MPI_Waitall(num_nbp, send_req_list2, send_status_list2);
+
+    free(send_req_list1);
+    free(send_req_list2);
+    free(send_status_list1);
+    free(send_status_list2);
 
 }
 
@@ -1030,12 +1089,21 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
     int num_nbp = nb_proc->size[0];
 
-    MPI_Request *ps_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
-    MPI_Request *ps_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *ps_send_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *ps_send_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
 
-    MPI_Request *tris_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
-    MPI_Request *tris_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *tris_send_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *tris_send_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
 
+    MPI_Status *ps_send_status_list1 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+    MPI_Status *ps_send_status_list2 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+
+    MPI_Status *tris_send_status_list1 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+    MPI_Status *tris_send_status_list2 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+
+    MPI_Request *ps_recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request));
+
+    int *ps_recv_size = (int *) calloc (2*num_nbp, sizeof(int));
     
     for (i = 1; i <= num_nbp; i++)
     {
@@ -1043,20 +1111,36 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	ps_tag_send = proc_send;
 	tris_tag_send = proc_send + 10;
 	isend2D_real_T(ps, proc_send, ps_tag_send, MPI_COMM_WORLD,
-		       &(ps_req_list1[I1dm(i)]), &(ps_req_list2[I1dm(i)]));
+		       &(ps_send_req_list1[I1dm(i)]), &(ps_send_req_list2[I1dm(i)]));
 	isend2D_int32_T(tris, proc_send, tris_tag_send, MPI_COMM_WORLD, 
-			&(tris_req_list1[I1dm(i)]), &(tris_req_list2[I1dm(i)]));
+			&(tris_send_req_list1[I1dm(i)]), &(tris_send_req_list2[I1dm(i)]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	proc_recv = nb_proc->data[I1dm(i)];
+	ps_tag_recv = rank;
+	tris_tag_recv = rank + 10;
+	MPI_Irecv(&(ps_recv_size[2*I1dm(i)]), 2, MPI_INT, proc_recv, ps_tag_recv+1, MPI_COMM_WORLD, &(ps_recv_req_list[I1dm(i)]));
     }
 
     for (i = 1; i <= num_nbp; i++)
     {
 	emxArray_real_T *ps_recv;
 	emxArray_int32_T *tris_recv;
-	proc_recv = nb_proc->data[I1dm(i)];
 	ps_tag_recv = rank;
 	tris_tag_recv = rank + 10;
-	
-	recv2D_real_T(&ps_recv, proc_recv, ps_tag_recv, MPI_COMM_WORLD);
+
+	MPI_Status ps_recv_status1, ps_recv_status2;
+	int recv_index;
+
+	MPI_Waitany(num_nbp, ps_recv_req_list, &recv_index, &ps_recv_status1);
+	proc_recv = ps_recv_status1.MPI_SOURCE;
+
+	ps_recv = emxCreate_real_T(ps_recv_size[2*recv_index], ps_recv_size[2*recv_index+1]);
+
+	MPI_Recv(ps_recv->data, ps_recv_size[2*recv_index]*ps_recv_size[2*recv_index+1], MPI_DOUBLE, proc_recv, ps_tag_recv+2, MPI_COMM_WORLD, &ps_recv_status2);
+
 	recv2D_int32_T(&tris_recv, proc_recv, tris_tag_recv, MPI_COMM_WORLD);
 
 	/* Build the pinfo for points */
@@ -1146,10 +1230,25 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	emxFree_int32_T(&tris_recv);
     }
 
-    free(ps_req_list1);
-    free(ps_req_list2);
-    free(tris_req_list1);
-    free(tris_req_list1);
+    free(ps_recv_size);
+    free(ps_recv_req_list);
+
+    MPI_Waitall(num_nbp, ps_send_req_list1, ps_send_status_list1);
+    MPI_Waitall(num_nbp, ps_send_req_list2, ps_send_status_list2);
+
+    MPI_Waitall(num_nbp, tris_send_req_list1, tris_send_status_list1);
+    MPI_Waitall(num_nbp, tris_send_req_list2, tris_send_status_list2);
+
+    free(ps_send_req_list1);
+    free(ps_send_req_list2);
+    free(tris_send_req_list1);
+    free(tris_send_req_list1);
+
+    free(ps_send_status_list1);
+    free(ps_send_status_list2);
+
+    free(tris_send_status_list1);
+    free(tris_send_status_list2);
 }
 
 void hpBuildOppositeHalfEdge(hiPropMesh *mesh)
