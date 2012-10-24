@@ -470,9 +470,9 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	/* calculate the list of global index of triangles existing on each proc
 	 * tri_index[rank][i-1] is the global index of the i-th tri on the ranked proc
 	 */
-	int** tri_index = (int**) malloc(num_proc*sizeof(int*));
+	int** tri_index = (int**) calloc(num_proc,sizeof(int*));
 	for(i = 0; i<num_proc; i++)
-	    tri_index[i] = (int*) malloc(num_tri[i]*sizeof(int));
+	    tri_index[i] = (int*) calloc(num_tri[i],sizeof(int));
 
 	/* fill tri_index by looping over all tris */
 	int* p = (int*)malloc(num_proc*sizeof(int));/* pointer to the end of the list */
@@ -494,10 +494,10 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	 * looks space and time consuming, however easy to convert 
 	 * between globle and local index of points
 	 */
-	int** pt_local = (int**)malloc(num_proc*sizeof(int*));
+	int** pt_local = (int**)calloc(num_proc,sizeof(int*));
 	for(i = 0; i<num_proc; i++)
 	{
-	    pt_local[i] = (int*) malloc(total_num_pt * sizeof(int));
+	    pt_local[i] = (int*) calloc(total_num_pt , sizeof(int));
 	    for(j = 0; j<total_num_pt; j++)
 		pt_local[i][j] = -1;	/*initialize to -1 */
 	}
@@ -633,8 +633,8 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 
 	MPI_Status recv_stat;
 	int total_num_pt;
-	int* l2gindex = (int*) malloc(mesh->ps->size[0]*sizeof(int));
-	int** g2lindex = (int**) malloc(num_proc*sizeof(int*));
+	int* l2gindex = (int*) calloc(mesh->ps->size[0], sizeof(int));
+	int** g2lindex = (int**) calloc(num_proc, sizeof(int*));
 	
 	MPI_Recv(l2gindex, mesh->ps->size[0], MPI_INT, root, tag+10, MPI_COMM_WORLD, &recv_stat);
 	MPI_Recv(&total_num_pt, 1, MPI_INT, root, tag+11, MPI_COMM_WORLD, &recv_stat);
@@ -1541,19 +1541,19 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     /* 4. Send the pt_save_flag and pt_new_index info to all neighbour procs */
     int num_nb_proc = mesh->nb_proc->size[0];
     int tag[3] = {1,2,3};
-    MPI_Request request[3];
+    MPI_Request* request_send = (MPI_Request*) malloc( 3*num_nb_proc * sizeof(MPI_Request));
     int dest;
 
     for (i = 0; i<num_nb_proc; i++)
     {
 	dest = mesh->nb_proc->data[i];
-	MPI_Isend(&num_pt,1,MPI_INT,dest,tag[0],MPI_COMM_WORLD, &request[0]);
-	MPI_Isend(pt_save_flag, num_pt, MPI_INT, dest, tag[1], MPI_COMM_WORLD, &request[1]);
-	MPI_Isend(pt_new_index, num_pt, MPI_INT, dest, tag[2], MPI_COMM_WORLD, &request[2]);
+	MPI_Isend(&num_pt,1,MPI_INT,dest,tag[0],MPI_COMM_WORLD, &request_send[3*i]);
+	MPI_Isend(pt_save_flag, num_pt, MPI_INT, dest, tag[1], MPI_COMM_WORLD, &request_send[3*i+1]);
+	MPI_Isend(pt_new_index, num_pt, MPI_INT, dest, tag[2], MPI_COMM_WORLD, &request_send[3*i+2]);
     }
 
     /* 5. Recv pt_save_flag and pt_new_index info from all neighbours and update mesh->ps_pinfo */
-    int num_pt_to_recv;
+    int* num_pt_to_recv = (int*)calloc(num_nb_proc, sizeof(int));
     int** pt_flag = (int**) calloc(num_proc, sizeof(int*));
     int** pt_index = (int**) calloc(num_proc, sizeof(int*));
     int source;
@@ -1565,15 +1565,25 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	pt_index[i] = (int*)NULL;
     }
 
+
+    MPI_Request* req_recv_num = (MPI_Request*) malloc(num_nb_proc*sizeof(MPI_Request));
+    int recv_index;
     for (i = 0; i<num_nb_proc; i++)
     {
 	source = mesh->nb_proc->data[i];
-	MPI_Recv(&num_pt_to_recv, 1, MPI_INT, source, tag[0], MPI_COMM_WORLD, &status);
-	pt_flag[source] = (int*) calloc(num_pt_to_recv, sizeof(int));
-	pt_index[source] = (int*) calloc(num_pt_to_recv, sizeof(int));
-	MPI_Recv(pt_flag[source], num_pt_to_recv, MPI_INT, source, tag[1], MPI_COMM_WORLD, &status);
-	MPI_Recv(pt_index[source], num_pt_to_recv, MPI_INT, source, tag[2],MPI_COMM_WORLD, &status);
+	MPI_Irecv(&num_pt_to_recv[i], 1, MPI_INT, source, tag[0], MPI_COMM_WORLD, &req_recv_num[i]);
     }
+
+    for(i = 0; i<num_nb_proc; i++)
+    {
+	MPI_Waitany(num_nb_proc, req_recv_num, &recv_index, &status);
+	source = status.MPI_SOURCE;
+	pt_flag[source] = (int*) calloc(num_pt_to_recv[recv_index], sizeof(int));
+	pt_index[source] = (int*) calloc(num_pt_to_recv[recv_index], sizeof(int));
+	MPI_Recv(pt_flag[source], num_pt_to_recv[recv_index], MPI_INT, source, tag[1], MPI_COMM_WORLD, &status);
+	MPI_Recv(pt_index[source], num_pt_to_recv[recv_index], MPI_INT, source, tag[2],MPI_COMM_WORLD, &status);
+    }
+
     pt_flag[rank] = pt_save_flag;
     pt_index[rank] = pt_new_index;
 
@@ -1620,6 +1630,13 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     }
 
     hpDeletePInfoList(&old_ps_pinfo);
+
+    free(tris_to_save);
+    free(tri_save_flag);
+    free(num_pt_to_recv);
+    free(req_recv_num);
+    MPI_Status* status_send = (MPI_Status*) malloc(3*num_nb_proc*sizeof(MPI_Status));
+    MPI_Waitall(3*num_nb_proc, request_send, status_send);
     for(i = 0; i<num_proc; i++)
     {
 	free(pt_flag[i]);
@@ -1627,8 +1644,8 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     }
     free(pt_flag);
     free(pt_index);
-    free(tris_to_save);
-    free(tri_save_flag);
+    free(request_send);
+    free(status_send);
 
     /* 6. update nb_proc list since it might change */
     emxDestroyArray_int32_T(mesh->nb_proc);
