@@ -1089,20 +1089,6 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     MPI_Request *send_req_list = (MPI_Request *) malloc( 4*num_nbp*sizeof(MPI_Request) );
     MPI_Status *send_status_list = (MPI_Status *) malloc( 4*num_nbp*sizeof(MPI_Status) );
 
-    /*
-    MPI_Request *ps_send_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
-    MPI_Request *ps_send_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
-
-    MPI_Request *tris_send_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
-    MPI_Request *tris_send_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
-
-    MPI_Status *ps_send_status_list1 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
-    MPI_Status *ps_send_status_list2 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
-
-    MPI_Status *tris_send_status_list1 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
-    MPI_Status *tris_send_status_list2 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
-    */
-
     MPI_Request *ps_recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request));
 
     int *ps_recv_size = (int *) calloc (2*num_nbp, sizeof(int));
@@ -2233,29 +2219,105 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 				 int *tpinfol,
 				 int *tpinfop)
 {
-    int i;
+    int i,j;
     int cur_proc;
     MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
 
     emxArray_real_T *ps = mesh->ps;
     emxArray_int32_T *tris = mesh->tris;
 
+    int num_ps_old = ps->size[0];
+    int num_tris_old = tris->size[0];
+
     hpPInfoList *ps_pinfo = mesh->ps_pinfo;
     hpPInfoList *tris_pinfo = mesh->tris_pinfo;
 
+    int num_buf_ps = bps->size[0];
+    int num_buf_tris = btris->size[0];
+    int num_buf_ps_pinfo = ppinfot[num_buf_ps];
+    int num_buf_tris_pinfo = tpinfot[num_buf_tris];
+
+    int *ps_map = (int *) calloc(num_buf_ps, sizeof(int));
+
+    unsigned char *buf_ps_flag = (unsigned char *) calloc(num_buf_ps, sizeof(unsigned char));
+    unsigned char *buf_tris_flag = (unsigned char *) calloc(num_buf_tris, sizeof(unsigned char));
+
+    int num_add_ps = 0;
+    int num_add_tris = 0;
+
+    /* Calculate # of new ps/tris and allocated the memory
+     * Update ps_map, have all new ps and tris flagged */
+
+    for (i = 1; i <= num_buf_ps; i++)
     {
-	int num_buf_ps = bps->size[0];
-	int num_buf_tris = btris->size[0];
-
-	int *ps_map = (int *) calloc(num_buf_ps, sizeof(int));
-
-
-
-
-
-
-	free(ps_map);
+	buf_ps_flag[I1dm(i)] = 1;
+	for(j = ppinfot[i-1]; j <= ppinfot[i]-1; j++)
+	{
+	    if (ppinfop[j] == cur_proc)
+	    {
+		buf_ps_flag[I1dm(i)] = 0;
+		ps_map[I1dm(i)] = ppinfol[j];
+		break;
+	    }
+	}
+	if (buf_ps_flag[I1dm(i)] == 1)
+	{
+	    num_add_ps++;
+	    ps_map[I1dm(i)] = num_ps_old + num_add_ps;
+	}
     }
+
+    for (i = 1; i <= num_buf_tris; i++)
+    {
+	buf_tris_flag[I1dm(i)] = 1;
+	for(j = tpinfot[i-1]; j <= tpinfot[i]-1; j++)
+	{
+	    if (tpinfop[j] == cur_proc)
+	    {
+		buf_tris_flag[I1dm(i)] = 0;
+		break;
+	    }
+	}
+	if (buf_tris_flag[I1dm(i)] == 1)
+	    num_add_tris++;
+    }
+    
+    addRowToArray_real_T(ps, num_add_ps);
+    addRowToArray_int32_T(tris, num_add_tris);
+
+    /* Add each point, merge pinfo */
+
+    num_add_ps = 0;
+
+    for (i = 1; i <= num_buf_ps; i++)
+    {
+	/* If not a new point, update the pinfo */
+
+
+
+	/* If a new point, add the point, the pinfo and update
+	 * based on the current local index */
+    }
+
+    /* Add each triangle, merge pinfo */
+
+    num_add_tris = 0;
+
+    for (i = 1; i <= num_buf_tris; i++)
+    {
+	/* If not a new triangle, update the pinfo */
+
+
+	/* If a new triangle, add the triangle, the pinfo and update
+	 * based on the current local index */
+
+    }
+
+
+
+    free(ps_map);
+    free(buf_ps_flag);
+    free(buf_tris_flag);
 
 }
 
