@@ -783,11 +783,15 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     int *nb_ptemp = (int *) calloc (num_proc-1, sizeof(int));
     int num_nbp = 0;
 
-    MPI_Request *send_req_list1 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
-    MPI_Request *send_req_list2 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+    MPI_Request *send_req_list = (MPI_Request *) malloc ( 2*(num_proc-1)*sizeof(MPI_Request) );
 
-    MPI_Status *send_status_list1 = (MPI_Status *) malloc( (num_proc-1)*sizeof(MPI_Status) );
-    MPI_Status *send_status_list2 = (MPI_Status *) malloc( (num_proc-1)*sizeof(MPI_Status) );
+    //MPI_Request *send_req_list1 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+    //MPI_Request *send_req_list2 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+
+    MPI_Status *send_status_list = (MPI_Status *) malloc( 2*(num_proc-1)*sizeof(MPI_Status) );
+
+    //MPI_Status *send_status_list1 = (MPI_Status *) malloc( (num_proc-1)*sizeof(MPI_Status) );
+    //MPI_Status *send_status_list2 = (MPI_Status *) malloc( (num_proc-1)*sizeof(MPI_Status) );
 
     MPI_Request *recv_req_list = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
 
@@ -801,7 +805,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	if (rank != i)
 	{
 	    isend2D_real_T(mesh->ps, i, tag_send, MPI_COMM_WORLD,
-		    	   &(send_req_list1[j]), &(send_req_list2[j]));
+		    	   &(send_req_list[j]), &(send_req_list[num_proc-1+j]));
 	    j++;
 	}
     }
@@ -870,13 +874,10 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     free(recv_req_list);
     free(common_info);
 
-    MPI_Waitall(num_proc-1, send_req_list1, send_status_list1);
-    MPI_Waitall(num_proc-1, send_req_list2, send_status_list2);
+    MPI_Waitall(2*(num_proc-1), send_req_list, send_status_list);
 
-    free(send_req_list1);
-    free(send_req_list2);
-    free(send_status_list1);
-    free(send_status_list2);
+    free(send_req_list);
+    free(send_status_list);
 
 
 }
@@ -967,11 +968,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
     int num_nbp = nb_proc->size[0];
 
-    MPI_Request *send_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
-    MPI_Request *send_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+    MPI_Request *send_req_list = (MPI_Request *) malloc( 2*num_nbp*sizeof(MPI_Request) );
 
-    MPI_Status *send_status_list1 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
-    MPI_Status *send_status_list2 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+    MPI_Status *send_status_list = (MPI_Status *) malloc( 2*num_nbp*sizeof(MPI_Status) );
 
     MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
 
@@ -984,7 +983,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	proc_send = nb_proc->data[I1dm(i)];
 	tag_send = proc_send;
 	isend2D_real_T(ps, proc_send, tag_send, MPI_COMM_WORLD,
-		       &(send_req_list1[I1dm(i)]), &(send_req_list2[I1dm(i)]));
+		       &(send_req_list[I1dm(i)]), &(send_req_list[I1dm(i)+num_nbp]));
     }
 
     for (i = 1; i <= num_nbp; i++)
@@ -1059,13 +1058,10 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     free(recv_size);
     free(recv_req_list);
 
-    MPI_Waitall(num_nbp, send_req_list1, send_status_list1);
-    MPI_Waitall(num_nbp, send_req_list2, send_status_list2);
+    MPI_Waitall(num_nbp, send_req_list, send_status_list);
 
-    free(send_req_list1);
-    free(send_req_list2);
-    free(send_status_list1);
-    free(send_status_list2);
+    free(send_req_list);
+    free(send_status_list);
 
 }
 
@@ -1089,6 +1085,11 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
     int num_nbp = nb_proc->size[0];
 
+
+    MPI_Request *send_req_list = (MPI_Request *) malloc( 4*num_nbp*sizeof(MPI_Request) );
+    MPI_Status *send_status_list = (MPI_Status *) malloc( 4*num_nbp*sizeof(MPI_Status) );
+
+    /*
     MPI_Request *ps_send_req_list1 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
     MPI_Request *ps_send_req_list2 = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
 
@@ -1100,6 +1101,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
     MPI_Status *tris_send_status_list1 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
     MPI_Status *tris_send_status_list2 = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+    */
 
     MPI_Request *ps_recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request));
 
@@ -1111,9 +1113,9 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	ps_tag_send = proc_send;
 	tris_tag_send = proc_send + 10;
 	isend2D_real_T(ps, proc_send, ps_tag_send, MPI_COMM_WORLD,
-		       &(ps_send_req_list1[I1dm(i)]), &(ps_send_req_list2[I1dm(i)]));
+		       &(send_req_list[I1dm(i)]), &(send_req_list[I1dm(i)+num_nbp]));
 	isend2D_int32_T(tris, proc_send, tris_tag_send, MPI_COMM_WORLD, 
-			&(tris_send_req_list1[I1dm(i)]), &(tris_send_req_list2[I1dm(i)]));
+			&(send_req_list[I1dm(i)+2*num_nbp]), &(send_req_list[I1dm(i)+3*num_nbp]));
     }
 
     for (i = 1; i <= num_nbp; i++)
@@ -1233,22 +1235,10 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     free(ps_recv_size);
     free(ps_recv_req_list);
 
-    MPI_Waitall(num_nbp, ps_send_req_list1, ps_send_status_list1);
-    MPI_Waitall(num_nbp, ps_send_req_list2, ps_send_status_list2);
+    MPI_Waitall(num_nbp, send_req_list, send_status_list);
 
-    MPI_Waitall(num_nbp, tris_send_req_list1, tris_send_status_list1);
-    MPI_Waitall(num_nbp, tris_send_req_list2, tris_send_status_list2);
-
-    free(ps_send_req_list1);
-    free(ps_send_req_list2);
-    free(tris_send_req_list1);
-    free(tris_send_req_list1);
-
-    free(ps_send_status_list1);
-    free(ps_send_status_list2);
-
-    free(tris_send_status_list1);
-    free(tris_send_status_list2);
+    free(send_req_list);
+    free(send_status_list);
 }
 
 void hpBuildOppositeHalfEdge(hiPropMesh *mesh)
@@ -1753,8 +1743,9 @@ void hpCollectAllOverlayPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 }
 
 void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
+			       const int nb_proc_index,
 			       const real_T num_ring,
-			       emxArray_int32_T **psid_proc,
+			       emxArray_int32_T *psid_proc,
 			       emxArray_int32_T **ps_ring_proc,
 			       emxArray_int32_T **tris_ring_proc,
 			       emxArray_real_T **buffer_ps,
@@ -1771,41 +1762,39 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
      * information where the ps/tri is being sent to
      */
     int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
-    int num_nb_proc = mesh->nb_proc->size[0];
-    int i,j;
+    int j;
 
-    for (i = 1; i <= num_nb_proc; i++)
     {
-	hpCollectNRingTris(mesh, psid_proc[I1dm(i)], num_ring,
-			   &(ps_ring_proc[I1dm(i)]), &(tris_ring_proc[I1dm(i)]));
+	hpCollectNRingTris(mesh, psid_proc, num_ring,
+			   ps_ring_proc, tris_ring_proc);
 
-	int num_ps_buffer = (ps_ring_proc[I1dm(i)])->size[0];
-	int num_tris_buffer = (tris_ring_proc[I1dm(i)])->size[0];
+	int num_ps_buffer = (*ps_ring_proc)->size[0];
+	int num_tris_buffer = (*tris_ring_proc)->size[0];
 
 	
-	buffer_ps[I1dm(i)] = emxCreate_real_T(num_ps_buffer, 3);
-	buffer_tris[I1dm(i)] = emxCreate_int32_T(num_tris_buffer, 3);
+	(*buffer_ps) = emxCreate_real_T(num_ps_buffer, 3);
+	(*buffer_tris) = emxCreate_int32_T(num_tris_buffer, 3);
 
 	for (j = 1; j <= num_ps_buffer; j++)
 	{
-	    int cur_buf_ps_index = (ps_ring_proc[I1dm(i)])->data[I1dm(j)];
-	    (buffer_ps[I1dm(i)])->data[I2dm(j,1,(buffer_ps[I1dm(i)])->size)] =
+	    int cur_buf_ps_index = (*ps_ring_proc)->data[I1dm(j)];
+	    (*buffer_ps)->data[I2dm(j,1,(*buffer_ps)->size)] =
 		mesh->ps->data[I2dm(cur_buf_ps_index,1,mesh->ps->size)];
-	    (buffer_ps[I1dm(i)])->data[I2dm(j,2,(buffer_ps[I1dm(i)])->size)] =
+	    (*buffer_ps)->data[I2dm(j,2,(*buffer_ps)->size)] =
 		mesh->ps->data[I2dm(cur_buf_ps_index,2,mesh->ps->size)];
-	    (buffer_ps[I1dm(i)])->data[I2dm(j,3,(buffer_ps[I1dm(i)])->size)] =
+	    (*buffer_ps)->data[I2dm(j,3,(*buffer_ps)->size)] =
 		mesh->ps->data[I2dm(cur_buf_ps_index,3,mesh->ps->size)];
 
 	    ps_mapping[I1dm(cur_buf_ps_index)] = j;
 	}
 	for (j = 1; j <= num_tris_buffer; j++)
 	{
-	    int cur_buf_tris_index = (tris_ring_proc[I1dm(i)])->data[I1dm(j)];
-	    (buffer_tris[I1dm(i)])->data[I2dm(j,1,(buffer_tris[I1dm(i)])->size)] =
+	    int cur_buf_tris_index = (*tris_ring_proc)->data[I1dm(j)];
+	    (*buffer_tris)->data[I2dm(j,1,(*buffer_tris)->size)] =
 		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,1,mesh->tris->size)]-1];
-	    (buffer_tris[I1dm(i)])->data[I2dm(j,2,(buffer_tris[I1dm(i)])->size)] =
+	    (*buffer_tris)->data[I2dm(j,2,(*buffer_tris)->size)] =
 		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,2,mesh->tris->size)]-1];
-	    (buffer_tris[I1dm(i)])->data[I2dm(j,3,(buffer_tris[I1dm(i)])->size)] =
+	    (*buffer_tris)->data[I2dm(j,3,(*buffer_tris)->size)] =
 		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,3,mesh->tris->size)]-1];
 	}
 	/************* Debugging output **********************************
@@ -1823,16 +1812,15 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 }
 
 void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
-					   emxArray_int32_T **ps_ring_proc,
-					   emxArray_int32_T **tris_ring_proc,
-					   int **buffer_ps_pinfo_tag,
-					   int **buffer_ps_pinfo_lindex,
-					   int **buffer_ps_pinfo_proc,
-					   int **buffer_tris_pinfo_tag,
-					   int **buffer_tris_pinfo_lindex,
-					   int **buffer_tris_pinfo_proc,
-					   int *ps_pinfo_len,
-					   int *tris_pinfo_len)
+				    const int nb_proc_index,
+				    emxArray_int32_T *ps_ring_proc,
+				    emxArray_int32_T *tris_ring_proc,
+				    int **buffer_ps_pinfo_tag,
+				    int **buffer_ps_pinfo_lindex,
+				    int **buffer_ps_pinfo_proc,
+				    int **buffer_tris_pinfo_tag,
+				    int **buffer_tris_pinfo_lindex,
+				    int **buffer_tris_pinfo_proc)
 {
     /* Fill and build the temp pinfo information on each master processor 
      * Step 1, For original pinfo, the new target processor is added as a new
@@ -1855,28 +1843,25 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
     int buffer_ps_pinfo_length = 0;
     int buffer_tris_pinfo_length = 0;
     
-    int num_nb_proc = mesh->nb_proc->size[0];
+    int j;
 
-    int i,j;
+    int num_ps_buffer = ps_ring_proc->size[0];
+    int num_tris_buffer = tris_ring_proc->size[0];
+    int target_proc_id = mesh->nb_proc->data[I1dm(nb_proc_index)];
 
     /* Finish Step 1 and fill buffer_ps_pinfo_tag & buffer_tris_pinfo_tag */
-    for (i = 1; i <= num_nb_proc; i++)
     {
-	int num_ps_buffer = (ps_ring_proc[I1dm(i)])->size[0];
-	int num_tris_buffer = (tris_ring_proc[I1dm(i)])->size[0];
-	int target_proc_id = mesh->nb_proc->data[I1dm(i)];
+	(*buffer_ps_pinfo_tag) = (int *) calloc(num_ps_buffer+1, sizeof(int));
+	(*buffer_tris_pinfo_tag) = (int *) calloc(num_tris_buffer+1, sizeof(int));
 
-	buffer_ps_pinfo_tag[I1dm(i)] = (int *) calloc(num_ps_buffer+1, sizeof(int));
-	buffer_tris_pinfo_tag[I1dm(i)] = (int *) calloc(num_tris_buffer+1, sizeof(int));
-
-	buffer_ps_pinfo_tag[I1dm(i)][0] = 0;
-	buffer_tris_pinfo_tag[I1dm(i)][0] = 0;
+	(*buffer_ps_pinfo_tag)[0] = 0;
+	(*buffer_tris_pinfo_tag)[0] = 0;
 
 	for (j = 1; j <= num_ps_buffer; j++)
 	{
 	    int num_pinfo_data = 0;
 	    unsigned char overlay_flag = 0;
-	    int cur_ps_index = (ps_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    int cur_ps_index = ps_ring_proc->data[I1dm(j)];
 	    int next_node = ps_pinfo->head[I1dm(cur_ps_index)];
 	    while(next_node != -1)
 	    {
@@ -1898,7 +1883,7 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 		num_pinfo_data++;
 	    }
 	    buffer_ps_pinfo_length += num_pinfo_data;
-	    buffer_ps_pinfo_tag[I1dm(i)][j] = buffer_ps_pinfo_length;
+	    (*buffer_ps_pinfo_tag)[j] = buffer_ps_pinfo_length;
 
 	}
 
@@ -1906,7 +1891,7 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 	{
 	    int num_pinfo_data = 0;
 	    unsigned char overlay_flag = 0;
-	    int cur_tri_index = (tris_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    int cur_tri_index = tris_ring_proc->data[I1dm(j)];
 	    int next_node = tris_pinfo->head[I1dm(cur_tri_index)];
 	    while(next_node != -1)
 	    {
@@ -1928,35 +1913,28 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 		num_pinfo_data++;
 	    }
 	    buffer_tris_pinfo_length += num_pinfo_data;
-	    buffer_tris_pinfo_tag[I1dm(i)][j] = buffer_tris_pinfo_length;
+	    (*buffer_tris_pinfo_tag)[j] = buffer_tris_pinfo_length;
 	}
 
     }
 
-    (*ps_pinfo_len) = buffer_ps_pinfo_length;
-    (*tris_pinfo_len) = buffer_tris_pinfo_length;
-
     /* Fill in the buffer_ps/tris_pinfo_lindex & buffer_ps/tris_pinfo_proc in order */
-    for (i = 1; i <= num_nb_proc; i++)
     {
-	int num_ps_buffer = (ps_ring_proc[I1dm(i)])->size[0];
-	int num_tris_buffer = (tris_ring_proc[I1dm(i)])->size[0];
+	(*buffer_ps_pinfo_lindex) = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
+	(*buffer_ps_pinfo_proc) = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
 
-	buffer_ps_pinfo_lindex[I1dm(i)] = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
-	buffer_ps_pinfo_proc[I1dm(i)] = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
-
-	buffer_tris_pinfo_lindex[I1dm(i)] = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
-	buffer_tris_pinfo_proc[I1dm(i)] = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
+	(*buffer_tris_pinfo_lindex) = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
+	(*buffer_tris_pinfo_proc) = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
 
 	int cur_ps_pinfo = 0;
 	for (j = 1; j <= num_ps_buffer; j++)
 	{
-	    int cur_ps_index = (ps_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    int cur_ps_index = ps_ring_proc->data[I1dm(j)];
 	    int next_node = ps_pinfo->head[I1dm(cur_ps_index)];
 	    while(next_node != -1)
 	    {
-		buffer_ps_pinfo_lindex[I1dm(i)][cur_ps_pinfo] = ps_pinfo->pdata[I1dm(next_node)].lindex;
-		buffer_ps_pinfo_proc[I1dm(i)][cur_ps_pinfo] = ps_pinfo->pdata[I1dm(next_node)].proc;
+		(*buffer_ps_pinfo_lindex)[cur_ps_pinfo] = ps_pinfo->pdata[I1dm(next_node)].lindex;
+		(*buffer_ps_pinfo_proc)[cur_ps_pinfo] = ps_pinfo->pdata[I1dm(next_node)].proc;
 		next_node = ps_pinfo->pdata[I1dm(next_node)].next;
 		cur_ps_pinfo++;
 	    }
@@ -1965,12 +1943,12 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 	int cur_tris_pinfo = 0;
 	for (j = 1; j <= num_tris_buffer; j++)
 	{
-	    int cur_tri_index = (tris_ring_proc[I1dm(i)])->data[I1dm(j)];
+	    int cur_tri_index = tris_ring_proc->data[I1dm(j)];
 	    int next_node = tris_pinfo->head[I1dm(cur_tri_index)];
 	    while(next_node != -1)
 	    {
-		buffer_tris_pinfo_lindex[I1dm(i)][cur_tris_pinfo] = tris_pinfo->pdata[I1dm(next_node)].lindex;
-		buffer_tris_pinfo_proc[I1dm(i)][cur_tris_pinfo] = tris_pinfo->pdata[I1dm(next_node)].proc;
+		(*buffer_tris_pinfo_lindex)[cur_tris_pinfo] = tris_pinfo->pdata[I1dm(next_node)].lindex;
+		(*buffer_tris_pinfo_proc)[cur_tris_pinfo] = tris_pinfo->pdata[I1dm(next_node)].proc;
 		next_node = tris_pinfo->pdata[I1dm(next_node)].next;
 		cur_tris_pinfo++;
 	    }
@@ -1998,9 +1976,15 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
 
 
     /* Set up the MPI_Request list */
-    int num_all_rqst = 10*num_nb_proc;
-    MPI_Request* rqst_list = (MPI_Request *) calloc(num_all_rqst, sizeof(MPI_Request));
-    MPI_Status* status_list = (MPI_Status *) calloc(num_all_rqst, sizeof(MPI_Status));
+    int num_all_send_rqst = 10*num_nb_proc;
+
+    MPI_Request* send_rqst_list = (MPI_Request *) calloc(num_all_send_rqst, sizeof(MPI_Request));
+    MPI_Status* send_status_list = (MPI_Status *) calloc(num_all_send_rqst, sizeof(MPI_Status));
+
+    MPI_Request* recv_req_list = (MPI_Request *) calloc(num_nb_proc, sizeof(MPI_Request));
+
+    int *recv_size = (int *) calloc (2*num_nb_proc, sizeof(int));
+
     int cur_rqst = 0;
 
     /* Build n-ring neighborhood and send*/
@@ -2008,24 +1992,7 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
     emxArray_int32_T **tris_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
     emxArray_real_T **buffer_ps = (emxArray_real_T **) calloc(num_nb_proc, sizeof(emxArray_real_T *));
     emxArray_int32_T **buffer_tris = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
-    
-    hpBuildGhostPsTrisForSend(mesh, num_ring, psid_proc, ps_ring_proc, tris_ring_proc, buffer_ps, buffer_tris);
 
-    int tag_ps = 0;
-    int tag_tris = 10;
-    for (i = 1; i <= num_nb_proc; i++)
-    {
-	isend2D_real_T(buffer_ps[I1dm(i)], mesh->nb_proc->data[I1dm(i)],
-		       tag_ps, MPI_COMM_WORLD, &(rqst_list[cur_rqst]), &(rqst_list[cur_rqst+1]));
-	cur_rqst += 2;
-
-	isend2D_int32_T(buffer_tris[I1dm(i)], mesh->nb_proc->data[I1dm(i)],
-		       tag_tris, MPI_COMM_WORLD, &(rqst_list[cur_rqst]), &(rqst_list[cur_rqst+1]));
-	cur_rqst += 2;
-    }
-
-    /* Get pinfo for n-ring neighborhood and send*/
-    int ps_pinfo_length, tris_pinfo_length;
     int **buffer_ps_pinfo_tag = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_ps_pinfo_lindex = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_ps_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
@@ -2033,11 +2000,10 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
     int **buffer_tris_pinfo_tag = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_tris_pinfo_lindex = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_tris_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
+    
 
-    hpBuildGhostPsTrisPInfoForSend(mesh, ps_ring_proc, tris_ring_proc,
-	    buffer_ps_pinfo_tag, buffer_ps_pinfo_lindex, buffer_ps_pinfo_proc,
-	    buffer_tris_pinfo_tag, buffer_tris_pinfo_lindex, buffer_tris_pinfo_proc,
-	    &ps_pinfo_length, &tris_pinfo_length);
+    int tag_ps = 0;
+    int tag_tris = 10;
 
     int tag_ps_pinfo1 = 50;
     int tag_ps_pinfo2 = 51;
@@ -2049,25 +2015,20 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
 
     for (i = 1; i <= num_nb_proc; i++)
     {
-	int num_buf_ps_send = (buffer_ps[I1dm(i)])->size[0];
-	int num_buf_ps_pinfo_send = buffer_ps_pinfo_tag[I1dm(i)][num_buf_ps_send];
+	hpBuildGhostPsTrisForSend(mesh, i, num_ring, psid_proc[I1dm(i)],
+				  &(ps_ring_proc[I1dm(i)]),
+				  &(tris_ring_proc[I1dm(i)]), 
+				  &(buffer_ps[I1dm(i)]), &(buffer_tris[I1dm(i)]));
 
-	MPI_Isend(buffer_ps_pinfo_tag[I1dm(i)], num_buf_ps_send+1, MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo1, MPI_COMM_WORLD, &(rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_ps_pinfo_lindex[I1dm(i)], num_buf_ps_pinfo_send, MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo2, MPI_COMM_WORLD, &(rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_ps_pinfo_proc[I1dm(i)], num_buf_ps_pinfo_send, MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo3, MPI_COMM_WORLD, &(rqst_list[cur_rqst++]));
 
-	int num_buf_tris_send = (buffer_tris[I1dm(i)])->size[0];
-	int num_buf_tris_pinfo_send = buffer_tris_pinfo_tag[I1dm(i)][num_buf_tris_send];
+	hpBuildGhostPsTrisPInfoForSend(mesh, i, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)],
+		&(buffer_ps_pinfo_tag[I1dm(i)]),
+		&(buffer_ps_pinfo_lindex[I1dm(i)]),
+		&(buffer_ps_pinfo_proc[I1dm(i)]),
+		&(buffer_tris_pinfo_tag[I1dm(i)]),
+		&(buffer_tris_pinfo_lindex[I1dm(i)]),
+		&(buffer_tris_pinfo_proc[I1dm(i)]));
 
-	MPI_Isend(buffer_tris_pinfo_tag[I1dm(i)], num_buf_tris_send+1, MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo1, MPI_COMM_WORLD, &(rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_tris_pinfo_lindex[I1dm(i)], num_buf_tris_pinfo_send, MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo2, MPI_COMM_WORLD, &(rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_tris_pinfo_proc[I1dm(i)], num_buf_tris_pinfo_send, MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo3, MPI_COMM_WORLD, &(rqst_list[cur_rqst++]));
     }
 
     /* Free the buffer ps and tris index */
@@ -2081,82 +2042,135 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
     free(ps_ring_proc);
     free(tris_ring_proc);
 
+    /* send all the information to different processors */
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+
+	isend2D_real_T(buffer_ps[I1dm(i)], mesh->nb_proc->data[I1dm(i)],
+		       tag_ps, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst]), &(send_rqst_list[cur_rqst+1]));
+	cur_rqst += 2;
+
+	isend2D_int32_T(buffer_tris[I1dm(i)], mesh->nb_proc->data[I1dm(i)],
+		       tag_tris, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst]), &(send_rqst_list[cur_rqst+1]));
+	cur_rqst += 2;
+
+	MPI_Isend(buffer_ps_pinfo_tag[I1dm(i)], (buffer_ps[I1dm(i)])->size[0]+1, MPI_INT,
+		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo1, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_ps_pinfo_lindex[I1dm(i)], buffer_ps_pinfo_tag[I1dm(i)][(buffer_ps[I1dm(i)])->size[0]], MPI_INT,
+		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo2, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_ps_pinfo_proc[I1dm(i)], buffer_ps_pinfo_tag[I1dm(i)][(buffer_ps[I1dm(i)])->size[0]], MPI_INT,
+		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo3, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+
+
+	MPI_Isend(buffer_tris_pinfo_tag[I1dm(i)], (buffer_tris[I1dm(i)])->size[0]+1, MPI_INT,
+		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo1, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_tris_pinfo_lindex[I1dm(i)], buffer_tris_pinfo_tag[I1dm(i)][(buffer_tris[I1dm(i)])->size[0]], MPI_INT,
+		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo2, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_tris_pinfo_proc[I1dm(i)], buffer_tris_pinfo_tag[I1dm(i)][(buffer_tris[I1dm(i)])->size[0]], MPI_INT,
+		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo3, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+    }
+
+
+
     /* Receive buffer points and tris with temp pinfo */
 
-    emxArray_real_T **buffer_ps_recv = (emxArray_real_T **) calloc(num_nb_proc, sizeof(emxArray_real_T *));
-    emxArray_int32_T **buffer_tris_recv = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
-
-    int **buf_ppinfo_tag_recv = (int **) calloc(num_nb_proc, sizeof(int *));
-    int **buf_ppinfo_lindex_recv = (int **) calloc(num_nb_proc, sizeof(int *));
-    int **buf_ppinfo_proc_recv = (int **) calloc(num_nb_proc, sizeof(int *));
-
-    int **buf_tpinfo_tag_recv = (int **) calloc(num_nb_proc, sizeof(int *));
-    int **buf_tpinfo_lindex_recv = (int **) calloc(num_nb_proc, sizeof(int *));
-    int **buf_tpinfo_proc_recv = (int **) calloc(num_nb_proc, sizeof(int *));
+    for (i = 1; i <= num_nb_proc; i++)
+	MPI_Irecv(&(recv_size[2*I1dm(i)]), 2, MPI_INT, mesh->nb_proc->data[I1dm(i)], tag_ps+1, MPI_COMM_WORLD, &(recv_req_list[I1dm(i)]));
 
     for (i = 1; i <= num_nb_proc; i++)
     {
+	emxArray_real_T *buffer_ps_recv;
+	emxArray_int32_T *buffer_tris_recv;
+
+	int *buf_ppinfo_tag_recv;
+	int *buf_ppinfo_lindex_recv;
+	int *buf_ppinfo_proc_recv;
+
+	int *buf_tpinfo_tag_recv;
+	int *buf_tpinfo_lindex_recv;
+	int *buf_tpinfo_proc_recv;
+
 	int num_buf_ps_recv, num_buf_tris_recv;
-	
 	int num_buf_ps_pinfo_recv;
 	int num_buf_tris_pinfo_recv;
+
 	MPI_Status tmp_status;
+	MPI_Status recv_status1, recv_status2;
 
-	recv2D_real_T(&(buffer_ps_recv[I1dm(i)]), mesh->nb_proc->data[I1dm(i)], tag_ps, MPI_COMM_WORLD);
-	recv2D_int32_T(&(buffer_tris_recv[I1dm(i)]), mesh->nb_proc->data[I1dm(i)], tag_tris, MPI_COMM_WORLD);
+	int recv_index;
+	int proc_recv;
 
-	num_buf_ps_recv = (buffer_ps_recv[I1dm(i)])->size[0];
-	num_buf_tris_recv = (buffer_tris_recv[I1dm(i)])->size[0];
+	MPI_Waitany(num_nb_proc, recv_req_list, &recv_index, &recv_status1);
+	proc_recv = recv_status1.MPI_SOURCE;
+
+	buffer_ps_recv = emxCreate_real_T(recv_size[2*recv_index], recv_size[2*recv_index+1]);
+
+	MPI_Recv(buffer_ps_recv->data, recv_size[2*recv_index]*recv_size[2*recv_index+1], MPI_DOUBLE, proc_recv, tag_ps+2, MPI_COMM_WORLD, &recv_status2);
+
+	recv2D_int32_T(&buffer_tris_recv, proc_recv, tag_tris, MPI_COMM_WORLD);
+
+	num_buf_ps_recv = buffer_ps_recv->size[0];
+	num_buf_tris_recv = buffer_tris_recv->size[0];
 
 	/* Recv ps pinfo */
-	buf_ppinfo_tag_recv[I1dm(i)] = (int *) calloc(num_buf_ps_recv+1, sizeof(int));
+	buf_ppinfo_tag_recv = (int *) calloc(num_buf_ps_recv+1, sizeof(int));
 
-	MPI_Recv(buf_ppinfo_tag_recv[I1dm(i)], num_buf_ps_recv+1, MPI_INT, mesh->nb_proc->data[I1dm(i)],
+	MPI_Recv(buf_ppinfo_tag_recv, num_buf_ps_recv+1, MPI_INT, proc_recv,
 		 tag_ps_pinfo1, MPI_COMM_WORLD, &tmp_status);
 	
-	num_buf_ps_pinfo_recv = buf_ppinfo_tag_recv[I1dm(i)][num_buf_ps_recv];
+	num_buf_ps_pinfo_recv = buf_ppinfo_tag_recv[num_buf_ps_recv];
 
-	buf_ppinfo_lindex_recv[I1dm(i)] = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
-	buf_ppinfo_proc_recv[I1dm(i)] = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
+	buf_ppinfo_lindex_recv = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
+	buf_ppinfo_proc_recv = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
 
-	MPI_Recv(buf_ppinfo_lindex_recv[I1dm(i)], num_buf_ps_pinfo_recv, MPI_INT, mesh->nb_proc->data[I1dm(i)],
+	MPI_Recv(buf_ppinfo_lindex_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
 		 tag_ps_pinfo2, MPI_COMM_WORLD, &tmp_status);
-	MPI_Recv(buf_ppinfo_proc_recv[I1dm(i)], num_buf_ps_pinfo_recv, MPI_INT, mesh->nb_proc->data[I1dm(i)],
+	MPI_Recv(buf_ppinfo_proc_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
 		 tag_ps_pinfo3, MPI_COMM_WORLD, &tmp_status);
 
 	/* Recv tris pinfo */
-	buf_tpinfo_tag_recv[I1dm(i)] = (int *) calloc(num_buf_tris_recv+1, sizeof(int));
+	buf_tpinfo_tag_recv = (int *) calloc(num_buf_tris_recv+1, sizeof(int));
 
-	MPI_Recv(buf_tpinfo_tag_recv[I1dm(i)], num_buf_tris_recv+1, MPI_INT, mesh->nb_proc->data[I1dm(i)],
+	MPI_Recv(buf_tpinfo_tag_recv, num_buf_tris_recv+1, MPI_INT, proc_recv,
 		 tag_tris_pinfo1, MPI_COMM_WORLD, &tmp_status);
 	
-	num_buf_tris_pinfo_recv = buf_tpinfo_tag_recv[I1dm(i)][num_buf_tris_recv];
+	num_buf_tris_pinfo_recv = buf_tpinfo_tag_recv[num_buf_tris_recv];
 
-	buf_tpinfo_lindex_recv[I1dm(i)] = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
-	buf_tpinfo_proc_recv[I1dm(i)] = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
+	buf_tpinfo_lindex_recv = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
+	buf_tpinfo_proc_recv = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
 
-	MPI_Recv(buf_tpinfo_lindex_recv[I1dm(i)], num_buf_tris_pinfo_recv, MPI_INT, mesh->nb_proc->data[I1dm(i)],
+	MPI_Recv(buf_tpinfo_lindex_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
 		 tag_tris_pinfo2, MPI_COMM_WORLD, &tmp_status);
-	MPI_Recv(buf_tpinfo_proc_recv[I1dm(i)], num_buf_tris_pinfo_recv, MPI_INT, mesh->nb_proc->data[I1dm(i)],
+	MPI_Recv(buf_tpinfo_proc_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
 		 tag_tris_pinfo3, MPI_COMM_WORLD, &tmp_status);
 
+	hpAttachNRingGhostWithPInfo(mesh, proc_recv, buffer_ps_recv, buffer_tris_recv,
+		buf_ppinfo_tag_recv, buf_ppinfo_lindex_recv, buf_ppinfo_proc_recv,
+		buf_tpinfo_tag_recv, buf_tpinfo_lindex_recv, buf_tpinfo_proc_recv);
+
+	emxFree_real_T(&buffer_ps_recv);
+	emxFree_int32_T(&buffer_tris_recv);
+
+	free(buf_ppinfo_tag_recv);
+	free(buf_ppinfo_lindex_recv);
+	free(buf_ppinfo_proc_recv);
+
+	free(buf_tpinfo_tag_recv);
+	free(buf_tpinfo_lindex_recv);
+	free(buf_tpinfo_proc_recv);
     }
 
-    /* After receiving, could do the real job */
-
-    hpAttachNRingGhostWithPInfo(mesh, buffer_ps_recv, buffer_tris_recv,
-	    buf_ppinfo_tag_recv, buf_ppinfo_lindex_recv, buf_ppinfo_proc_recv,
-	    buf_tpinfo_tag_recv, buf_tpinfo_lindex_recv, buf_tpinfo_proc_recv);
-
+    free(recv_req_list);
+    free(recv_size);
 
     /* Wait until all the array are sent */
 
-    MPI_Waitall(num_all_rqst, rqst_list, status_list);
+    MPI_Waitall(num_all_send_rqst, send_rqst_list, send_status_list);
 
     /* Free the array for send */
 
-    free(rqst_list);
-    free(status_list);
+    free(send_rqst_list);
+    free(send_status_list);
 
     for (i = 1; i <= num_nb_proc; i++)
     {
@@ -2181,32 +2195,6 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
     free(buffer_tris_pinfo_lindex);
     free(buffer_tris_pinfo_proc);
 
-    /* Free the array for recv */
-
-    for (i = 1; i <= num_nb_proc; i++)
-    {
-	emxFree_real_T(&(buffer_ps_recv[I1dm(i)]));
-	emxFree_int32_T(&(buffer_tris_recv[I1dm(i)]));
-
-	free(buf_ppinfo_tag_recv[I1dm(i)]); 
-	free(buf_ppinfo_lindex_recv[I1dm(i)]); 
-	free(buf_ppinfo_proc_recv[I1dm(i)]); 
-
-	free(buf_tpinfo_tag_recv[I1dm(i)]); 
-	free(buf_tpinfo_lindex_recv[I1dm(i)]); 
-	free(buf_tpinfo_proc_recv[I1dm(i)]); 
-    }
-
-    free(buffer_ps_recv);
-    free(buffer_tris_recv);
-    free(buf_ppinfo_tag_recv);
-    free(buf_ppinfo_lindex_recv);
-    free(buf_ppinfo_proc_recv);
-
-    free(buf_tpinfo_tag_recv);
-    free(buf_tpinfo_lindex_recv);
-    free(buf_tpinfo_proc_recv);
-
     /* Update nb_proc information based on the new pinfo */
 
 }
@@ -2214,18 +2202,17 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
 
 
 void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
-				 emxArray_real_T **bps,
-				 emxArray_int32_T **btris,
-				 int **ppinfot,
-				 int **ppinfol,
-				 int **ppinfop,
-				 int **tpinfot,
-				 int **tpinfol,
-				 int **tpinfop)
+				 const int rcv_id,
+				 emxArray_real_T *bps,
+				 emxArray_int32_T *btris,
+				 int *ppinfot,
+				 int *ppinfol,
+				 int *ppinfop,
+				 int *tpinfot,
+				 int *tpinfol,
+				 int *tpinfop)
 {
-    /*
     int i;
-    int num_nb_proc = mesh->nb_proc->size[0];
     int cur_proc;
     MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
 
@@ -2235,11 +2222,9 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
     hpPInfoList *ps_pinfo = mesh->ps_pinfo;
     hpPInfoList *tris_pinfo = mesh->tris_pinfo;
 
-    for (i = 1; i <= num_nb_proc; i++)
     {
-	int from_proc = mesh->nb_proc->data[I1dm(i)];
-	int num_buf_ps = bps[I1dm(i)]->size[0];
-	int num_buf_tris = btris[I1dm(i)]->size[0];
+	int num_buf_ps = bps->size[0];
+	int num_buf_tris = btris->size[0];
 
 	int *ps_map = (int *) calloc(num_buf_ps, sizeof(int));
 
@@ -2250,7 +2235,6 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 
 	free(ps_map);
     }
-    */
 
 }
 

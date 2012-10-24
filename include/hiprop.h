@@ -349,33 +349,34 @@ extern void hpDebugOutput(const hiPropMesh *mesh,
 			  char *debug_file_name);
 
 extern void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
+				      const int nb_proc_index,
 				      const real_T num_ring,
-				      emxArray_int32_T **psid_proc,
+				      emxArray_int32_T *psid_proc,
 				      emxArray_int32_T **ps_ring_proc,
 				      emxArray_int32_T **tris_ring_proc,
 				      emxArray_real_T **buffer_ps,
 				      emxArray_int32_T **buffer_tris);
 
 extern void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
-					   emxArray_int32_T **ps_ring_proc,
-					   emxArray_int32_T **tris_ring_proc,
+					   const int nb_proc_index,
+					   emxArray_int32_T *ps_ring_proc,
+					   emxArray_int32_T *tris_ring_proc,
 					   int **buffer_ps_pinfo_tag,
 					   int **buffer_ps_pinfo_lindex,
 					   int **buffer_ps_pinfo_proc,
 					   int **buffer_tris_pinfo_tag,
 					   int **buffer_tris_pinfo_lindex,
-					   int **buffer_tris_pinfo_proc,
-					   int *ps_pinfo_len,
-					   int *tris_pinfo_len);
+					   int **buffer_tris_pinfo_proc);
 
 extern void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
-					emxArray_real_T **bps,
-					emxArray_int32_T **btris,
-					int **ppinfot,
-					int **ppinfol,
-					int **ppinfop,
-					int **tpinfot,
-					int **tpinfol,
-					int **tpinfop);
+					const int rcv_id,
+					emxArray_real_T *bps,
+					emxArray_int32_T *btris,
+					int *ppinfot,
+					int *ppinfol,
+					int *ppinfop,
+					int *tpinfot,
+					int *tpinfol,
+					int *tpinfop);
 
 #endif
