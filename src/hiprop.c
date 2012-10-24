@@ -1665,9 +1665,30 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 
     free(nb_proc_bool);
 
-    /* 7. since no overlapping trianlges, free mesh->tris_pinfo */
+    /* 7. since no overlapping trianlges, free mesh->tris_pinfo 
+     * and then reinitialize it*/
     hpDeletePInfoList(&(mesh->tris_pinfo));
 
+    int num_tris_tmp = mesh->tris->size[0];
+    int tris_estimate_tmp = 2*num_tris_tmp;
+
+    mesh->tris_pinfo = (hpPInfoList *) calloc(1, sizeof(hpPInfoList));
+    mesh->tris_pinfo->pdata = (hpPInfoNode *) calloc(tris_estimate_tmp, sizeof(hpPInfoNode));
+
+    mesh->tris_pinfo->head = (int *) calloc(num_tris_tmp, sizeof(int));
+    mesh->tris_pinfo->tail = (int *) calloc(num_tris_tmp, sizeof(int));
+
+    mesh->tris_pinfo->max_len = tris_estimate_tmp;
+
+    for (i = 1; i <= num_tris_tmp; i++)
+    {
+	(mesh->tris_pinfo->pdata[I1dm(i)]).proc = rank;
+	(mesh->tris_pinfo->pdata[I1dm(i)]).lindex = i;
+	(mesh->tris_pinfo->pdata[I1dm(i)]).next = -1;
+	mesh->tris_pinfo->head[I1dm(i)] = i;
+	mesh->tris_pinfo->tail[I1dm(i)] = i;
+    }
+    mesh->tris_pinfo->allocated_len = num_tris_tmp;
 }
 
 void hpCollectAllOverlayPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
