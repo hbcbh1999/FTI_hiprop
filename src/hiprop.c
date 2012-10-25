@@ -1904,6 +1904,7 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 		ps_pinfo->pdata[I1dm(new_tail)].lindex = -1;
 		ps_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
 		ps_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
+		ps_pinfo->tail[I1dm(cur_ps_index)] = new_tail;
 		num_pinfo_data++;
 	    }
 	    buffer_ps_pinfo_length += num_pinfo_data;
@@ -1934,6 +1935,7 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 		tris_pinfo->pdata[I1dm(new_tail)].lindex = -1;
 		tris_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
 		tris_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
+		tris_pinfo->tail[I1dm(cur_tri_index)] = new_tail;
 		num_pinfo_data++;
 	    }
 	    buffer_tris_pinfo_length += num_pinfo_data;
@@ -2251,10 +2253,14 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 
     int num_buf_ps = bps->size[0];
     int num_buf_tris = btris->size[0];
+
+    /*
     int num_buf_ps_pinfo = ppinfot[num_buf_ps];
     int num_buf_tris_pinfo = tpinfot[num_buf_tris];
+    */
 
     int *ps_map = (int *) calloc(num_buf_ps, sizeof(int));
+    int *tris_map = (int *) calloc(num_buf_tris, sizeof(int));
 
     unsigned char *buf_ps_flag = (unsigned char *) calloc(num_buf_ps, sizeof(unsigned char));
     unsigned char *buf_tris_flag = (unsigned char *) calloc(num_buf_tris, sizeof(unsigned char));
@@ -2270,7 +2276,7 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 	buf_ps_flag[I1dm(i)] = 1;
 	for(j = ppinfot[i-1]; j <= ppinfot[i]-1; j++)
 	{
-	    if (ppinfop[j] == cur_proc)
+	    if ((ppinfop[j] == cur_proc) && (ppinfol[j] != -1))
 	    {
 		buf_ps_flag[I1dm(i)] = 0;
 		ps_map[I1dm(i)] = ppinfol[j];
@@ -2289,50 +2295,194 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 	buf_tris_flag[I1dm(i)] = 1;
 	for(j = tpinfot[i-1]; j <= tpinfot[i]-1; j++)
 	{
-	    if (tpinfop[j] == cur_proc)
+	    if ((tpinfop[j] == cur_proc) && (tpinfol[j] != -1))
 	    {
 		buf_tris_flag[I1dm(i)] = 0;
+		tris_map[I1dm(i)] = tpinfol[j];
 		break;
 	    }
 	}
 	if (buf_tris_flag[I1dm(i)] == 1)
+	{
 	    num_add_tris++;
+	    tris_map[I1dm(i)] = num_tris_old + num_add_tris;
+	}
     }
     
+    // Allocated more space for ps and tris 
+
     addRowToArray_real_T(ps, num_add_ps);
     addRowToArray_int32_T(tris, num_add_tris);
 
-    /* Add each point, merge pinfo */
+     //Also need to allocated more space for head and tail in pinfolist 
 
-    num_add_ps = 0;
+    int *new_head_ps = (int *) calloc(num_ps_old + num_add_ps, sizeof(int));
+    int *new_tail_ps = (int *) calloc(num_ps_old + num_add_ps, sizeof(int));
+
+    int *new_head_tris = (int *) calloc(num_tris_old + num_add_tris, sizeof(int));
+    int *new_tail_tris = (int *) calloc(num_tris_old + num_add_tris, sizeof(int));
+
+    memcpy(new_head_ps, ps_pinfo->head, num_ps_old*sizeof(int));
+    memcpy(new_tail_ps, ps_pinfo->tail, num_ps_old*sizeof(int));
+
+    memcpy(new_head_tris, tris_pinfo->head, num_tris_old*sizeof(int));
+    memcpy(new_tail_tris, tris_pinfo->tail, num_tris_old*sizeof(int));
+
+
+    free(ps_pinfo->head);
+    free(ps_pinfo->tail);
+    free(tris_pinfo->head);
+    free(tris_pinfo->tail);
+
+    ps_pinfo->head = new_head_ps;
+    ps_pinfo->tail = new_tail_ps;
+
+    tris_pinfo->head = new_head_tris;
+    tris_pinfo->tail = new_tail_tris;
+    // Add each point, merge pinfo 
 
     for (i = 1; i <= num_buf_ps; i++)
     {
-	/* If not a new point, update the pinfo */
+	// If not a new point, update the pinfo 
 
+	if (buf_ps_flag[I1dm(i)] == 0)
+	{
+	    int ps_index = ps_map[I1dm(i)];
+	    for(j = ppinfot[i-1]; j <= ppinfot[i]-1; j++)
+	    {
+		if (ppinfol[j] == -1)
+		{
+		    hpEnsurePInfoCapacity(ps_pinfo);
+		    int cur_tail = ps_pinfo->tail[I1dm(ps_index)];
+		    int new_tail = ps_pinfo->allocated_len++; // new node
 
+		    ps_pinfo->pdata[I1dm(new_tail)].proc = ppinfop[j];
+		    ps_pinfo->pdata[I1dm(new_tail)].lindex = -1;
+		    ps_pinfo->pdata[I1dm(new_tail)].next = -1;
 
-	/* If a new point, add the point, the pinfo and update
-	 * based on the current local index */
+		    ps_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
+		    ps_pinfo->tail[I1dm(ps_index)] = new_tail;
+		}
+	    }
+	}
+	// If a new point, add the point, the pinfo and update
+	// based on the current local index 
+	else
+	{
+	    int ps_index = ps_map[I1dm(i)];
+	    ps->data[I2dm(ps_index,1,ps->size)] = bps->data[I2dm(i,1,bps->size)];
+	    ps->data[I2dm(ps_index,2,ps->size)] = bps->data[I2dm(i,2,bps->size)];
+	    ps->data[I2dm(ps_index,3,ps->size)] = bps->data[I2dm(i,3,bps->size)];
+
+	    // Deal with head ---> tail - 1 
+	    int cur_node;
+	    int new_head = ps_pinfo->allocated_len + 1;
+	    for (j = ppinfot[i-1]; j < ppinfot[i]-1; j++)
+	    {
+		hpEnsurePInfoCapacity(ps_pinfo);
+		cur_node = ps_pinfo->allocated_len++;
+
+		ps_pinfo->pdata[I1dm(cur_node)].proc = ppinfop[j];
+		ps_pinfo->pdata[I1dm(cur_node)].next = cur_node+1;
+
+		if (ppinfop[j] == cur_proc)
+		    ps_pinfo->pdata[I1dm(cur_node)].lindex = ps_index;
+		else
+		    ps_pinfo->pdata[I1dm(cur_node)].lindex = ppinfol[j];
+	    }
+	    ps_pinfo->head[I1dm(ps_index)] = new_head;
+
+	    // Deal with tail 
+	    j = ppinfot[i]-1;
+	    hpEnsurePInfoCapacity(ps_pinfo);
+	    cur_node = ps_pinfo->allocated_len++;
+	    ps_pinfo->pdata[I1dm(cur_node)].proc = ppinfop[j];
+	    ps_pinfo->pdata[I1dm(cur_node)].next = -1;
+
+	    if (ppinfop[j] == cur_proc)
+		ps_pinfo->pdata[I1dm(cur_node)].lindex = ps_index;
+	    else
+		ps_pinfo->pdata[I1dm(cur_node)].lindex = ppinfol[j];
+	    ps_pinfo->tail[I1dm(ps_index)] = cur_node;
+	}
     }
 
-    /* Add each triangle, merge pinfo */
-
-    num_add_tris = 0;
+    // Add each triangle, merge pinfo 
 
     for (i = 1; i <= num_buf_tris; i++)
     {
-	/* If not a new triangle, update the pinfo */
+	// If not a new triangle, update the pinfo 
 
+	if (buf_tris_flag[I1dm(i)] == 0)
+	{
+	    int tris_index = tris_map[I1dm(i)];
+	    for(j = tpinfot[i-1]; j <= tpinfot[i]-1; j++)
+	    {
+		if (tpinfol[j] == -1)
+		{
+		    hpEnsurePInfoCapacity(tris_pinfo);
+		    int cur_tail = tris_pinfo->tail[I1dm(tris_index)];
+		    int new_tail = tris_pinfo->allocated_len++; // new node 
 
-	/* If a new triangle, add the triangle, the pinfo and update
-	 * based on the current local index */
+		    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = tpinfop[j];
+		    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = -1;
+		    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = -1;
 
+		    tris_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
+		    tris_pinfo->tail[I1dm(tris_index)] = new_tail;
+		}
+	    }
+	}
+	// If a new point, add the point, the pinfo and update
+	// based on the current local index 
+	else
+	{
+	    int tris_index = tris_map[I1dm(i)];
+	    int recv_tri_index1 = btris->data[I2dm(i,1,btris->size)];
+	    int recv_tri_index2 = btris->data[I2dm(i,2,btris->size)];
+	    int recv_tri_index3 = btris->data[I2dm(i,3,btris->size)];
+
+	    tris->data[I2dm(tris_index,1,tris->size)] = ps_map[I1dm(recv_tri_index1)];
+	    tris->data[I2dm(tris_index,2,tris->size)] = ps_map[I1dm(recv_tri_index2)];
+	    tris->data[I2dm(tris_index,3,tris->size)] = ps_map[I1dm(recv_tri_index3)];
+
+	    // Deal with head ---> tail - 1 
+	    int cur_node;
+	    int new_head = tris_pinfo->allocated_len + 1;
+	    for (j = tpinfot[i-1]; j < tpinfot[i]-1; j++)
+	    {
+		hpEnsurePInfoCapacity(tris_pinfo);
+		cur_node = tris_pinfo->allocated_len++;
+
+		tris_pinfo->pdata[I1dm(cur_node)].proc = tpinfop[j];
+		tris_pinfo->pdata[I1dm(cur_node)].next = cur_node+1;
+
+		if (tpinfop[j] == cur_proc)
+		    tris_pinfo->pdata[I1dm(cur_node)].lindex = tris_index;
+		else
+		    tris_pinfo->pdata[I1dm(cur_node)].lindex = tpinfol[j];
+	    }
+	    tris_pinfo->head[I1dm(tris_index)] = new_head;
+
+	    // Deal with tail 
+	    hpEnsurePInfoCapacity(tris_pinfo);
+	    cur_node = tris_pinfo->allocated_len++;
+	    j = tpinfot[i]-1;
+
+	    tris_pinfo->pdata[I1dm(cur_node)].proc = tpinfop[j];
+	    tris_pinfo->pdata[I1dm(cur_node)].next = -1;
+
+	    if (tpinfop[j] == cur_proc)
+		tris_pinfo->pdata[I1dm(cur_node)].lindex = tris_index;
+	    else
+		tris_pinfo->pdata[I1dm(cur_node)].lindex = tpinfol[j];
+
+	    tris_pinfo->tail[I1dm(tris_index)] = cur_node;
+	}
     }
 
-
-
     free(ps_map);
+    free(tris_map);
     free(buf_ps_flag);
     free(buf_tris_flag);
 

@@ -62,6 +62,9 @@ int main(int argc, char* argv[])
     hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
 
+    char debug_filename[200];
+    sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
+    hpWriteUnstrMeshVtk3d(debug_filename, mesh);
 
     /*
     emxArray_int32_T *ring_ps, *ring_tris;
