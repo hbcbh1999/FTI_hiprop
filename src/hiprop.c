@@ -784,14 +784,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     int num_nbp = 0;
 
     MPI_Request *send_req_list = (MPI_Request *) malloc ( 2*(num_proc-1)*sizeof(MPI_Request) );
-
-    //MPI_Request *send_req_list1 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
-    //MPI_Request *send_req_list2 = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
-
     MPI_Status *send_status_list = (MPI_Status *) malloc( 2*(num_proc-1)*sizeof(MPI_Status) );
-
-    //MPI_Status *send_status_list1 = (MPI_Status *) malloc( (num_proc-1)*sizeof(MPI_Status) );
-    //MPI_Status *send_status_list2 = (MPI_Status *) malloc( (num_proc-1)*sizeof(MPI_Status) );
 
     MPI_Request *recv_req_list = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
 
@@ -1835,6 +1828,82 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 
 }
 
+void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
+				 const int nb_proc_index,
+				 emxArray_int32_T *ps_ring_proc,
+				 emxArray_int32_T *tris_ring_proc)
+{
+
+     /* Fill and build the temp pinfo information on each master processor 
+     * Step 1, For original pinfo, the new target processor is added as a new
+     * node with proc = new_proc_id, lindex = -1 (unknown) to the tail
+     */
+
+    hpPInfoList *ps_pinfo = mesh->ps_pinfo;
+    hpPInfoList *tris_pinfo = mesh->tris_pinfo;
+
+    int j;
+
+    int num_ps_buffer = ps_ring_proc->size[0];
+    int num_tris_buffer = tris_ring_proc->size[0];
+    int target_proc_id = mesh->nb_proc->data[I1dm(nb_proc_index)];
+
+    /* Finish Step 1 */
+    {
+	for (j = 1; j <= num_ps_buffer; j++)
+	{
+	    unsigned char overlay_flag = 0;
+	    int cur_ps_index = ps_ring_proc->data[I1dm(j)];
+	    int next_node = ps_pinfo->head[I1dm(cur_ps_index)];
+	    while(next_node != -1)
+	    {
+		if (ps_pinfo->pdata[I1dm(next_node)].proc == target_proc_id)
+		    overlay_flag = 1;
+
+		next_node = ps_pinfo->pdata[I1dm(next_node)].next;
+	    }
+	    if (overlay_flag == 0)
+	    {
+		int cur_tail = ps_pinfo->tail[I1dm(cur_ps_index)];
+		hpEnsurePInfoCapacity(ps_pinfo);
+		ps_pinfo->allocated_len++;
+		int new_tail = ps_pinfo->allocated_len;
+		ps_pinfo->pdata[I1dm(new_tail)].next = -1;
+		ps_pinfo->pdata[I1dm(new_tail)].lindex = -1;
+		ps_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
+		ps_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
+		ps_pinfo->tail[I1dm(cur_ps_index)] = new_tail;
+	    }
+	}
+
+	for (j = 1; j <= num_tris_buffer; j++)
+	{
+	    unsigned char overlay_flag = 0;
+	    int cur_tri_index = tris_ring_proc->data[I1dm(j)];
+	    int next_node = tris_pinfo->head[I1dm(cur_tri_index)];
+	    while(next_node != -1)
+	    {
+		if (tris_pinfo->pdata[I1dm(next_node)].proc == target_proc_id)
+		    overlay_flag = 1;
+		
+		next_node = tris_pinfo->pdata[I1dm(next_node)].next;
+	    }
+	    if (overlay_flag == 0)
+	    {
+		int cur_tail = tris_pinfo->tail[I1dm(cur_tri_index)];
+		hpEnsurePInfoCapacity(tris_pinfo);
+		tris_pinfo->allocated_len++;
+		int new_tail = tris_pinfo->allocated_len;
+		tris_pinfo->pdata[I1dm(new_tail)].next = -1;
+		tris_pinfo->pdata[I1dm(new_tail)].lindex = -1;
+		tris_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
+		tris_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
+		tris_pinfo->tail[I1dm(cur_tri_index)] = new_tail;
+	    }
+	}
+    }
+}
+
 void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 				    const int nb_proc_index,
 				    emxArray_int32_T *ps_ring_proc,
@@ -1847,8 +1916,6 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 				    int **buffer_tris_pinfo_proc)
 {
     /* Fill and build the temp pinfo information on each master processor 
-     * Step 1, For original pinfo, the new target processor is added as a new
-     * node with proc = new_proc_id, lindex = -1 (unknown) to the tail
      * Step 2, Use the updated original pinfo to build the temp pinfo for MPI
      * send
      */
@@ -1871,9 +1938,8 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 
     int num_ps_buffer = ps_ring_proc->size[0];
     int num_tris_buffer = tris_ring_proc->size[0];
-    int target_proc_id = mesh->nb_proc->data[I1dm(nb_proc_index)];
 
-    /* Finish Step 1 and fill buffer_ps_pinfo_tag & buffer_tris_pinfo_tag */
+    /* Fill buffer_ps_pinfo_tag & buffer_tris_pinfo_tag */
     {
 	(*buffer_ps_pinfo_tag) = (int *) calloc(num_ps_buffer+1, sizeof(int));
 	(*buffer_tris_pinfo_tag) = (int *) calloc(num_tris_buffer+1, sizeof(int));
@@ -1884,29 +1950,12 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 	for (j = 1; j <= num_ps_buffer; j++)
 	{
 	    int num_pinfo_data = 0;
-	    unsigned char overlay_flag = 0;
 	    int cur_ps_index = ps_ring_proc->data[I1dm(j)];
 	    int next_node = ps_pinfo->head[I1dm(cur_ps_index)];
 	    while(next_node != -1)
 	    {
 		num_pinfo_data++;
-		if (ps_pinfo->pdata[I1dm(next_node)].proc == target_proc_id)
-		    overlay_flag = 1;
-
 		next_node = ps_pinfo->pdata[I1dm(next_node)].next;
-	    }
-	    if (overlay_flag == 0)
-	    {
-		int cur_tail = ps_pinfo->tail[I1dm(cur_ps_index)];
-		hpEnsurePInfoCapacity(ps_pinfo);
-		ps_pinfo->allocated_len++;
-		int new_tail = ps_pinfo->allocated_len;
-		ps_pinfo->pdata[I1dm(new_tail)].next = -1;
-		ps_pinfo->pdata[I1dm(new_tail)].lindex = -1;
-		ps_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
-		ps_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
-		ps_pinfo->tail[I1dm(cur_ps_index)] = new_tail;
-		num_pinfo_data++;
 	    }
 	    buffer_ps_pinfo_length += num_pinfo_data;
 	    (*buffer_ps_pinfo_tag)[j] = buffer_ps_pinfo_length;
@@ -1916,29 +1965,12 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 	for (j = 1; j <= num_tris_buffer; j++)
 	{
 	    int num_pinfo_data = 0;
-	    unsigned char overlay_flag = 0;
 	    int cur_tri_index = tris_ring_proc->data[I1dm(j)];
 	    int next_node = tris_pinfo->head[I1dm(cur_tri_index)];
 	    while(next_node != -1)
 	    {
 		num_pinfo_data++;
-		if (tris_pinfo->pdata[I1dm(next_node)].proc == target_proc_id)
-		    overlay_flag = 1;
-		
 		next_node = tris_pinfo->pdata[I1dm(next_node)].next;
-	    }
-	    if (overlay_flag == 0)
-	    {
-		int cur_tail = tris_pinfo->tail[I1dm(cur_tri_index)];
-		hpEnsurePInfoCapacity(tris_pinfo);
-		tris_pinfo->allocated_len++;
-		int new_tail = tris_pinfo->allocated_len;
-		tris_pinfo->pdata[I1dm(new_tail)].next = -1;
-		tris_pinfo->pdata[I1dm(new_tail)].lindex = -1;
-		tris_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
-		tris_pinfo->pdata[I1dm(cur_tail)].next = new_tail;
-		tris_pinfo->tail[I1dm(cur_tri_index)] = new_tail;
-		num_pinfo_data++;
 	    }
 	    buffer_tris_pinfo_length += num_pinfo_data;
 	    (*buffer_tris_pinfo_tag)[j] = buffer_tris_pinfo_length;
@@ -1982,6 +2014,93 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 	    }
 	}
     }
+}
+
+
+void hpUpdateNbWithPInfo(hiPropMesh *mesh)
+{
+    int i;
+    int num_proc;
+    int cur_proc;
+    MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+
+    int *head = mesh->ps_pinfo->head;
+    hpPInfoNode *pdata = mesh->ps_pinfo->pdata;
+
+    unsigned char *nb_flag = calloc(num_proc, sizeof(unsigned char));
+
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	int next_node = head[I1dm(i)];
+	while(next_node != -1)
+	{
+	    nb_flag[pdata[next_node].proc] = 1;
+	    next_node = pdata[next_node].next;
+	}
+    }
+
+    int new_num_nbp = 0;
+    
+    for (i = 0; i < cur_proc; i++)
+    {
+	if (nb_flag[i] == 1)
+	    new_num_nbp++;
+    }
+    for (i = cur_proc+1; i < num_proc; i++)
+    {
+	if (nb_flag[i] == 1)
+	    new_num_nbp++;
+    }
+
+    emxArray_int32_T *new_nb_proc = emxCreateND_int32_T(1, &new_num_nbp);
+
+    int j = 0;
+    for (i = 0; i < cur_proc; i++)
+    {
+	if (nb_flag[i] == 1)
+	{
+	    new_nb_proc->data[j] = i;
+	    j++;
+	}
+    }
+    for (i = cur_proc+1; i < num_proc; i++)
+    {
+	if (nb_flag[i] == 1)
+	{
+	    new_nb_proc->data[j] = i;
+	    j++;
+	}
+    }
+
+    emxFree_int32_T(&(mesh->nb_proc));
+    mesh->nb_proc = new_nb_proc;
+
+    free(nb_flag);
+}
+
+void hpUpdatePInfo(hiPropMesh *mesh)
+{
+    int cur_proc;
+    MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
+    int i;
+
+    int num_nb_proc = mesh->nb_proc->size[0];
+
+    emxArray_int32_T **psid_proc = (emxArray_int32_T **)
+	calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+
+    /* Get the overlapping points for building up n-ring neighborhood */
+    hpCollectAllOverlayPs(mesh, psid_proc);
+
+
+
+
+    for (i = 1 ;i <= num_nb_proc; i++)
+	emxFree_int32_T(&(psid_proc[I1dm(i)]));
+    free(psid_proc);
+
+
 }
 
 
@@ -2049,6 +2168,11 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
 				  &(ps_ring_proc[I1dm(i)]),
 				  &(tris_ring_proc[I1dm(i)]), 
 				  &(buffer_ps[I1dm(i)]), &(buffer_tris[I1dm(i)]));
+    }
+
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+	hpAddProcInfoForGhostPsTris(mesh, i, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)]);
     }
 
     for (i = 1; i <= num_nb_proc; i++)
@@ -2228,6 +2352,10 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
     free(buffer_tris_pinfo_proc);
 
     /* Update nb_proc information based on the new pinfo */
+    hpUpdateNbWithPInfo(mesh);
+
+    /* Merge pinfo for ps/tris to get a fully updated pinfo list */
+    //hpUpdatePInfo(mesh);
 
 }
 
@@ -2317,12 +2445,12 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	}
     }
     
-    // Allocated more space for ps and tris 
+    /* Allocated more space for ps and tris */
 
     addRowToArray_real_T(ps, num_add_ps);
     addRowToArray_int32_T(tris, num_add_tris);
 
-     //Also need to allocated more space for head and tail in pinfolist 
+    /* Also need to allocated more space for head and tail in pinfolist */
 
     int *new_head_ps = (int *) calloc(num_ps_old + num_add_ps, sizeof(int));
     int *new_tail_ps = (int *) calloc(num_ps_old + num_add_ps, sizeof(int));
@@ -2346,12 +2474,12 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 
     tris_pinfo->head = new_head_tris;
     tris_pinfo->tail = new_tail_tris;
-    // Add each point, merge pinfo 
 
+    /* Add each point, merge pinfo */
 
     for (i = 1; i <= num_buf_ps; i++)
     {
-	// If not a new point, update the pinfo 
+	/* If not a new point, update the pinfo */
 
 	if (buf_ps_flag[I1dm(i)] == 0)
 	{
@@ -2363,7 +2491,7 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 		    hpEnsurePInfoCapacity(ps_pinfo);
 		    int cur_tail = ps_pinfo->tail[I1dm(ps_index)];
 		    ps_pinfo->allocated_len++;
-		    int new_tail = ps_pinfo->allocated_len; // new node
+		    int new_tail = ps_pinfo->allocated_len; /* new node */
 		    ps_pinfo->pdata[I1dm(new_tail)].proc = ppinfop[j];
 		    ps_pinfo->pdata[I1dm(new_tail)].lindex = -1;
 		    ps_pinfo->pdata[I1dm(new_tail)].next = -1;
@@ -2373,8 +2501,8 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 		}
 	    }
 	}
-	// If a new point, add the point, the pinfo and update
-	// based on the current local index 
+	/* If a new point, add the point, the pinfo and update
+	 * based on the current local index */
 	else
 	{
 
@@ -2384,7 +2512,7 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	    ps->data[I2dm(ps_index,2,ps->size)] = bps->data[I2dm(i,2,bps->size)];
 	    ps->data[I2dm(ps_index,3,ps->size)] = bps->data[I2dm(i,3,bps->size)];
 
-	    // Deal with head ---> tail - 1 
+	    /* Deal with head ---> tail - 1 */
 	    int cur_node;
 	    int new_head = ps_pinfo->allocated_len + 1;
 	    for (j = ppinfot[i-1]; j < ppinfot[i]-1; j++)
@@ -2402,7 +2530,7 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	    }
 	    ps_pinfo->head[I1dm(ps_index)] = new_head;
 
-	    // Deal with tail 
+	    /* Deal with tail */
 	    j = ppinfot[i]-1;
 	    hpEnsurePInfoCapacity(ps_pinfo);
 	    ps_pinfo->allocated_len++;
@@ -2418,11 +2546,11 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	}
     }
 
-    // Add each triangle, merge pinfo 
+    /* Add each triangle, merge pinfo */
 
     for (i = 1; i <= num_buf_tris; i++)
     {
-	// If not a new triangle, update the pinfo 
+	/* If not a new triangle, update the pinfo */
 
 	if (buf_tris_flag[I1dm(i)] == 0)
 	{
@@ -2433,8 +2561,8 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 		{
 		    hpEnsurePInfoCapacity(tris_pinfo);
 		    int cur_tail = tris_pinfo->tail[I1dm(tris_index)];
-		    tris_pinfo->allocated_len++;
-		    int new_tail = tris_pinfo->allocated_len; // new node 
+		    tris_pinfo->allocated_len++; /* new node */
+		    int new_tail = tris_pinfo->allocated_len; 
 
 		    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = tpinfop[j];
 		    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = -1;
@@ -2445,8 +2573,8 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 		}
 	    }
 	}
-	// If a new point, add the point, the pinfo and update
-	// based on the current local index 
+	/* If a new point, add the point, the pinfo and update
+	 * based on the current local index */
 	else
 	{
 	    int tris_index = tris_map[I1dm(i)];
@@ -2459,7 +2587,7 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	    tris->data[I2dm(tris_index,2,tris->size)] = ps_map[I1dm(recv_tri_index2)];
 	    tris->data[I2dm(tris_index,3,tris->size)] = ps_map[I1dm(recv_tri_index3)];
 
-	    // Deal with head ---> tail - 1 
+	    /* Deal with head ---> tail - 1 */
 	    int cur_node;
 	    int new_head = tris_pinfo->allocated_len + 1;
 	    for (j = tpinfot[i-1]; j < tpinfot[i]-1; j++)
@@ -2478,7 +2606,7 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	    }
 	    tris_pinfo->head[I1dm(tris_index)] = new_head;
 
-	    // Deal with tail 
+	    /* Deal with tail */
 	    hpEnsurePInfoCapacity(tris_pinfo);
 	    tris_pinfo->allocated_len++;
 	    cur_node = tris_pinfo->allocated_len;

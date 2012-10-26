@@ -379,4 +379,13 @@ extern void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					int *tpinfol,
 					int *tpinfop);
 
+extern void hpUpdatePInfo(hiPropMesh *mesh);
+
+extern void hpUpdateNbWithPInfo(hiPropMesh *mesh);
+
+extern void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
+					const int nb_proc_index,
+					emxArray_int32_T *ps_ring_proc,
+					emxArray_int32_T *tris_ring_proc);
+
 #endif
