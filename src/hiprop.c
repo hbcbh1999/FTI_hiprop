@@ -1899,7 +1899,8 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 	    {
 		int cur_tail = ps_pinfo->tail[I1dm(cur_ps_index)];
 		hpEnsurePInfoCapacity(ps_pinfo);
-		int new_tail = ps_pinfo->allocated_len++;
+		ps_pinfo->allocated_len++;
+		int new_tail = ps_pinfo->allocated_len;
 		ps_pinfo->pdata[I1dm(new_tail)].next = -1;
 		ps_pinfo->pdata[I1dm(new_tail)].lindex = -1;
 		ps_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
@@ -1930,7 +1931,8 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 	    {
 		int cur_tail = tris_pinfo->tail[I1dm(cur_tri_index)];
 		hpEnsurePInfoCapacity(tris_pinfo);
-		int new_tail = tris_pinfo->allocated_len++;
+		tris_pinfo->allocated_len++;
+		int new_tail = tris_pinfo->allocated_len;
 		tris_pinfo->pdata[I1dm(new_tail)].next = -1;
 		tris_pinfo->pdata[I1dm(new_tail)].lindex = -1;
 		tris_pinfo->pdata[I1dm(new_tail)].proc = target_proc_id;
@@ -2039,14 +2041,18 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
     int tag_tris_pinfo2 = 61;
     int tag_tris_pinfo3 = 62;
 
+
+
     for (i = 1; i <= num_nb_proc; i++)
     {
 	hpBuildGhostPsTrisForSend(mesh, i, num_ring, psid_proc[I1dm(i)],
 				  &(ps_ring_proc[I1dm(i)]),
 				  &(tris_ring_proc[I1dm(i)]), 
 				  &(buffer_ps[I1dm(i)]), &(buffer_tris[I1dm(i)]));
+    }
 
-
+    for (i = 1; i <= num_nb_proc; i++)
+    {
 	hpBuildGhostPsTrisPInfoForSend(mesh, i, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)],
 		&(buffer_ps_pinfo_tag[I1dm(i)]),
 		&(buffer_ps_pinfo_lindex[I1dm(i)]),
@@ -2227,7 +2233,7 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
 
 
 
-void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
+void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 				 const int rcv_id,
 				 emxArray_real_T *bps,
 				 emxArray_int32_T *btris,
@@ -2238,6 +2244,7 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 				 int *tpinfol,
 				 int *tpinfop)
 {
+
     int i,j;
     int cur_proc;
     MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
@@ -2267,6 +2274,7 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 
     int num_add_ps = 0;
     int num_add_tris = 0;
+
 
     /* Calculate # of new ps/tris and allocated the memory
      * Update ps_map, have all new ps and tris flagged */
@@ -2328,7 +2336,6 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
     memcpy(new_head_tris, tris_pinfo->head, num_tris_old*sizeof(int));
     memcpy(new_tail_tris, tris_pinfo->tail, num_tris_old*sizeof(int));
 
-
     free(ps_pinfo->head);
     free(ps_pinfo->tail);
     free(tris_pinfo->head);
@@ -2340,6 +2347,7 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
     tris_pinfo->head = new_head_tris;
     tris_pinfo->tail = new_tail_tris;
     // Add each point, merge pinfo 
+
 
     for (i = 1; i <= num_buf_ps; i++)
     {
@@ -2354,8 +2362,8 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 		{
 		    hpEnsurePInfoCapacity(ps_pinfo);
 		    int cur_tail = ps_pinfo->tail[I1dm(ps_index)];
-		    int new_tail = ps_pinfo->allocated_len++; // new node
-
+		    ps_pinfo->allocated_len++;
+		    int new_tail = ps_pinfo->allocated_len; // new node
 		    ps_pinfo->pdata[I1dm(new_tail)].proc = ppinfop[j];
 		    ps_pinfo->pdata[I1dm(new_tail)].lindex = -1;
 		    ps_pinfo->pdata[I1dm(new_tail)].next = -1;
@@ -2369,7 +2377,9 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 	// based on the current local index 
 	else
 	{
+
 	    int ps_index = ps_map[I1dm(i)];
+
 	    ps->data[I2dm(ps_index,1,ps->size)] = bps->data[I2dm(i,1,bps->size)];
 	    ps->data[I2dm(ps_index,2,ps->size)] = bps->data[I2dm(i,2,bps->size)];
 	    ps->data[I2dm(ps_index,3,ps->size)] = bps->data[I2dm(i,3,bps->size)];
@@ -2380,8 +2390,8 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 	    for (j = ppinfot[i-1]; j < ppinfot[i]-1; j++)
 	    {
 		hpEnsurePInfoCapacity(ps_pinfo);
-		cur_node = ps_pinfo->allocated_len++;
-
+		ps_pinfo->allocated_len++;
+		cur_node = ps_pinfo->allocated_len;
 		ps_pinfo->pdata[I1dm(cur_node)].proc = ppinfop[j];
 		ps_pinfo->pdata[I1dm(cur_node)].next = cur_node+1;
 
@@ -2395,7 +2405,8 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 	    // Deal with tail 
 	    j = ppinfot[i]-1;
 	    hpEnsurePInfoCapacity(ps_pinfo);
-	    cur_node = ps_pinfo->allocated_len++;
+	    ps_pinfo->allocated_len++;
+	    cur_node = ps_pinfo->allocated_len;
 	    ps_pinfo->pdata[I1dm(cur_node)].proc = ppinfop[j];
 	    ps_pinfo->pdata[I1dm(cur_node)].next = -1;
 
@@ -2422,7 +2433,8 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 		{
 		    hpEnsurePInfoCapacity(tris_pinfo);
 		    int cur_tail = tris_pinfo->tail[I1dm(tris_index)];
-		    int new_tail = tris_pinfo->allocated_len++; // new node 
+		    tris_pinfo->allocated_len++;
+		    int new_tail = tris_pinfo->allocated_len; // new node 
 
 		    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = tpinfop[j];
 		    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = -1;
@@ -2438,6 +2450,7 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 	else
 	{
 	    int tris_index = tris_map[I1dm(i)];
+
 	    int recv_tri_index1 = btris->data[I2dm(i,1,btris->size)];
 	    int recv_tri_index2 = btris->data[I2dm(i,2,btris->size)];
 	    int recv_tri_index3 = btris->data[I2dm(i,3,btris->size)];
@@ -2452,7 +2465,8 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 	    for (j = tpinfot[i-1]; j < tpinfot[i]-1; j++)
 	    {
 		hpEnsurePInfoCapacity(tris_pinfo);
-		cur_node = tris_pinfo->allocated_len++;
+		tris_pinfo->allocated_len++;
+		cur_node = tris_pinfo->allocated_len;
 
 		tris_pinfo->pdata[I1dm(cur_node)].proc = tpinfop[j];
 		tris_pinfo->pdata[I1dm(cur_node)].next = cur_node+1;
@@ -2466,7 +2480,8 @@ void hpAttachNRingGhostWithPInfo(const hiPropMesh *mesh,
 
 	    // Deal with tail 
 	    hpEnsurePInfoCapacity(tris_pinfo);
-	    cur_node = tris_pinfo->allocated_len++;
+	    tris_pinfo->allocated_len++;
+	    cur_node = tris_pinfo->allocated_len;
 	    j = tpinfot[i]-1;
 
 	    tris_pinfo->pdata[I1dm(cur_node)].proc = tpinfop[j];
