@@ -343,6 +343,8 @@ extern void hpCollectNRingTris(const hiPropMesh *mesh,
  */
 extern void hpCollectAllOverlayPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
 
+extern void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh);
+
 extern void hpDebugOutput(const hiPropMesh *mesh,
 			  const emxArray_int32_T *debug_ps,
 			  const emxArray_int32_T *debug_tris,

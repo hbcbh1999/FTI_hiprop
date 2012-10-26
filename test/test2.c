@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
-    hpWriteUnstrMeshVtk3d(debug_filename, mesh);
+    hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
 
     /*
     emxArray_int32_T *ring_ps, *ring_tris;

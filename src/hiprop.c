@@ -2794,3 +2794,88 @@ void hpDebugOutput(const hiPropMesh *mesh, const emxArray_int32_T *debug_ps,
     free(ps_mapping);
 }
 
+void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
+{
+    FILE* file;
+    int i;
+    int cur_proc;
+    MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
+    emxArray_real_T* points = mesh->ps;
+    emxArray_int32_T* tris = mesh->tris;
+    
+    int *ps_head = mesh->ps_pinfo->head;
+    int *ps_tail = mesh->ps_pinfo->tail;
+    hpPInfoNode *ps_pdata = mesh->ps_pinfo->pdata;
+
+    int *tri_head = mesh->tris_pinfo->head;
+    int *tri_tail = mesh->tris_pinfo->tail;
+    hpPInfoNode *tri_pdata = mesh->tris_pinfo->pdata;
+
+    file = fopen(name, "w");
+
+    fprintf(file, "# vtk DataFile Version 3.0\n");
+    fprintf(file, "Mesh output by hiProp\n");
+    fprintf(file, "ASCII\n");
+    fprintf(file, "DATASET UNSTRUCTURED_GRID\n");
+
+    int num_points = mesh->ps->size[0];
+    int num_tris = mesh->tris->size[0];
+
+    fprintf(file, "POINTS %d double\n", num_points);
+    for (i = 1; i <= num_points; i++)
+	fprintf(file, "%lf %lf %lf\n",
+		points->data[I2dm(i,1,points->size)],
+		points->data[I2dm(i,2,points->size)],
+		points->data[I2dm(i,3,points->size)]);
+
+    fprintf(file, "CELLS %d %d\n", num_tris, 4*num_tris);
+    for (i = 1; i <= num_tris; i++)
+	fprintf(file, "3 %d %d %d\n",
+		tris->data[I2dm(i,1,tris->size)]-1,
+		tris->data[I2dm(i,2,tris->size)]-1,
+		tris->data[I2dm(i,3,tris->size)]-1);
+
+    fprintf(file, "CELL_TYPES %d\n", num_tris);
+    for (i = 0; i<num_tris; i++)
+	fprintf(file, "5\n");
+
+
+    fprintf(file, "POINT_DATA %d\n", num_points);
+    fprintf(file, "SCALARS point_type int 1\n");
+    fprintf(file, "LOOKUP_TABLE default\n");
+    for (i = 0; i < num_points; i++)
+    {
+	int ps_type;
+	if (ps_pdata[ps_head[i]-1].proc != cur_proc)
+	    ps_type = 2; /* buffer ps */
+	else
+	{
+	    if(ps_head[i] != ps_tail[i])
+		ps_type = 1; /* overlay tri */
+	    else
+		ps_type = 0; /* interior tri */
+	}
+	fprintf(file, "%d\n", ps_type);
+    }
+
+    fprintf(file, "CELL_DATA %d\n", num_tris);
+    fprintf(file, "SCALARS tri_type int 1\n");
+    fprintf(file, "LOOKUP_TABLE default\n");
+    for (i = 0; i < num_tris; i++)
+    {
+	int tri_type;
+	if (tri_pdata[tri_head[i]-1].proc != cur_proc)
+	    tri_type = 2; /* buffer tri */
+	else
+	{
+	    if(tri_head[i] != tri_tail[i])
+		tri_type = 1; /* overlay tri */
+	    else
+		tri_type = 0; /* interior tri */
+	}
+	fprintf(file, "%d\n", tri_type);
+    }
+
+    fclose(file);
+
+}
