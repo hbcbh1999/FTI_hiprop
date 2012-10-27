@@ -3,8 +3,8 @@ CXX = mpicxx
 AR  = ar
 
 #metis_Dir = /Users/yijiezhou/pkg/metis
-#metis_Dir = /home/Yijie/pkg/metis
-metis_Dir = ./pkg/metis
+metis_Dir = /home/Yijie/pkg/metis
+#metis_Dir = ./pkg/metis
 metis_Include = -I${metis_Dir}/include
 metis_lib = -L${metis_Dir}/lib
 
@@ -20,7 +20,7 @@ test2.exe: pre test2.o libhiprop.a
 test3.exe: pre test3.o libhiprop.a
 	$(CC) -g -o $@ $(CPPFLAGS) test3.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
 
-all: test.exe test2.exe test3.exe doc
+all: test.exe test2.exe test3.exe
 
 lib: pre libhiprop.a
 
@@ -51,11 +51,7 @@ clean:
 	rm -f *.o *.exe *.a
 	rm -f *.gch
 	rm -rf doc
-	rm -f tags
-	rm -f src/tags
-	rm -f include/tags
 	rm -f include/stdafx.h.gch
-	rm -f test/tags
 	rm -f *.vtk
 	rm -f run-log.*
 

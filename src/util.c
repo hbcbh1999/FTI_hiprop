@@ -8,6 +8,50 @@
 
 #include "util.h"
 
+static void b_fix(real_T *x);
+static real_T length(const emxArray_int32_T *x);
+/*
+static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimensions);
+static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
+
+
+static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
+  numDimensions)
+{
+  emxArray_int32_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_int32_T *)malloc(sizeof(emxArray_int32_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (int32_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
+}
+
+static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
+{
+  emxArray_real_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_real_T *)malloc(sizeof(emxArray_real_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (real_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
+}
+*/
 
 void right_flush(const int n, int ndigits, char *s)
 {
@@ -698,13 +742,11 @@ void determine_opposite_halfedge_tri(int32_T nv, const emxArray_int32_T *tris,
 }
 
 void determine_incident_halfedges(const emxArray_int32_T *elems, const
-  emxArray_int32_T *opphes, emxArray_real_T *v2he)
+  emxArray_int32_T *opphes, emxArray_int32_T *v2he)
 {
   int32_T kk;
-  int32_T lid;
-  int32_T i0;
+  int32_T loop_ub;
   boolean_T guard1 = FALSE;
-  real_T d0;
   uint32_T a;
 
   /* DETERMINE_INCIDENT_HALFEDGES Determine an incident halfedges. */
@@ -725,18 +767,15 @@ void determine_incident_halfedges(const emxArray_int32_T *elems, const
   /* 'determine_incident_halfedges:18' coder.inline('never'); */
   /* 'determine_incident_halfedges:19' assert((size(elems,2)==3) && (size(elems,1)>=1) && isa(elems,'int32')); */
   /* 'determine_incident_halfedges:20' assert((size(opphes,2)==3) && (size(opphes,1)>=1) && isa(opphes,'int32')); */
-  /* 'determine_incident_halfedges:21' assert((size(v2he,2)==3) && (size(v2he,1)>=1) && isa(v2he,'double')); */
+  /* 'determine_incident_halfedges:21' assert((size(v2he,2)==1) && (size(v2he,1)>=1) && isa(v2he,'int32')); */
   /* 'determine_incident_halfedges:23' if nargin<3 */
   /* 'determine_incident_halfedges:35' else */
   /* 'determine_incident_halfedges:36' v2he(:) = 0; */
-  kk = v2he->size[0] * v2he->size[1];
-  v2he->size[1] = 3;
-  emxEnsureCapacity((emxArray__common *)v2he, kk, (int32_T)sizeof(real_T));
-  for (kk = 0; kk < 3; kk++) {
-    lid = v2he->size[0] - 1;
-    for (i0 = 0; i0 <= lid; i0++) {
-      v2he->data[i0 + v2he->size[0] * kk] = 0.0;
-    }
+  kk = v2he->size[0];
+  emxEnsureCapacity((emxArray__common *)v2he, kk, (int32_T)sizeof(int32_T));
+  loop_ub = v2he->size[0] - 1;
+  for (kk = 0; kk <= loop_ub; kk++) {
+    v2he->data[kk] = 0;
   }
 
   /* 'determine_incident_halfedges:39' for kk=1:int32(size(elems,1)) */
@@ -744,35 +783,31 @@ void determine_incident_halfedges(const emxArray_int32_T *elems, const
   while ((kk + 1 <= elems->size[0]) && (!(elems->data[kk] == 0))) {
     /* 'determine_incident_halfedges:40' if elems(kk,1)==0 */
     /* 'determine_incident_halfedges:42' for lid=1:int32(size(elems,2)) */
-    for (lid = 0; lid < 3; lid++) {
+    for (loop_ub = 0; loop_ub < 3; loop_ub++) {
       /* 'determine_incident_halfedges:43' v = elems(kk,lid); */
       /* 'determine_incident_halfedges:44' if v>0 && (v2he(v)==0 || opphes( kk,lid) == 0 || ... */
       /* 'determine_incident_halfedges:45' 	     (opphes( int32( bitshift( uint32(v2he(v)),-2)), mod(v2he(v),4)+1) && opphes( kk, lid)<0)) */
-      if (elems->data[kk + elems->size[0] * lid] > 0) {
+      if (elems->data[kk + elems->size[0] * loop_ub] > 0) {
         guard1 = FALSE;
-        if ((v2he->data[elems->data[kk + elems->size[0] * lid] - 1] == 0.0) ||
-            (opphes->data[kk + opphes->size[0] * lid] == 0)) {
+        if ((v2he->data[elems->data[kk + elems->size[0] * loop_ub] - 1] == 0) ||
+            (opphes->data[kk + opphes->size[0] * loop_ub] == 0)) {
           guard1 = TRUE;
         } else {
-          d0 = v2he->data[elems->data[kk + elems->size[0] * lid] - 1];
-          if ((d0 < 4.503599627370496E+15) && (d0 > -4.503599627370496E+15)) {
-            d0 = d0 < 0.0 ? ceil(d0 - 0.5) : floor(d0 + 0.5);
-          }
-
-          a = (uint32_T)d0;
-          if ((opphes->data[((int32_T)(a >> 2U) + opphes->size[0] * ((int32_T)
-                 ((v2he->data[elems->data[kk + elems->size[0] * lid] - 1] -
-                   floor(v2he->data[elems->data[kk + elems->size[0] * lid] - 1] /
-                         4.0) * 4.0) + 1.0) - 1)) - 1] != 0) && (opphes->data[kk
-               + opphes->size[0] * lid] < 0)) {
+          a = (uint32_T)v2he->data[elems->data[kk + elems->size[0] * loop_ub] -
+            1];
+          if ((opphes->data[((int32_T)(a >> 2U) + opphes->size[0] * (v2he->
+                 data[elems->data[kk + elems->size[0] * loop_ub] - 1] -
+                 ((v2he->data[elems->data[kk + elems->size[0] * loop_ub] - 1] >>
+                   2) << 2))) - 1] != 0) && (opphes->data[kk + opphes->size[0] *
+               loop_ub] < 0)) {
             guard1 = TRUE;
           }
         }
 
         if (guard1 == TRUE) {
           /* 'determine_incident_halfedges:46' v2he(v) = 4*kk + lid - 1; */
-          v2he->data[elems->data[kk + elems->size[0] * lid] - 1] = (real_T)(((kk
-            + 1) << 2) + lid);
+          v2he->data[elems->data[kk + elems->size[0] * loop_ub] - 1] = ((kk + 1)
+            << 2) + loop_ub;
         }
       }
     }
@@ -781,7 +816,7 @@ void determine_incident_halfedges(const emxArray_int32_T *elems, const
   }
 }
 
-void b_fix(real_T *x)
+static void b_fix(real_T *x)
 {
   if (*x > 0.0) {
     *x = floor(*x);
@@ -790,7 +825,7 @@ void b_fix(real_T *x)
   }
 }
 
-real_T length(const emxArray_int32_T *x)
+static real_T length(const emxArray_int32_T *x)
 {
   real_T n;
   if (x->size[0] == 0) {
@@ -805,11 +840,10 @@ real_T length(const emxArray_int32_T *x)
 }
 
 void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const
-  emxArray_int32_T *tris, const emxArray_int32_T *opphes, const emxArray_real_T *
-  v2he, emxArray_int32_T *ngbvs, emxArray_boolean_T *vtags, emxArray_boolean_T
-  *ftags, emxArray_int32_T *ngbfs, int32_T *nverts, int32_T *nfaces)
+  emxArray_int32_T *tris, const emxArray_int32_T *opphes, const emxArray_int32_T
+  *v2he, emxArray_int32_T *ngbvs, emxArray_boolean_T *vtags, emxArray_boolean_T *
+  ftags, emxArray_int32_T *ngbfs, int32_T *nverts, int32_T *nfaces)
 {
-  real_T d0;
   int32_T fid;
   int32_T lid;
   boolean_T overflow;
@@ -889,7 +923,7 @@ void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const
   /* 'obtain_nring_surf:52' assert(isscalar(minpnts)&&isa(minpnts,'int32')); */
   /* 'obtain_nring_surf:53' assert((size(tris,2)==3) && (size(tris,1)>=1) && isa(tris,'int32')); */
   /* 'obtain_nring_surf:54' assert((size(opphes,2)==3) && (size(opphes,1)>=1) && isa(opphes,'int32')); */
-  /* 'obtain_nring_surf:55' assert((size(v2he,2)==3) && (size(v2he,1)>=1) && isa(v2he,'double')); */
+  /* 'obtain_nring_surf:55' assert((size(v2he,2)==1) && (size(v2he,1)>=1) && isa(v2he,'int32')); */
   /* 'obtain_nring_surf:56' assert((size(ngbvs,2)==1) && (size(ngbvs,1)>=1) && isa(ngbvs,'int32')); */
   /* 'obtain_nring_surf:57' assert((size(vtags,2)==1) && (size(vtags,1)>=1) && isa(vtags,'logical')); */
   /* 'obtain_nring_surf:58' assert((size(ftags,2)==1) && (size(ftags,1)>=1) && isa(ftags,'logical')); */
@@ -904,23 +938,13 @@ void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const
   /*  HEID2FID   Obtains face ID from half-edge ID. */
   /* 'heid2fid:3' coder.inline('always'); */
   /* 'heid2fid:4' fid = int32(bitshift(uint32(heid), -2)); */
-  d0 = v2he->data[vid - 1];
-  if ((d0 < 4.503599627370496E+15) && (d0 > -4.503599627370496E+15)) {
-    d0 = d0 < 0.0 ? ceil(d0 - 0.5) : floor(d0 + 0.5);
-  }
-
-  fid = (int32_T)((uint32_T)d0 >> 2U) - 1;
+  fid = (int32_T)((uint32_T)v2he->data[vid - 1] >> 2U) - 1;
 
   /* 'obtain_nring_surf:67' lid = heid2leid(v2he(vid)); */
   /*  HEID2LEID   Obtains local edge ID within a face from half-edge ID. */
   /* 'heid2leid:3' coder.inline('always'); */
   /* 'heid2leid:4' leid = int32(bitand(uint32(heid),3))+1; */
-  d0 = v2he->data[vid - 1];
-  if ((d0 < 4.503599627370496E+15) && (d0 > -4.503599627370496E+15)) {
-    d0 = d0 < 0.0 ? ceil(d0 - 0.5) : floor(d0 + 0.5);
-  }
-
-  lid = (int32_T)((uint32_T)d0 & 3U);
+  lid = (int32_T)((uint32_T)v2he->data[vid - 1] & 3U);
 
   /* 'obtain_nring_surf:68' nverts=int32(0); */
   *nverts = 0;
@@ -1226,23 +1250,15 @@ void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const
             /*  HEID2FID   Obtains face ID from half-edge ID. */
             /* 'heid2fid:3' coder.inline('always'); */
             /* 'heid2fid:4' fid = int32(bitshift(uint32(heid), -2)); */
-            d0 = v2he->data[ngbvs->data[nverts_pre] - 1];
-            if ((d0 < 4.503599627370496E+15) && (d0 > -4.503599627370496E+15)) {
-              d0 = d0 < 0.0 ? ceil(d0 - 0.5) : floor(d0 + 0.5);
-            }
-
-            fid = (int32_T)((uint32_T)d0 >> 2U) - 1;
+            fid = (int32_T)((uint32_T)v2he->data[ngbvs->data[nverts_pre] - 1] >>
+                            2U) - 1;
 
             /* 'obtain_nring_surf:195' lid = heid2leid(v2he(v)); */
             /*  HEID2LEID   Obtains local edge ID within a face from half-edge ID. */
             /* 'heid2leid:3' coder.inline('always'); */
             /* 'heid2leid:4' leid = int32(bitand(uint32(heid),3))+1; */
-            d0 = v2he->data[ngbvs->data[nverts_pre] - 1];
-            if ((d0 < 4.503599627370496E+15) && (d0 > -4.503599627370496E+15)) {
-              d0 = d0 < 0.0 ? ceil(d0 - 0.5) : floor(d0 + 0.5);
-            }
-
-            lid = (int32_T)((uint32_T)d0 & 3U);
+            lid = (int32_T)((uint32_T)v2he->data[ngbvs->data[nverts_pre] - 1] &
+                            3U);
 
             /*  Allow early termination of the loop if an incident halfedge */
             /*  was recorded and the vertex is not incident on a border halfedge */
@@ -1471,5 +1487,4 @@ void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const
     emxFree_int32_T(&hebuf);
   }
 }
-
 
