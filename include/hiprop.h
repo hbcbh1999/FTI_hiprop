@@ -341,7 +341,7 @@ extern void hpCollectNRingTris(const hiPropMesh *mesh,
  * \param out_psid array of pointers to the overlaying point ids for neighboring
  * processors.
  */
-extern void hpCollectAllOverlayPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
+extern void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
 
 extern void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh);
 
@@ -383,11 +383,73 @@ extern void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 
 extern void hpUpdatePInfo(hiPropMesh *mesh);
 
+extern void hpUpdateMasterPInfo(hiPropMesh *mesh);
+extern void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh);
+
 extern void hpUpdateNbWithPInfo(hiPropMesh *mesh);
 
 extern void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 					const int nb_proc_index,
 					emxArray_int32_T *ps_ring_proc,
 					emxArray_int32_T *tris_ring_proc);
+
+extern void hpCollectAllGhostPs(hiPropMesh *mesh,
+			 	const int nbp_index,
+				int *sizep,
+				int **ppinfot,
+				int **ppinfol,
+				int **ppinfop);
+
+extern void hpCollectAllGhostTris(hiPropMesh *mesh,
+			 	  const int nbp_index,
+				  int *sizet,
+				  int **tpinfot,
+				  int **tpinfol,
+				  int **tpinfop);
+
+
+extern void hpMergeOverlayPsPInfo(hiPropMesh *mesh,
+			   	  const int rcv_id,
+				  int nump,
+				  int *ppinfot,
+				  int *ppinfol,
+				  int *ppinfop);
+
+extern void hpMergeOverlayTrisPInfo(hiPropMesh *mesh,
+			     	    const int rcv_id,
+				    int numt,
+				    int *tpinfot,
+				    int *tpinfol,
+				    int *tpinfop);
+
+extern void hpCollectAllOverlayPs(hiPropMesh *mesh,
+				  const int nbp_index,
+				  int *sizep,
+				  int **ppinfot,
+				  int **ppinfol,
+				  int **ppinfop);
+
+extern void hpCollectAllOverlayTris(hiPropMesh *mesh,
+				    const int nbp_index,
+				    int *sizet,
+				    int **tpinfot,
+				    int **tpinfol,
+				    int **tpinfop);
+
+
+extern void hpMergeGhostPsPInfo(hiPropMesh *mesh,
+			   	const int rcv_id,
+				int nump,
+				int *ppinfot,
+				int *ppinfol,
+				int *ppinfop);
+
+extern void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
+			     	  const int rcv_id,
+				  int numt,
+				  int *tpinfot,
+				  int *tpinfol,
+				  int *tpinfop);
+
 
 #endif
