@@ -396,31 +396,23 @@ extern void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 extern void hpCollectAllGhostPs(hiPropMesh *mesh,
 			 	const int nbp_index,
 				int *sizep,
-				int **ppinfot,
-				int **ppinfol,
-				int **ppinfop);
+				int **ppinfol);
 
 extern void hpCollectAllGhostTris(hiPropMesh *mesh,
 			 	  const int nbp_index,
 				  int *sizet,
-				  int **tpinfot,
-				  int **tpinfol,
-				  int **tpinfop);
+				  int **tpinfol);
 
 
 extern void hpMergeOverlayPsPInfo(hiPropMesh *mesh,
 			   	  const int rcv_id,
 				  int nump,
-				  int *ppinfot,
-				  int *ppinfol,
-				  int *ppinfop);
+				  int *ppinfol);
 
 extern void hpMergeOverlayTrisPInfo(hiPropMesh *mesh,
 			     	    const int rcv_id,
 				    int numt,
-				    int *tpinfot,
-				    int *tpinfol,
-				    int *tpinfop);
+				    int *tpinfol);
 
 extern void hpCollectAllOverlayPs(hiPropMesh *mesh,
 				  const int nbp_index,
