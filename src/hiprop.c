@@ -2664,7 +2664,7 @@ void hpMergeGhostPsPInfo(hiPropMesh *mesh,
 		int new_tail = ps_pinfo->allocated_len;
 		pdata[I1dm(new_tail)].lindex = ppinfol[j];
 		pdata[I1dm(new_tail)].proc = ppinfop[j];
-		pdata[I1dm(new_tail)].next = 1;
+		pdata[I1dm(new_tail)].next = -1;
 		pdata[I1dm(cur_tail)].next = new_tail;
 		tail[I1dm(ps_index)] = new_tail;
 	    }
@@ -2727,7 +2727,7 @@ void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 		int new_tail = tris_pinfo->allocated_len;
 		pdata[I1dm(new_tail)].lindex = tpinfol[j];
 		pdata[I1dm(new_tail)].proc = tpinfop[j];
-		pdata[I1dm(new_tail)].next = 1;
+		pdata[I1dm(new_tail)].next = -1;
 		pdata[I1dm(cur_tail)].next = new_tail;
 		tail[I1dm(tris_index)] = new_tail;
 	    }
@@ -2859,10 +2859,8 @@ void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh)
 		    tag_ps_pinfo2, MPI_COMM_WORLD, &tmp_status);
 	    MPI_Recv(buf_ppinfo_proc_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
 		    tag_ps_pinfo3, MPI_COMM_WORLD, &tmp_status);
-
 	    hpMergeGhostPsPInfo(mesh, proc_recv, num_buf_ps_recv,
 		    buf_ppinfo_tag_recv, buf_ppinfo_lindex_recv, buf_ppinfo_proc_recv);
-
 	free(buf_ppinfo_tag_recv);
 	free(buf_ppinfo_lindex_recv);
 	free(buf_ppinfo_proc_recv);
@@ -2911,10 +2909,8 @@ void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh)
 		    tag_tris_pinfo2, MPI_COMM_WORLD, &tmp_status);
 	    MPI_Recv(buf_tpinfo_proc_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
 		    tag_tris_pinfo3, MPI_COMM_WORLD, &tmp_status);
-
 	    hpMergeGhostTrisPInfo(mesh, proc_recv, num_buf_tris_recv,
 		    buf_tpinfo_tag_recv, buf_tpinfo_lindex_recv, buf_tpinfo_proc_recv);
-
 	    free(buf_tpinfo_tag_recv);
 	    free(buf_tpinfo_lindex_recv);
 	    free(buf_tpinfo_proc_recv);
@@ -3272,6 +3268,7 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
     for (i = 1; i <= num_buf_ps; i++)
     {
 	buf_ps_flag[I1dm(i)] = 1;
+	/* If already existing, do not add a new point */
 	for(j = ppinfot[i-1]; j <= ppinfot[i]-1; j++)
 	{
 	    if ((ppinfop[j] == cur_proc) && (ppinfol[j] != -1))
@@ -3283,8 +3280,28 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	}
 	if (buf_ps_flag[I1dm(i)] == 1)
 	{
-	    num_add_ps++;
-	    ps_map[I1dm(i)] = num_ps_old + num_add_ps;
+	    /* Still could be some existing point attached from other
+	     * processors. */
+	    /*
+	    int master_proc = ppinfop[ppinfot[i-1]];
+	    int master_index = ppinfol[ppinfot[i-1]];
+	    for (j = 1; j <= num_ps_old; j++)
+	    {
+		if ((ps_pinfo->pdata[I1dm(ps_pinfo->head[I1dm(j)])].proc == master_proc) &&
+		    (ps_pinfo->pdata[I1dm(ps_pinfo->head[I1dm(j)])].lindex = master_index) )
+		{
+		    buf_ps_flag[I1dm(i)] = 0;
+		    ps_map[I1dm(i)] = j;
+		    break;
+		}
+	    }
+	    */
+	    /* now a new point */
+	    //if (buf_ps_flag[I1dm(i)] == 1)
+	    {
+		num_add_ps++;
+		ps_map[I1dm(i)] = num_ps_old + num_add_ps;
+	    }
 	}
     }
 
@@ -3302,8 +3319,28 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	}
 	if (buf_tris_flag[I1dm(i)] == 1)
 	{
-	    num_add_tris++;
-	    tris_map[I1dm(i)] = num_tris_old + num_add_tris;
+	    /* Still could be some existing triangle attached from other
+	     * processors. */
+	    /*
+	    int master_proc = tpinfop[tpinfot[i-1]];
+	    int master_index = tpinfol[tpinfot[i-1]];
+	    for (j = 1; j <= num_tris_old; j++)
+	    {
+		if ((tris_pinfo->pdata[I1dm(tris_pinfo->head[I1dm(j)])].proc == master_proc) &&
+		    (tris_pinfo->pdata[I1dm(tris_pinfo->head[I1dm(j)])].lindex = master_index) )
+		{
+		    buf_tris_flag[I1dm(i)] = 0;
+		    tris_map[I1dm(i)] = j;
+		    break;
+		}
+	    }
+	    */
+	    /* now a new triangle */
+	    //if (buf_tris_flag[I1dm(i)] == 1)
+	    {
+		num_add_tris++;
+		tris_map[I1dm(i)] = num_tris_old + num_add_tris;
+	    }
 	}
     }
     

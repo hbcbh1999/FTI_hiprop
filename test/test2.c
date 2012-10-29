@@ -59,12 +59,71 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
+    printf("\nBefore building n-ring, pinfo for ps \n");
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	int cur_node = mesh->ps_pinfo->head[I1dm(i)];
+	while(cur_node != -1)
+	{
+	    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
+	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+	}
+	printf("\n");
+    }
+
     hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
-
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
+
+    int j;
+
+
+    for (i = 1; i <= mesh->ps->size[0]-1; i++)
+    {
+	for (j = i+1; j <= mesh->ps->size[0]; j++)
+	{
+	    double x1 = mesh->ps->data[I2dm(i,1,mesh->ps->size)];
+	    double y1 = mesh->ps->data[I2dm(i,2,mesh->ps->size)];
+	    double z1 = mesh->ps->data[I2dm(i,3,mesh->ps->size)];
+
+	    double x2 = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
+	    double y2 = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
+	    double z2 = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
+
+	    if ( (x1 == x2) && (y1 == y2) && (z1 == z2) )
+		printf("Same point for index %d and %d\n",i, j);
+	}
+    }
+
+    printf("\npinfo for ps \n");
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	int cur_node = mesh->ps_pinfo->head[I1dm(i)];
+	while(cur_node != -1)
+	{
+	    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
+	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+	}
+	printf("\n");
+    }
+
+
+    /*
+    hpBuildOppositeHalfEdge(mesh);
+    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+
+    hpBuildIncidentHalfEdge(mesh);
+    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+
+    hpBuildNRingGhost(mesh, 2);
+    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+
+    char debug_filename2[200];
+    sprintf(debug_filename2, "debugout2-p%s.vtk", rank_str);
+    hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
+    */
 
     /*
     emxArray_int32_T *ring_ps, *ring_tris;
