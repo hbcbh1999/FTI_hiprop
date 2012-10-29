@@ -2957,7 +2957,7 @@ void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh)
 void hpUpdatePInfo(hiPropMesh *mesh)
 {
     hpUpdateMasterPInfo(mesh);
-    hpUpdateAllPInfoFromMaster(mesh);
+    //hpUpdateAllPInfoFromMaster(mesh);
 }
 
 
@@ -3282,22 +3282,23 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	{
 	    /* Still could be some existing point attached from other
 	     * processors. */
-	    /*
-	    int master_proc = ppinfop[ppinfot[i-1]];
-	    int master_index = ppinfol[ppinfot[i-1]];
+	    int master_proc_buf = ppinfop[ppinfot[i-1]];
+	    int master_index_buf = ppinfol[ppinfot[i-1]];
 	    for (j = 1; j <= num_ps_old; j++)
 	    {
-		if ((ps_pinfo->pdata[I1dm(ps_pinfo->head[I1dm(j)])].proc == master_proc) &&
-		    (ps_pinfo->pdata[I1dm(ps_pinfo->head[I1dm(j)])].lindex = master_index) )
+		int head_cur = ps_pinfo->head[I1dm(j)];
+		int master_proc_cur = ps_pinfo->pdata[I1dm(head_cur)].proc;
+		int master_index_cur = ps_pinfo->pdata[I1dm(head_cur)].lindex;
+		if ((master_proc_buf == master_proc_cur) &&
+		    (master_index_buf == master_index_cur) )
 		{
 		    buf_ps_flag[I1dm(i)] = 0;
 		    ps_map[I1dm(i)] = j;
 		    break;
 		}
 	    }
-	    */
 	    /* now a new point */
-	    //if (buf_ps_flag[I1dm(i)] == 1)
+	    if (buf_ps_flag[I1dm(i)] == 1)
 	    {
 		num_add_ps++;
 		ps_map[I1dm(i)] = num_ps_old + num_add_ps;
@@ -3321,22 +3322,23 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 	{
 	    /* Still could be some existing triangle attached from other
 	     * processors. */
-	    /*
-	    int master_proc = tpinfop[tpinfot[i-1]];
-	    int master_index = tpinfol[tpinfot[i-1]];
+	    int master_proc_buf = tpinfop[tpinfot[i-1]];
+	    int master_index_buf = tpinfol[tpinfot[i-1]];
 	    for (j = 1; j <= num_tris_old; j++)
 	    {
-		if ((tris_pinfo->pdata[I1dm(tris_pinfo->head[I1dm(j)])].proc == master_proc) &&
-		    (tris_pinfo->pdata[I1dm(tris_pinfo->head[I1dm(j)])].lindex = master_index) )
+		int head_cur = tris_pinfo->head[I1dm(j)];
+		int master_proc_cur = tris_pinfo->pdata[I1dm(head_cur)].proc;
+		int master_index_cur = tris_pinfo->pdata[I1dm(head_cur)].lindex;
+		if ((master_proc_buf == master_proc_cur) &&
+		    (master_index_buf == master_index_cur) )
 		{
 		    buf_tris_flag[I1dm(i)] = 0;
 		    tris_map[I1dm(i)] = j;
 		    break;
 		}
 	    }
-	    */
 	    /* now a new triangle */
-	    //if (buf_tris_flag[I1dm(i)] == 1)
+	    if (buf_tris_flag[I1dm(i)] == 1)
 	    {
 		num_add_tris++;
 		tris_map[I1dm(i)] = num_tris_old + num_add_tris;
