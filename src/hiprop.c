@@ -1495,6 +1495,7 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	pt_new_index[I1dm(cur_pt)] = i;
 	for(j = 1; j<=3; j++)
 	    newpts->data[I2dm(i, j, newpts->size)] = mesh->ps->data[I2dm(cur_pt,j,mesh->ps->size)];
+	cur_pt++;
     }
 
     emxDestroyArray_real_T(mesh->ps);
@@ -2350,6 +2351,8 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
     free(buffer_tris_pinfo_tag);
     free(buffer_tris_pinfo_lindex);
     free(buffer_tris_pinfo_proc);
+
+
 
     /* Update nb_proc information based on the new pinfo */
     hpUpdateNbWithPInfo(mesh);

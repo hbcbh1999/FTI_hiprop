@@ -53,6 +53,15 @@ int main(int argc, char* argv[])
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
+    hpCleanMeshByPinfo(mesh);
+    printf("\n hpCleanMeshByPinfo, proc %d \n", rank);
+
+    char debug_out_name[250];
+    sprintf(debug_out_name, "debugout-p%s.vtk", rank_str);
+
+    hpWriteUnstrMeshVtk3d(debug_out_name, mesh);
+
+/*
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
 
@@ -65,7 +74,7 @@ int main(int argc, char* argv[])
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshVtk3d(debug_filename, mesh);
-
+*/
     /*
     emxArray_int32_T *ring_ps, *ring_tris;
     emxArray_boolean_T *tag_ps, *tag_tris;
