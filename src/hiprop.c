@@ -1051,7 +1051,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     free(recv_size);
     free(recv_req_list);
 
-    MPI_Waitall(num_nbp, send_req_list, send_status_list);
+    MPI_Waitall(2*num_nbp, send_req_list, send_status_list);
 
     free(send_req_list);
     free(send_status_list);
@@ -1214,7 +1214,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     free(ps_recv_size);
     free(ps_recv_req_list);
 
-    MPI_Waitall(num_nbp, send_req_list, send_status_list);
+    MPI_Waitall(4*num_nbp, send_req_list, send_status_list);
 
     free(send_req_list);
     free(send_status_list);
@@ -1284,6 +1284,8 @@ void hpObtainNRingTris(const hiPropMesh *mesh,
 
 void hpBuildPUpdateInfo(hiPropMesh *mesh)
 {
+    hpFreeMeshUpdateInfo(mesh);
+
     int num_nb_proc = mesh->nb_proc->size[0];
     int num_pt = mesh->ps->size[0];
     int cur_head, cur_node, cur_proc;
@@ -2656,7 +2658,6 @@ void hpMergeGhostPsPInfo(hiPropMesh *mesh,
 		}
 		cur_node = pdata[I1dm(cur_node)].next;
 	    }
-	    /* if a new proc info */
 	    if (cur_node == -1)
 	    {
 		hpEnsurePInfoCapacity(ps_pinfo);
@@ -2860,6 +2861,7 @@ void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh)
 		    tag_ps_pinfo2, MPI_COMM_WORLD, &tmp_status);
 	    MPI_Recv(buf_ppinfo_proc_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
 		    tag_ps_pinfo3, MPI_COMM_WORLD, &tmp_status);
+
 	    hpMergeGhostPsPInfo(mesh, proc_recv, num_buf_ps_recv,
 		    buf_ppinfo_tag_recv, buf_ppinfo_lindex_recv, buf_ppinfo_proc_recv);
 	free(buf_ppinfo_tag_recv);
@@ -2910,6 +2912,7 @@ void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh)
 		    tag_tris_pinfo2, MPI_COMM_WORLD, &tmp_status);
 	    MPI_Recv(buf_tpinfo_proc_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
 		    tag_tris_pinfo3, MPI_COMM_WORLD, &tmp_status);
+
 	    hpMergeGhostTrisPInfo(mesh, proc_recv, num_buf_tris_recv,
 		    buf_tpinfo_tag_recv, buf_tpinfo_lindex_recv, buf_tpinfo_proc_recv);
 	    free(buf_tpinfo_tag_recv);
@@ -2958,7 +2961,7 @@ void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh)
 void hpUpdatePInfo(hiPropMesh *mesh)
 {
     hpUpdateMasterPInfo(mesh);
-    //hpUpdateAllPInfoFromMaster(mesh);
+    hpUpdateAllPInfoFromMaster(mesh);
 }
 
 

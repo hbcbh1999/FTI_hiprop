@@ -443,5 +443,4 @@ extern void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 				  int *tpinfol,
 				  int *tpinfop);
 
-
 #endif
