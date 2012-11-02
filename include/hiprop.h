@@ -308,7 +308,7 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh);
  */
 extern void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring);
 
-extern void hpBuidBoundingBoxGhost(hiPropMesh *mesh, const emxArray_real_T *nb_box);
+extern void hpBuidBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
 
 /*!
  * \brief Collect the n-ring neighborhood for a list of points
@@ -358,6 +358,13 @@ extern void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 				      emxArray_int32_T **tris_ring_proc,
 				      emxArray_real_T **buffer_ps,
 				      emxArray_int32_T **buffer_tris);
+
+extern void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
+					   const int nb_proc_index,
+					   emxArray_int32_T **ps_ring_proc,
+					   emxArray_int32_T **tris_ring_proc,
+					   emxArray_real_T **buffer_ps,
+					   emxArray_int32_T **buffer_tris);
 
 extern void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   const int nb_proc_index,
@@ -442,6 +449,5 @@ extern void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 				  int *tpinfot,
 				  int *tpinfol,
 				  int *tpinfop);
-
 
 #endif

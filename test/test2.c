@@ -60,119 +60,47 @@ int main(int argc, char* argv[])
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
     hpBuildNRingGhost(mesh, 2);
-    printf("\n BuildNRingGhost passed, proc %d \n", rank);
 
+    printf("\n BuildNRingGhost passed, proc %d \n", rank);
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
 
-    /*
-    emxArray_int32_T *ring_ps, *ring_tris;
-    emxArray_boolean_T *tag_ps, *tag_tris;
-    int num_ring_ps, num_ring_tris;
-    int center;
+    hpBuildPUpdateInfo(mesh);
 
-    for (i = 1; i <= mesh->ps->size[0]; i++)
+
+/*
+    double *bounding_box = (double *) calloc(6, sizeof(double));
+
+    switch(rank)
     {
-	int j = 0;
-	int next = mesh->ps_pinfo->head[I1dm(i)];
-	while (next != -1)
-	{
-	    int cur_node = next;
-	    next = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
-	    j++;
-	}
-	if (j == 3)
-	    center = i;
+	case 0:
+	    bounding_box[0] = 0.4; bounding_box[1] = 1.0;
+	    bounding_box[2] = 0; bounding_box[3] = 0.6;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 1:
+	    bounding_box[0] = 0.4; bounding_box[1] = 1.0;
+	    bounding_box[2] = 0.4; bounding_box[3] = 1.0;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 2:
+	    bounding_box[0] = 0; bounding_box[1] = 0.6;
+	    bounding_box[2] = 0.4; bounding_box[3] = 1.0;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 3:
+	    bounding_box[0] = 0; bounding_box[1] = 0.6;
+	    bounding_box[2] = 0; bounding_box[3] = 0.6;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	default:
+	    break;
     }
 
-    hpObtainNRingTris(mesh, center, 2, 0, 128, 256, (&ring_ps), (&ring_tris), (&tag_ps),
-	    (&tag_tris), &num_ring_ps, &num_ring_tris);
-
-
-    char debug_out_name[250];
-    sprintf(debug_out_name, "debugout-p%s.vtk", rank_str);
-    FILE* file = fopen(debug_out_name, "w");
-
-    fprintf(file, "# vtk DataFile Version 3.0\n");
-    fprintf(file, "Debug output by hiProp\n");
-    fprintf(file, "ASCII\n");
-    fprintf(file, "DATASET UNSTRUCTURED_GRID\n");
-
-    fprintf(file, "POINTS %d double\n", mesh->ps->size[0]);
-    for (i = 1; i <= mesh->ps->size[0]; i++)
-    {
-	fprintf(file, "%lf %lf %lf\n",
-		mesh->ps->data[I2dm(i,1,mesh->ps->size)],
-		mesh->ps->data[I2dm(i,2,mesh->ps->size)],
-		mesh->ps->data[I2dm(i,3,mesh->ps->size)]);
-    }
-    fprintf(file, "CELLS %d %d\n", num_ring_tris, 4*num_ring_tris);
-    for (i = 1; i <= num_ring_tris; i++)
-    {
-	int tri_index = ring_tris->data[I1dm(i)];
-	fprintf(file, "3 %d %d %d\n",
-		mesh->tris->data[I2dm(tri_index,1,mesh->tris->size)]-1,
-		mesh->tris->data[I2dm(tri_index,2,mesh->tris->size)]-1,
-		mesh->tris->data[I2dm(tri_index,3,mesh->tris->size)]-1);
-
-    }
-    fprintf(file, "CELL_TYPES %d\n", num_ring_tris);
-    for (i = 1; i <= num_ring_tris; i++)
-	fprintf(file, "5\n");
-    fclose(file);
-
-    printf("\n Num ps in ring = %d\n", num_ring_ps);
-    printf("\n ObtainNRingTris passed, proc %d \n", rank);
-    emxFree_int32_T((&ring_ps));
-    emxFree_int32_T((&ring_tris));
-    emxFree_boolean_T((&tag_ps));
-    emxFree_boolean_T((&tag_tris));
-
-    */
-    /*
-    printf("\n Neighbor processors : \n");
-    for (i = 1; i <= mesh->nb_proc->size[0]; i++)
-	printf("%d ", mesh->nb_proc->data[I1dm(i)]);
-    printf("\n");
-
-    printf("\n ps_send_index: \n");
-    for (i = 0; i < num_proc; i++)
-    {
-	if (mesh->ps_send_index[i] == NULL)
-	    printf("proc %d, ps_send_index = NULL\n", i);
-	else
-	    printf("proc %d, ps_send_index != NULL\n", i);
-    }
-
-    printf("\n ps_send_buffer: \n");
-    for (i = 0; i < num_proc; i++)
-    {
-	if (mesh->ps_send_buffer[i] == NULL)
-	    printf("proc %d, ps_send_buffer = NULL\n", i);
-	else
-	    printf("proc %d, ps_send_buffer != NULL\n", i);
-    }
-
-    printf("\n ps_recv_index: \n");
-    for (i = 0; i < num_proc; i++)
-    {
-	if (mesh->ps_recv_index[i] == NULL)
-	    printf("proc %d, ps_recv_index = NULL\n", i);
-	else
-	    printf("proc %d, ps_recv_index != NULL\n", i);
-    }
-
-    printf("\n ps_recv_buffer: \n");
-    for (i = 0; i < num_proc; i++)
-    {
-	if (mesh->ps_recv_buffer[i] == NULL)
-	    printf("proc %d, ps_recv_buffer = NULL\n", i);
-	else
-	    printf("proc %d, ps_recv_buffer != NULL\n", i);
-    }
-
-    */
+    hpBuildBoundingBoxGhost(mesh, bounding_box);
+    free(bounding_box);
+*/
 
     hpDeleteMesh(&mesh);
 
