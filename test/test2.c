@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
+    /*
     printf("\nBefore build nring ghost \n");
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
@@ -71,6 +72,7 @@ int main(int argc, char* argv[])
 	}
 	printf("\n");
     }
+    */
 
     hpBuildNRingGhost(mesh, 2);
 
@@ -78,7 +80,7 @@ int main(int argc, char* argv[])
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
-
+/*
     printf("\nAfter build nring ghost \n");
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
@@ -91,21 +93,38 @@ int main(int argc, char* argv[])
 	}
 	printf("\n");
     }
+*/
 
+    double *bounding_box = (double *) calloc(6, sizeof(double));
 
-    //hpBuildPUpdateInfo(mesh);
-    printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
+    switch(rank)
+    {
+	case 0:
+	    bounding_box[0] = 0.4; bounding_box[1] = 1.0;
+	    bounding_box[2] = 0; bounding_box[3] = 0.6;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 1:
+	    bounding_box[0] = 0.4; bounding_box[1] = 1.0;
+	    bounding_box[2] = 0.4; bounding_box[3] = 1.0;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 2:
+	    bounding_box[0] = 0; bounding_box[1] = 0.6;
+	    bounding_box[2] = 0.4; bounding_box[3] = 1.0;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 3:
+	    bounding_box[0] = 0; bounding_box[1] = 0.6;
+	    bounding_box[2] = 0; bounding_box[3] = 0.6;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	default:
+	    break;
+    }
 
-    hpBuildOppositeHalfEdge(mesh);
-    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
-
-    hpBuildIncidentHalfEdge(mesh);
-    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
-    hpBuildNRingGhost(mesh, 2);
-    printf("\n BuildNRingGhost passed, proc %d \n", rank);
-    char debug_filename2[200];
-    sprintf(debug_filename2, "debugout2-p%s.vtk", rank_str);
-    hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
+    hpBuildBoundingBoxGhost(mesh, bounding_box);
+    free(bounding_box);
 
     hpDeleteMesh(&mesh);
 
