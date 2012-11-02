@@ -59,42 +59,17 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
-    /*
-    printf("\nBefore build nring ghost \n");
-    for (i = 1; i <= mesh->ps->size[0]; i++)
-    {
-	printf("%d-th point: ", i);
-	int cur_node = mesh->ps_pinfo->head[I1dm(i)];
-	while (cur_node != -1)
-	{
-	    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
-	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
-	}
-	printf("\n");
-    }
-    */
-
     hpBuildNRingGhost(mesh, 2);
 
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
-/*
-    printf("\nAfter build nring ghost \n");
-    for (i = 1; i <= mesh->ps->size[0]; i++)
-    {
-	printf("%d-th point: ", i);
-	int cur_node = mesh->ps_pinfo->head[I1dm(i)];
-	while (cur_node != -1)
-	{
-	    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
-	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
-	}
-	printf("\n");
-    }
-*/
 
+    hpBuildPUpdateInfo(mesh);
+
+
+/*
     double *bounding_box = (double *) calloc(6, sizeof(double));
 
     switch(rank)
@@ -125,6 +100,7 @@ int main(int argc, char* argv[])
 
     hpBuildBoundingBoxGhost(mesh, bounding_box);
     free(bounding_box);
+*/
 
     hpDeleteMesh(&mesh);
 

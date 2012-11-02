@@ -1310,9 +1310,13 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
     }
 
     /* compute the length of the buffers */
-    int* pt_buffer_length = (int*) calloc(num_proc, sizeof(int));
+    int* pt_send_buffer_length = (int*) calloc(num_proc, sizeof(int));
+    int* pt_recv_buffer_length = (int*) calloc(num_proc, sizeof(int));
     for (i = 0; i< num_proc; i++)
-	pt_buffer_length[i] = 0;
+    {
+	pt_send_buffer_length[i] = 0;
+	pt_recv_buffer_length[i] = 0;
+    }
     for(i = 1; i<=num_pt; i++)
     {
 	cur_head = mesh->ps_pinfo->head[I1dm(i)];
@@ -1323,12 +1327,12 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
 	    while(cur_node!=-1)
 	    {
 		cur_proc = mesh->ps_pinfo->pdata[I1dm(cur_node)].proc;
-		pt_buffer_length[cur_proc]++;
+		pt_send_buffer_length[cur_proc]++;
 		cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
 	    }
 	}
 	else	/* the current proc is not the master, recv this point from master */
-	    pt_buffer_length[master]++;
+	    pt_recv_buffer_length[master]++;
     }
 
     /* Here is a problem, we want the send and recv buffers have points with the same order,
@@ -1343,18 +1347,18 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
     for (i = 0; i<num_nb_proc; i++)
     {
 	cur_proc = mesh->nb_proc->data[i];
-	if(cur_proc<rank)		/* this proc is not the master, recv. 
-					 *  In this case, we need to sort the points on this proc, 
-					 *  so allocate memory for remoteid */
+	if(pt_recv_buffer_length[cur_proc]!=0)		/*  for the recv case. 
+					 		 *  In this case, we need to sort the points on this proc, 
+					 		 *  so allocate memory for remoteid */
 	{
-	    buffer_size[0] = pt_buffer_length[cur_proc];
+	    buffer_size[0] = pt_recv_buffer_length[cur_proc];
 	    mesh->ps_recv_index[cur_proc] = emxCreateND_int32_T(1, buffer_size);
 	    mesh->ps_recv_buffer[cur_proc] = emxCreate_real_T(buffer_size[0], 3);
-	    remoteid[cur_proc] = (int*) calloc(pt_buffer_length[cur_proc], sizeof(int));
+	    remoteid[cur_proc] = (int*) calloc(pt_recv_buffer_length[cur_proc], sizeof(int));
 	}
-	else	/* this proc is the master, send */
+	if(pt_send_buffer_length[cur_proc]!=0)	/* for the send case */
 	{
-	    buffer_size[0] = pt_buffer_length[cur_proc];
+	    buffer_size[0] = pt_send_buffer_length[cur_proc];
 	    mesh->ps_send_index[cur_proc] = emxCreateND_int32_T(1, buffer_size);
 	    mesh->ps_send_buffer[cur_proc] = emxCreate_real_T(buffer_size[0], 3);
 	}
@@ -1362,11 +1366,15 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
 
 
     int* cur_size;
-    int* p_index = (int*) calloc(num_proc, sizeof(int));	/* index to the end of the list */
+    int* p_send_index = (int*) calloc(num_proc, sizeof(int));	/* index to the end of the list */
+    int* p_recv_index = (int*) calloc(num_proc, sizeof(int));	/* index to the end of the list */
     int tmp_id;
     int tmp_pt;
     for(i = 0; i<num_proc; i++)
-	p_index[i] = 1;
+    {
+	p_send_index[i] = 1;
+	p_recv_index[i] = 1;
+    }
     for(i = 1; i<=num_pt; i++)
     {
 	cur_head = mesh->ps_pinfo->head[I1dm(i)];
@@ -1378,28 +1386,28 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
 	    {
 		cur_proc = mesh->ps_pinfo->pdata[I1dm(cur_node)].proc;
 
-		mesh->ps_send_index[cur_proc]->data[I1dm(p_index[cur_proc])]= i;
+		mesh->ps_send_index[cur_proc]->data[I1dm(p_send_index[cur_proc])]= i;
 		cur_size = mesh->ps_send_buffer[cur_proc]->size;
-		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_index[cur_proc],1,cur_size)]
+		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_send_index[cur_proc],1,cur_size)]
 		    = mesh->ps->data[I2dm(i, 1, mesh->ps->size)];
-		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_index[cur_proc],2,cur_size)]
+		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_send_index[cur_proc],2,cur_size)]
 		    = mesh->ps->data[I2dm(i, 2, mesh->ps->size)];
-		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_index[cur_proc],3,cur_size)]
+		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_send_index[cur_proc],3,cur_size)]
 		    = mesh->ps->data[I2dm(i, 3, mesh->ps->size)];
 
-		p_index[cur_proc]++;
+		p_send_index[cur_proc]++;
 		cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
 	    }
 	}
 	else	/* the current proc is not the master, recv this point from master, sorted by insertion sort */
 	{
 
-	    remoteid[master][I1dm(p_index[master])] = mesh->ps_pinfo->pdata[I1dm(cur_head)].lindex;
-	    mesh->ps_recv_index[master]->data[I1dm(p_index[master])] = i;
+	    remoteid[master][I1dm(p_recv_index[master])] = mesh->ps_pinfo->pdata[I1dm(cur_head)].lindex;
+	    mesh->ps_recv_index[master]->data[I1dm(p_recv_index[master])] = i;
 
-	    if(p_index[master]>1)	/* sort by the key of remoteid[master], the value is mesh->ps_recv_index[master]->data[] */
+	    if(p_recv_index[master]>1)	/* sort by the key of remoteid[master], the value is mesh->ps_recv_index[master]->data[] */
 	    {
-		for (j = p_index[master]; j>=1; j-- )
+		for (j = p_recv_index[master]; j>1; j-- )
 		{
 		    if(remoteid[master][I1dm(j)]<remoteid[master][I1dm(j-1)])
 		    {
@@ -1415,12 +1423,14 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
 			break;
 		}
 	    }
-	    p_index[master]++;
+	    p_recv_index[master]++;
 	}
     }
 
-    free(pt_buffer_length);
-    free(p_index);
+    free(pt_send_buffer_length);
+    free(pt_recv_buffer_length);
+    free(p_send_index);
+    free(p_recv_index);
     for (i = 0; i<num_proc; i++)
 	if(remoteid[i]!=NULL)
 	    free(remoteid[i]);
