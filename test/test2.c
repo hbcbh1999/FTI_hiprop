@@ -93,19 +93,19 @@ int main(int argc, char* argv[])
     }
 
 
-    //hpBuildPUpdateInfo(mesh);
-    printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
+    hpBuildPUpdateInfo(mesh);
+//    printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
-    hpBuildOppositeHalfEdge(mesh);
-    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
-
-    hpBuildIncidentHalfEdge(mesh);
-    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
-    hpBuildNRingGhost(mesh, 2);
-    printf("\n BuildNRingGhost passed, proc %d \n", rank);
-    char debug_filename2[200];
-    sprintf(debug_filename2, "debugout2-p%s.vtk", rank_str);
-    hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
+//    hpBuildOppositeHalfEdge(mesh);
+//    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+//
+//    hpBuildIncidentHalfEdge(mesh);
+//    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+//    hpBuildNRingGhost(mesh, 2);
+//    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+//    char debug_filename2[200];
+//    sprintf(debug_filename2, "debugout2-p%s.vtk", rank_str);
+//    hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
 
     hpDeleteMesh(&mesh);
 
