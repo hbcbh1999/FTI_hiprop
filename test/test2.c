@@ -59,8 +59,36 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
-    hpBuildNRingGhost(mesh, 2);
+    //hpBuildNRingGhost(mesh, 2);
+    double *bounding_box = (double *) calloc(6, sizeof(double));
 
+    switch(rank)
+    {
+	case 0:
+	    bounding_box[0] = 0.4; bounding_box[1] = 1.0;
+	    bounding_box[2] = 0; bounding_box[3] = 0.6;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 1:
+	    bounding_box[0] = 0.4; bounding_box[1] = 1.0;
+	    bounding_box[2] = 0.4; bounding_box[3] = 1.0;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 2:
+	    bounding_box[0] = 0; bounding_box[1] = 0.6;
+	    bounding_box[2] = 0.4; bounding_box[3] = 1.0;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	case 3:
+	    bounding_box[0] = 0; bounding_box[1] = 0.6;
+	    bounding_box[2] = 0; bounding_box[3] = 0.6;
+	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
+	    break;
+	default:
+	    break;
+    }
+
+    hpBuildBoundingBoxGhost(mesh, bounding_box);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
