@@ -361,6 +361,7 @@ extern void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 
 extern void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
 					   const int nb_proc_index,
+					   const double *bd_box,
 					   emxArray_int32_T **ps_ring_proc,
 					   emxArray_int32_T **tris_ring_proc,
 					   emxArray_real_T **buffer_ps,
