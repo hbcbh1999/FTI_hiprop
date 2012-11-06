@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 	default:
 	    break;
     }
-
+/*
     hpBuildBoundingBoxGhost(mesh, bounding_box);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
     char debug_filename[200];
@@ -99,8 +99,9 @@ int main(int argc, char* argv[])
 
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+*/
 
-    hpBuildNRingGhost(mesh, 2);
+    hpBuildNRingGhost(mesh, 6);
 
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
     char debug_filename2[200];
