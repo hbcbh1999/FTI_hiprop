@@ -32,7 +32,7 @@ pre: ./include/stdafx.h.gch
 doc:
 	doxygen hiprop-doxygen-file
 
-libhiprop.a: emx_util.o util.o hiprop.o
+libhiprop.a: emx_util.o compute_diffops.o util.o hiprop.o
 	$(AR) cru libhiprop.a $^
 	ranlib libhiprop.a
 

@@ -20,6 +20,7 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->ps = (emxArray_real_T *) NULL;
     mesh->tris = (emxArray_int32_T *) NULL;
     mesh->nor = (emxArray_real_T *) NULL;
+    mesh->curv = (emxArray_real_T *) NULL;
 
     mesh->nb_proc = (emxArray_int32_T *) NULL;
     mesh->ps_pinfo = (hpPInfoList *) NULL;
@@ -99,6 +100,8 @@ void hpFreeMeshBasicInfo(hiPropMesh *pmesh)
 	emxFree_int32_T(&(pmesh->tris));
     if( pmesh->nor != ((emxArray_real_T *) NULL) )
 	emxFree_real_T(&(pmesh->nor));
+    if( pmesh->curv != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(pmesh->curv));
 }
 
 void hpFreeMesh(hiPropMesh *pmesh)
@@ -4253,5 +4256,27 @@ void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
     }
 
     fclose(file);
+}
+
+void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree)
+{
+    if( mesh->nor != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(mesh->nor));
+    if( mesh->curv != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(mesh->curv));
+
+    real_T tmp = (double) in_degree + 2.0;
+    real_T in_ring = tmp/2.0;
+
+    int num_ps = mesh->ps->size[0];
+
+    mesh->nor = emxCreate_real_T(num_ps, 3);
+    mesh->curv = emxCreate_real_T(num_ps, 2);
+
+    emxArray_real_T *in_prdirs = emxCreate_real_T(num_ps, 3);
+
+    compute_diffops_surf(mesh->ps, mesh->tris, in_degree, in_ring, false, mesh->nor, mesh->curv, in_prdirs, 0);
+
+    emxFree_real_T(&(in_prdirs));
 
 }

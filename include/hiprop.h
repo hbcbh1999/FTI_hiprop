@@ -59,6 +59,7 @@ typedef struct hiPropMesh
     emxArray_real_T *ps;		/*!< point positions, # of points = n */
     emxArray_int32_T *tris;		/*!< triangles, # of triangles = m */
     emxArray_real_T *nor;		/*!< point normals */
+    emxArray_real_T *curv;		/*!< point curvatures */
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
     hpPInfoList *ps_pinfo;		/*!< parallel information for points */
     hpPInfoList *tris_pinfo;		/*!< parallel information for tris */
@@ -450,5 +451,7 @@ extern void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 				  int *tpinfot,
 				  int *tpinfol,
 				  int *tpinfop);
+
+extern void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree);
 
 #endif
