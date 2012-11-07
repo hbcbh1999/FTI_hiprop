@@ -50,16 +50,47 @@ int main(int argc, char* argv[])
     hpBuildPInfoNoOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
 
-    hpBuildPUpdateInfo(mesh);
-    printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
-
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
 
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
-    //hpBuildNRingGhost(mesh, 2);
+    hpBuildNRingGhost(mesh, 2);
+
+    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+    char debug_filename[200];
+    sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
+    hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
+
+    hpComputeDiffops(mesh, 2);
+
+    char nor_curv_filename[200];
+    sprintf(nor_curv_filename, "diffquant-p%s.out", rank_str);
+    FILE *diff_outfile = fopen(nor_curv_filename, "w");
+
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	int head = mesh->ps_pinfo->head[I1dm(i)];
+	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
+	{
+	    fprintf(diff_outfile, "%22.16g %22.16g %22.16g %22.16g %22.16g %22.16g %22.16g %22.16g\n",
+		    mesh->ps->data[I2dm(i,1,mesh->ps->size)], mesh->ps->data[I2dm(i,2,mesh->ps->size)], mesh->ps->data[I2dm(i,3,mesh->ps->size)],
+		    mesh->nor->data[I2dm(i,1,mesh->nor->size)], mesh->nor->data[I2dm(i,2,mesh->nor->size)], mesh->nor->data[I2dm(i,3,mesh->nor->size)],
+		    mesh->curv->data[I2dm(i,1,mesh->curv->size)], mesh->curv->data[I2dm(i,2,mesh->curv->size)]);
+
+	}
+    }
+
+    hpDeleteMesh(&mesh);
+
+    printf("Success processor %d\n", rank);
+
+    MPI_Finalize();
+
+    return 1;
+/*
+    hpBuildNRingGhost(mesh, 4);
     double *bounding_box = (double *) calloc(6, sizeof(double));
 
     switch(rank)
@@ -87,7 +118,6 @@ int main(int argc, char* argv[])
 	default:
 	    break;
     }
-/*
     hpBuildBoundingBoxGhost(mesh, bounding_box);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
     char debug_filename[200];
@@ -100,59 +130,6 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 */
-
-    hpBuildNRingGhost(mesh, 6);
-
-    printf("\n BuildNRingGhost passed, proc %d \n", rank);
-    char debug_filename2[200];
-    sprintf(debug_filename2, "debugout2-p%s.vtk", rank_str);
-    hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
-
-    hpBuildPUpdateInfo(mesh);
-
-
-
-/*
-    double *bounding_box = (double *) calloc(6, sizeof(double));
-
-    switch(rank)
-    {
-	case 0:
-	    bounding_box[0] = 0.4; bounding_box[1] = 1.0;
-	    bounding_box[2] = 0; bounding_box[3] = 0.6;
-	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
-	    break;
-	case 1:
-	    bounding_box[0] = 0.4; bounding_box[1] = 1.0;
-	    bounding_box[2] = 0.4; bounding_box[3] = 1.0;
-	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
-	    break;
-	case 2:
-	    bounding_box[0] = 0; bounding_box[1] = 0.6;
-	    bounding_box[2] = 0.4; bounding_box[3] = 1.0;
-	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
-	    break;
-	case 3:
-	    bounding_box[0] = 0; bounding_box[1] = 0.6;
-	    bounding_box[2] = 0; bounding_box[3] = 0.6;
-	    bounding_box[4] = -0.1; bounding_box[5] = 0.1;
-	    break;
-	default:
-	    break;
-    }
-
-    hpBuildBoundingBoxGhost(mesh, bounding_box);
-    free(bounding_box);
-*/
-
-    hpDeleteMesh(&mesh);
-
-
-    printf("Success processor %d\n", rank);
-
-    MPI_Finalize();
-
-    return 1;
 }
 
 

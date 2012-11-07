@@ -174,7 +174,7 @@ int hpReadPolyMeshVtk3d(
 
     pt_coord = (double*) malloc(3 * num_points * sizeof(double));
     for (i = 0; i< (3*num_points); i++)
-	fscanf(file, "%lf", &pt_coord[i]);
+	fscanf(file, "%lg", &pt_coord[i]);
 
     if(!findString(file, "POLYGONS"))
 	return 0;
@@ -229,7 +229,7 @@ int hpWritePolyMeshVtk3d(const char* name,
 
     fprintf(file, "POINTS %d double\n", num_points);
     for (i = 1; i <= num_points; i++)
-	fprintf(file, "%lf %lf %lf\n", 
+	fprintf(file, "%22.16lg %22.16lg %22.16lg\n", 
 		points->data[I2dm(i,1,points->size)],
 		points->data[I2dm(i,2,points->size)], 
 		points->data[I2dm(i,3,points->size)]);
@@ -286,7 +286,7 @@ int hpReadUnstrMeshVtk3d(
 
     pt_coord = (double*) malloc(3 * num_points * sizeof(double));
     for (i = 0; i< (3*num_points); i++)
-	fscanf(file, "%lf", &pt_coord[i]);
+	fscanf(file, "%lg", &pt_coord[i]);
 
     if(!findString(file, "CELLS"))
 	return 0;
@@ -338,7 +338,7 @@ int hpWriteUnstrMeshVtk3d(const char* name,
 
     fprintf(file, "POINTS %d double\n", num_points);
     for (i = 1; i <= num_points; i++)
-	fprintf(file, "%lf %lf %lf\n",
+	fprintf(file, "%22.16lg %22.16lg %22.16lg\n",
 		points->data[I2dm(i,1,points->size)],
 		points->data[I2dm(i,2,points->size)],
 		points->data[I2dm(i,3,points->size)]);
@@ -4150,7 +4150,7 @@ void hpDebugOutput(const hiPropMesh *mesh, const emxArray_int32_T *debug_ps,
     for (j = 1; j <= debug_ps->size[0]; j++)
     {
 	int ps_id = debug_ps->data[j-1];
-	fprintf(file, "%lf %lf %lf\n",
+	fprintf(file, "%22.16lg %22.16lg %22.16lg\n",
 		mesh->ps->data[I2dm(ps_id,1,mesh->ps->size)],
 		mesh->ps->data[I2dm(ps_id,2,mesh->ps->size)],
 		mesh->ps->data[I2dm(ps_id,3,mesh->ps->size)]);
@@ -4202,7 +4202,7 @@ void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
 
     fprintf(file, "POINTS %d double\n", num_points);
     for (i = 1; i <= num_points; i++)
-	fprintf(file, "%lf %lf %lf\n",
+	fprintf(file, "%22.16lg %22.16lg %22.16lg\n",
 		points->data[I2dm(i,1,points->size)],
 		points->data[I2dm(i,2,points->size)],
 		points->data[I2dm(i,3,points->size)]);
