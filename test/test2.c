@@ -56,12 +56,68 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
+    printf("\nbefore build nring ghost, num tris = %d\n", mesh->tris->size[0]);
     hpBuildNRingGhost(mesh, 2);
+    printf("\nafter build nring ghost, num tris = %d\n", mesh->tris->size[0]);
 
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
+
+    hpBuildOppositeHalfEdge(mesh);
+    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+
+    hpBuildIncidentHalfEdge(mesh);
+    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+
+    if (rank == 0)
+    {
+    emxArray_int32_T *ngbvs, *ngbfs;
+    emxArray_boolean_T *vtags, *ftags;
+    int32_T num_ring_ps, num_ring_tris;
+
+    hpObtainNRingTris(mesh, 11, 2.0, 0, 128, 256, &ngbvs, &ngbfs, &vtags, &ftags, &num_ring_ps, &num_ring_tris);
+
+    printf("num of ps = %d, num of tris = %d\n", num_ring_ps, num_ring_tris);
+
+    for (i = 1; i <= ngbvs->size[0]; i++)
+	printf("point %d\n", ngbvs->data[I1dm(i)]);
+
+    for (i = 1; i <= ngbfs->size[0]; i++)
+    {
+	int tri_index = ngbfs->data[I1dm(i)];
+	printf("tris %d: (%d, %d, %d)\n", tri_index, mesh->tris->data[I2dm(tri_index,1,mesh->tris->size)], 
+		 mesh->tris->data[I2dm(tri_index,2,mesh->tris->size)], mesh->tris->data[I2dm(tri_index,3,mesh->tris->size)]);  
+    }
+
+    num_ring_ps++;
+
+    emxArray_int32_T *ps_vis = emxCreateND_int32_T(1, &num_ring_ps);
+    emxArray_int32_T *tris_vis = emxCreateND_int32_T(1, &num_ring_tris);
+
+    for (i = 1; i < num_ring_ps; i++)
+	ps_vis->data[I1dm(i)] = ngbvs->data[I1dm(i)];
+    ps_vis->data[I1dm(num_ring_ps)] = 11;
+
+    for (i = 1; i <= num_ring_tris; i++)
+	tris_vis->data[I1dm(i)] = ngbfs->data[I1dm(i)];
+
+
+
+    emxFree_int32_T(&(ngbvs));
+    emxFree_int32_T(&(ngbfs));
+    emxFree_boolean_T(&(vtags));
+    emxFree_boolean_T(&(ftags));
+
+    char dfilename[200];
+    sprintf(dfilename, "debout.vtk");
+    hpDebugOutput(mesh, ps_vis, tris_vis, dfilename);
+
+    emxFree_int32_T(&(ps_vis));
+    emxFree_int32_T(&(tris_vis));
+
+    }
 
     hpComputeDiffops(mesh, 2);
 
