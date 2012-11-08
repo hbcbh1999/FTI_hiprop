@@ -57,14 +57,17 @@ int main(int argc, char* argv[])
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
     printf("\nbefore build nring ghost, num tris = %d\n", mesh->tris->size[0]);
-    hpBuildNRingGhost(mesh, 2);
-    printf("\nafter build nring ghost, num tris = %d\n", mesh->tris->size[0]);
+    printf("\nbefore build nring ghost, num ps = %d\n", mesh->ps->size[0]);
 
-    printf("\n BuildNRingGhost passed, proc %d \n", rank);
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
 
+    hpBuildNRingGhost(mesh, 2);
+    printf("\nafter build nring ghost, num tris = %d\n", mesh->tris->size[0]);
+    printf("\nafter build nring ghost, num ps = %d\n", mesh->ps->size[0]);
+
+    printf("\n BuildNRingGhost passed, proc %d \n", rank);
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
 
@@ -77,7 +80,7 @@ int main(int argc, char* argv[])
     emxArray_boolean_T *vtags, *ftags;
     int32_T num_ring_ps, num_ring_tris;
 
-    hpObtainNRingTris(mesh, 11, 2.0, 0, 128, 256, &ngbvs, &ngbfs, &vtags, &ftags, &num_ring_ps, &num_ring_tris);
+    hpObtainNRingTris(mesh, 12, 2.0, 0, 128, 256, &ngbvs, &ngbfs, &vtags, &ftags, &num_ring_ps, &num_ring_tris);
 
     printf("num of ps = %d, num of tris = %d\n", num_ring_ps, num_ring_tris);
 
@@ -98,7 +101,7 @@ int main(int argc, char* argv[])
 
     for (i = 1; i < num_ring_ps; i++)
 	ps_vis->data[I1dm(i)] = ngbvs->data[I1dm(i)];
-    ps_vis->data[I1dm(num_ring_ps)] = 11;
+    ps_vis->data[I1dm(num_ring_ps)] = 12;
 
     for (i = 1; i <= num_ring_tris; i++)
 	tris_vis->data[I1dm(i)] = ngbfs->data[I1dm(i)];
