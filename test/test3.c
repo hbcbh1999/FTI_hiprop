@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
 
     hiPropMesh *mesh;	//mesh after partition
     hpInitMesh(&mesh);
+    emxArray_int32_T* ps_globalid, *tri_globalid;
 
     if (rank == 0)
     {
@@ -41,11 +42,11 @@ int main(int argc, char* argv[])
     	int* pt_part;
 
     	hpMetisPartMesh(in_mesh, num_proc, &tri_part, &pt_part);
-	hpDistMesh(root, in_mesh, mesh, tri_part, tag);
+	hpDistMesh(root, in_mesh, mesh, tri_part, tag, ps_globalid, tri_globalid);
 	hpDeleteMesh(&in_mesh);
     }
     else
-	hpDistMesh(root, NULL, mesh, NULL, tag);
+	hpDistMesh(root, NULL, mesh, NULL, tag, ps_globalid, tri_globalid);
 
     // output
     char rank_str[5];
