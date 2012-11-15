@@ -963,7 +963,7 @@ void hpEnsurePInfoCapacity(hpPInfoList *pinfo)
     {
 	double len_temp = pinfo->max_len * 1.1;
 	int new_max_len = (int) (len_temp); /* Increase 10% */
-	hpPInfoNode *new_pdata = calloc(new_max_len, sizeof(hpPInfoNode));
+	hpPInfoNode *new_pdata = (hpPInfoNode *) calloc(new_max_len, sizeof(hpPInfoNode));
 	memcpy(new_pdata, pinfo->pdata, pinfo->allocated_len*sizeof(hpPInfoNode));
 
 	free(pinfo->pdata);
@@ -2231,7 +2231,7 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
     int *head = mesh->ps_pinfo->head;
     hpPInfoNode *pdata = mesh->ps_pinfo->pdata;
 
-    unsigned char *nb_flag = calloc(num_proc, sizeof(unsigned char));
+    unsigned char *nb_flag = (unsigned char *) calloc(num_proc, sizeof(unsigned char));
 
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
