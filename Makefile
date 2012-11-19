@@ -9,16 +9,17 @@ metis_Include = -I${metis_Dir}/include
 metis_lib = -L${metis_Dir}/lib
 
 # CFLAGS = -c -DNDEBUG -Wall 
-CFLAGS = -c -g -Wall
-CPPFLAGS = -Iinclude
+CFLAGS = -g -Wall -c
+Include_Dir = -Iinclude $(metis_Include)
+CPPFLAGS = 
 VPATH = src test
 
 test.exe: pre test.o libhiprop.a
-	$(CC) -g -o $@ $(CPPFLAGS) test.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
+	$(CC) -g -o $@ test.o -L./ -lhiprop $(metis_lib) -lmetis
 test2.exe: pre test2.o libhiprop.a
-	$(CC) -g -o $@ $(CPPFLAGS) test2.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
+	$(CC) -g -o $@ test2.o -L./ -lhiprop $(metis_lib) -lmetis
 test3.exe: pre test3.o libhiprop.a
-	$(CC) -g -o $@ $(CPPFLAGS) test3.o -L./ -lhiprop $(metis_Include) $(metis_lib) -lmetis
+	$(CC) -g -o $@ test3.o -L./ -lhiprop $(metis_lib) -lmetis
 
 all: test.exe test2.exe test3.exe
 
@@ -27,23 +28,23 @@ lib: pre libhiprop.a
 pre: ./include/stdafx.h.gch
 
 ./include/stdafx.h.gch: ./include/stdafx.h
-	 $(CC) $(CFLAGS) $(CPPFLAGS) $<
+	  $(CC) $(CFLAGS) $<
 
 doc:
 	doxygen hiprop-doxygen-file
 
-libhiprop.a: emx_util.o util.o hiprop.o
+libhiprop.a: emx_util.o compute_diffops.o util.o hiprop.o
 	$(AR) cru libhiprop.a $^
 	ranlib libhiprop.a
 
 %.o:%.c 
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(metis_Include) $(metis_lib) $< -o $@
+	$(CC) $(CFLAGS) $(Include_Dir) $< -o $@
 
 %.o:%.cpp
-	$(CXX) $(CFLAGS) $(CPPFLAGS) $< -o $@  
+	$(CXX) $(CPPFLAGS) $(Include_Dir)  $< -o $@  
 
 %.o:%.cxx
-	$(CXX) $(CFLAGS) $(CPPFLAGS) $< -o $@
+	$(CXX) $(CPPFLAGS) $(Include_Dir) $< -o $@
 
 tagsfile:
 	ctags src/*.c include/*.h test/*.c

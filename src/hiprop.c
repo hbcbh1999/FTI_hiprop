@@ -20,6 +20,7 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->ps = (emxArray_real_T *) NULL;
     mesh->tris = (emxArray_int32_T *) NULL;
     mesh->nor = (emxArray_real_T *) NULL;
+    mesh->curv = (emxArray_real_T *) NULL;
 
     mesh->nb_proc = (emxArray_int32_T *) NULL;
     mesh->ps_pinfo = (hpPInfoList *) NULL;
@@ -99,6 +100,8 @@ void hpFreeMeshBasicInfo(hiPropMesh *pmesh)
 	emxFree_int32_T(&(pmesh->tris));
     if( pmesh->nor != ((emxArray_real_T *) NULL) )
 	emxFree_real_T(&(pmesh->nor));
+    if( pmesh->curv != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(pmesh->curv));
 }
 
 void hpFreeMesh(hiPropMesh *pmesh)
@@ -171,7 +174,7 @@ int hpReadPolyMeshVtk3d(
 
     pt_coord = (double*) malloc(3 * num_points * sizeof(double));
     for (i = 0; i< (3*num_points); i++)
-	fscanf(file, "%lf", &pt_coord[i]);
+	fscanf(file, "%lg", &pt_coord[i]);
 
     if(!findString(file, "POLYGONS"))
 	return 0;
@@ -226,7 +229,7 @@ int hpWritePolyMeshVtk3d(const char* name,
 
     fprintf(file, "POINTS %d double\n", num_points);
     for (i = 1; i <= num_points; i++)
-	fprintf(file, "%lf %lf %lf\n", 
+	fprintf(file, "%22.16lg %22.16lg %22.16lg\n", 
 		points->data[I2dm(i,1,points->size)],
 		points->data[I2dm(i,2,points->size)], 
 		points->data[I2dm(i,3,points->size)]);
@@ -283,7 +286,7 @@ int hpReadUnstrMeshVtk3d(
 
     pt_coord = (double*) malloc(3 * num_points * sizeof(double));
     for (i = 0; i< (3*num_points); i++)
-	fscanf(file, "%lf", &pt_coord[i]);
+	fscanf(file, "%lg", &pt_coord[i]);
 
     if(!findString(file, "CELLS"))
 	return 0;
@@ -335,7 +338,7 @@ int hpWriteUnstrMeshVtk3d(const char* name,
 
     fprintf(file, "POINTS %d double\n", num_points);
     for (i = 1; i <= num_points; i++)
-	fprintf(file, "%lf %lf %lf\n",
+	fprintf(file, "%22.16lg %22.16lg %22.16lg\n",
 		points->data[I2dm(i,1,points->size)],
 		points->data[I2dm(i,2,points->size)],
 		points->data[I2dm(i,3,points->size)]);
@@ -421,7 +424,9 @@ int hpMetisPartMesh(hiPropMesh* mesh, const int nparts,
 
 int hpDistMesh(int root, hiPropMesh *in_mesh,
 	hiPropMesh *mesh, int *tri_part,
-	int tag)
+	int tag,
+	emxArray_int32_T **ps_globalid,
+	emxArray_int32_T **tri_globalid)
 {
     hpFreeMesh(mesh);
     int i,j,k;
@@ -460,6 +465,8 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	for(i = 0; i < total_num_tri; i++)
 	    num_tri[tri_part[i]]++;
 
+
+
 	for(i = 0; i< num_proc; i++)
 	{
 	    printf("num_tri[%d] = %d\n", i, num_tri[i]);
@@ -472,7 +479,10 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	 */
 	int** tri_index = (int**) calloc(num_proc,sizeof(int*));
 	for(i = 0; i<num_proc; i++)
+	{
 	    tri_index[i] = (int*) calloc(num_tri[i],sizeof(int));
+
+	}
 
 	/* fill tri_index by looping over all tris */
 	int* p = (int*)malloc(num_proc*sizeof(int));/* pointer to the end of the list */
@@ -486,6 +496,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    tri_index[tri_rk][p[tri_rk]] = i;
 	    p[tri_rk]++;
 	}
+
 
 	/* construct an index table to store the local index of every point 
 	 * (global to local)
@@ -563,6 +574,7 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    }
 	}
 
+
 	/* finally, get in p_mesh[]->ps, :) */
 	for(i = 0; i< num_proc; i++)
 	    (p_mesh[i]->ps) = emxCreate_real_T(num_pt[i], 3);
@@ -595,6 +607,15 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 		g2lindex = pt_local;
     		hpConstrPInfoFromGlobalLocalInfo(mesh, g2lindex, l2gindex, rank);
 
+		/* Create a wrapper for points and triangles global index arrays.
+		 * This wrapper is an output of the function 
+		 */
+		int array_size[1];
+		array_size[0] = num_pt[i];
+		*ps_globalid = emxCreateWrapperND_int32_T(pt_index[i],1,array_size);
+		array_size[0] = num_tri[i];
+		*tri_globalid = emxCreateWrapperND_int32_T(tri_index[i], 1, array_size);
+
 	    }
 	    else
 	    {
@@ -602,21 +623,21 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	    	send2D_real_T(p_mesh[i]->ps, i, tag+5, MPI_COMM_WORLD);
 		
 		MPI_Send(pt_index[i], p_mesh[i]->ps->size[0], MPI_INT, i, tag+10, MPI_COMM_WORLD);
-		MPI_Send(&total_num_pt, 1, MPI_INT, i, tag+11, MPI_COMM_WORLD);
+		MPI_Send(tri_index[i], p_mesh[i]->tris->size[0], MPI_INT, i, tag+11, MPI_COMM_WORLD);
+
+		MPI_Send(&total_num_pt, 1, MPI_INT, i, tag+12, MPI_COMM_WORLD);
 		for (j = 0; j<num_proc; j++)
-		    MPI_Send(pt_local[j], total_num_pt, MPI_INT, i, tag+12+j, MPI_COMM_WORLD);
+		    MPI_Send(pt_local[j], total_num_pt, MPI_INT, i, tag+13+j, MPI_COMM_WORLD);
 
 	    	hpDeleteMesh(&p_mesh[i]);
+		free(tri_index[i]);
+		free(pt_index[i]);
 	    }
 	}
 
 	/* free pointers */
 	for (i = 0; i<num_proc; i++)
-	{
-	    free(tri_index[i]);
-	    free(pt_index[i]);
 	    free(pt_local[i]);
-	}
 	free(p_mesh);
 	free(pt_index);
 	free(tri_index);
@@ -635,17 +656,25 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 	int total_num_pt;
 	int* l2gindex = (int*) calloc(mesh->ps->size[0], sizeof(int));
 	int** g2lindex = (int**) calloc(num_proc, sizeof(int*));
+	int* tri_index = (int*) calloc(mesh->tris->size[0], sizeof(int));
 	
 	MPI_Recv(l2gindex, mesh->ps->size[0], MPI_INT, root, tag+10, MPI_COMM_WORLD, &recv_stat);
-	MPI_Recv(&total_num_pt, 1, MPI_INT, root, tag+11, MPI_COMM_WORLD, &recv_stat);
+	MPI_Recv(tri_index, mesh->tris->size[0], MPI_INT, root, tag+11, MPI_COMM_WORLD, &recv_stat);
+	MPI_Recv(&total_num_pt, 1, MPI_INT, root, tag+12, MPI_COMM_WORLD, &recv_stat);
 	for(i = 0; i<num_proc; i++)
 	{
 	    g2lindex[i] = (int*) calloc(total_num_pt,sizeof(int));
-	    MPI_Recv(g2lindex[i], total_num_pt, MPI_INT, root, tag+12+i, MPI_COMM_WORLD, &recv_stat);
+	    MPI_Recv(g2lindex[i], total_num_pt, MPI_INT, root, tag+13+i, MPI_COMM_WORLD, &recv_stat);
 	}
 
     	hpConstrPInfoFromGlobalLocalInfo(mesh, g2lindex, l2gindex, rank);
-	free(l2gindex);
+
+	int array_size[1];
+	array_size[0] = mesh->ps->size[0];
+	*ps_globalid = emxCreateWrapperND_int32_T(l2gindex,1,array_size);
+	array_size[0] = mesh->tris->size[0];
+	*tri_globalid = emxCreateWrapperND_int32_T(tri_index, 1, array_size);
+
 	for(i = 0; i<num_proc; i++)
 	    free(g2lindex[i]);
 	free(g2lindex);
@@ -934,7 +963,7 @@ void hpEnsurePInfoCapacity(hpPInfoList *pinfo)
     {
 	double len_temp = pinfo->max_len * 1.1;
 	int new_max_len = (int) (len_temp); /* Increase 10% */
-	hpPInfoNode *new_pdata = calloc(new_max_len, sizeof(hpPInfoNode));
+	hpPInfoNode *new_pdata = (hpPInfoNode *) calloc(new_max_len, sizeof(hpPInfoNode));
 	memcpy(new_pdata, pinfo->pdata, pinfo->allocated_len*sizeof(hpPInfoNode));
 
 	free(pinfo->pdata);
@@ -2202,7 +2231,7 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
     int *head = mesh->ps_pinfo->head;
     hpPInfoNode *pdata = mesh->ps_pinfo->pdata;
 
-    unsigned char *nb_flag = calloc(num_proc, sizeof(unsigned char));
+    unsigned char *nb_flag = (unsigned char *) calloc(num_proc, sizeof(unsigned char));
 
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
@@ -4147,7 +4176,7 @@ void hpDebugOutput(const hiPropMesh *mesh, const emxArray_int32_T *debug_ps,
     for (j = 1; j <= debug_ps->size[0]; j++)
     {
 	int ps_id = debug_ps->data[j-1];
-	fprintf(file, "%lf %lf %lf\n",
+	fprintf(file, "%22.16lg %22.16lg %22.16lg\n",
 		mesh->ps->data[I2dm(ps_id,1,mesh->ps->size)],
 		mesh->ps->data[I2dm(ps_id,2,mesh->ps->size)],
 		mesh->ps->data[I2dm(ps_id,3,mesh->ps->size)]);
@@ -4199,7 +4228,7 @@ void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
 
     fprintf(file, "POINTS %d double\n", num_points);
     for (i = 1; i <= num_points; i++)
-	fprintf(file, "%lf %lf %lf\n",
+	fprintf(file, "%22.16lg %22.16lg %22.16lg\n",
 		points->data[I2dm(i,1,points->size)],
 		points->data[I2dm(i,2,points->size)],
 		points->data[I2dm(i,3,points->size)]);
@@ -4253,5 +4282,27 @@ void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
     }
 
     fclose(file);
+}
+
+void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree)
+{
+    if( mesh->nor != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(mesh->nor));
+    if( mesh->curv != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(mesh->curv));
+
+    real_T tmp = (double) in_degree + 2.0;
+    real_T in_ring = tmp/2.0;
+
+    int num_ps = mesh->ps->size[0];
+
+    mesh->nor = emxCreate_real_T(num_ps, 3);
+    mesh->curv = emxCreate_real_T(num_ps, 2);
+
+    emxArray_real_T *in_prdirs = emxCreate_real_T(num_ps, 3);
+
+    compute_diffops_surf(mesh->ps, mesh->tris, in_degree, in_ring, false, mesh->nor, mesh->curv, in_prdirs, 0);
+
+    emxFree_real_T(&(in_prdirs));
 
 }
