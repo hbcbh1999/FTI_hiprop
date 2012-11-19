@@ -42,24 +42,37 @@ int main(int argc, char* argv[])
     	int* pt_part;
 
     	hpMetisPartMesh(in_mesh, num_proc, &tri_part, &pt_part);
-	hpDistMesh(root, in_mesh, mesh, tri_part, tag, ps_globalid, tri_globalid);
+	hpDistMesh(root, in_mesh, mesh, tri_part, tag, &ps_globalid, &tri_globalid);
 	hpDeleteMesh(&in_mesh);
     }
     else
-	hpDistMesh(root, NULL, mesh, NULL, tag, ps_globalid, tri_globalid);
+	hpDistMesh(root, NULL, mesh, NULL, tag, &ps_globalid, &tri_globalid);
 
     // output
     char rank_str[5];
     char out_name[200];
+    char id_out_name[200];
 
     right_flush(rank,4,rank_str);
     sprintf(out_name, "data/parallel/%s-p%s.vtk",argv[1], rank_str);
+    sprintf(id_out_name, "ptid-p%s.data",rank_str);
 
+    FILE *id_out_file = fopen(id_out_name, "w");
+
+
+    int i;
+
+    for (i = 1; i <= ps_globalid->size[0]; i++)
+	fprintf(id_out_file, "%d\n", ps_globalid->data[i-1]);
+
+    fclose(id_out_file);
+/*
     if(!hpWriteUnstrMeshVtk3d(out_name, mesh))
     {
 	printf("Write fail\n");
 	return 0;
     }
+    */
     hpDeleteMesh(&mesh);
     printf("Success for proc %d\n", rank);
 

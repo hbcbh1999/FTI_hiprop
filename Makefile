@@ -3,8 +3,8 @@ CXX = mpicxx
 AR  = ar
 
 #metis_Dir = /Users/yijiezhou/pkg/metis
-#metis_Dir = /home/Yijie/pkg/metis
-metis_Dir = ./pkg/metis
+metis_Dir = /home/Yijie/pkg/metis
+#metis_Dir = ./pkg/metis
 metis_Include = -I${metis_Dir}/include
 metis_lib = -L${metis_Dir}/lib
 

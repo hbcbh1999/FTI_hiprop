@@ -167,7 +167,7 @@ extern int hpMetisPartMesh(hiPropMesh *mesh, const int nparts, int **tri_part, i
  * \param tri_globalid The global id of each triangle on each submesh, memory allocated inside the function
  */
 extern int hpDistMesh(int root, hiPropMesh *in_mesh, hiPropMesh *mesh, int *tri_part, int tag,
-       	emxArray_int32_T *ps_globalid, emxArray_int32_T *tri_globalid);
+       	emxArray_int32_T **ps_globalid, emxArray_int32_T **tri_globalid);
 
 /*!
  * \brief Construct parallel information for points assuming no overlapping triangles

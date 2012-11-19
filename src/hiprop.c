@@ -425,8 +425,8 @@ int hpMetisPartMesh(hiPropMesh* mesh, const int nparts,
 int hpDistMesh(int root, hiPropMesh *in_mesh,
 	hiPropMesh *mesh, int *tri_part,
 	int tag,
-	emxArray_int32_T *ps_globalid,
-	emxArray_int32_T *tri_globalid)
+	emxArray_int32_T **ps_globalid,
+	emxArray_int32_T **tri_globalid)
 {
     hpFreeMesh(mesh);
     int i,j,k;
@@ -612,9 +612,9 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 		 */
 		int array_size[1];
 		array_size[0] = num_pt[i];
-		ps_globalid = emxCreateWrapperND_int32_T(pt_index[i],1,array_size);
+		*ps_globalid = emxCreateWrapperND_int32_T(pt_index[i],1,array_size);
 		array_size[0] = num_tri[i];
-		tri_globalid = emxCreateWrapperND_int32_T(tri_index[i], 1, array_size);
+		*tri_globalid = emxCreateWrapperND_int32_T(tri_index[i], 1, array_size);
 
 	    }
 	    else
@@ -671,9 +671,9 @@ int hpDistMesh(int root, hiPropMesh *in_mesh,
 
 	int array_size[1];
 	array_size[0] = mesh->ps->size[0];
-	ps_globalid = emxCreateWrapperND_int32_T(l2gindex,1,array_size);
+	*ps_globalid = emxCreateWrapperND_int32_T(l2gindex,1,array_size);
 	array_size[0] = mesh->tris->size[0];
-	tri_globalid = emxCreateWrapperND_int32_T(tri_index, 1, array_size);
+	*tri_globalid = emxCreateWrapperND_int32_T(tri_index, 1, array_size);
 
 	for(i = 0; i<num_proc; i++)
 	    free(g2lindex[i]);
