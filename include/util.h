@@ -368,4 +368,6 @@ extern void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const e
 
 extern void compute_diffops_surf(const emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, real_T ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs, emxArray_real_T *prdirs, int32_T param);
 
+extern void test_walf_tri(const emxArray_real_T *ps, const emxArray_int32_T *tris, int32_T degree, const emxArray_real_T *param, emxArray_real_T *pnts);
+
 #endif

@@ -61,11 +61,11 @@ int main (int argc, char *argv[])
 
 
     	hpMetisPartMesh(in_mesh, num_proc, &tri_part, &pt_part);
-	hpDistMesh(root, in_mesh, mesh, tri_part, tag, ps_globalid, tri_globalid);
+	hpDistMesh(root, in_mesh, mesh, tri_part, tag, &ps_globalid, &tri_globalid);
 	hpDeleteMesh(&in_mesh);
     }
     else
-	hpDistMesh(root, NULL, mesh, NULL, tag, ps_globalid, tri_globalid);
+	hpDistMesh(root, NULL, mesh, NULL, tag, &ps_globalid, &tri_globalid);
 
     hpBuildPUpdateInfo(mesh);
 
