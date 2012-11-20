@@ -55,7 +55,7 @@
  * \param ndigits number of digits for the output
  * \param in_string output string
  */
-extern void right_flush(const int n, const int ndigits, char *in_string);
+EXTERN_C void right_flush(const int n, const int ndigits, char *in_string);
 
 /*!
  * \brief Locate the current cursor after the searching string, if string not found,
@@ -63,7 +63,7 @@ extern void right_flush(const int n, const int ndigits, char *in_string);
  * \param file file pointer
  * \param in_string string for search
  */
-extern int findString(FILE* file, const char* in_string);
+EXTERN_C int findString(FILE* file, const char* in_string);
 
 /*!
  * \brief Determine whether 2 triangles are the same base on floating point
@@ -76,7 +76,7 @@ extern int findString(FILE* file, const char* in_string);
  * \param tri_index2 triangle index in tri2 for comparison
  */
 
-extern boolean_T sameTriangle(const emxArray_real_T* ps1,
+EXTERN_C boolean_T sameTriangle(const emxArray_real_T* ps1,
 			      const emxArray_int32_T* tri1,
 			      const int tri_index1,
 			      const emxArray_real_T* ps2,
@@ -103,7 +103,7 @@ inline int32_T I3d(int32_T i, int32_T j, int32_T k, int32_T *size)
  * \param numColAdd number of column added
  * \param elementSize size of each element
  */
-extern void addColumnToArray_common(emxArray__common *emxArray, const int32_T numColAdd, const uint32_T elementSize);
+EXTERN_C void addColumnToArray_common(emxArray__common *emxArray, const int32_T numColAdd, const uint32_T elementSize);
 
 /*!
  * \brief Add column to int array
@@ -111,7 +111,7 @@ extern void addColumnToArray_common(emxArray__common *emxArray, const int32_T nu
  * \param emxArray pointer to int array
  * \param numColAdd number of column added
  */
-extern void addColumnToArray_int32_T(emxArray_int32_T *emxArray, const int32_T numColAdd);
+EXTERN_C void addColumnToArray_int32_T(emxArray_int32_T *emxArray, const int32_T numColAdd);
 
 /*!
  * \brief Add column to real array
@@ -119,7 +119,7 @@ extern void addColumnToArray_int32_T(emxArray_int32_T *emxArray, const int32_T n
  * \param emxArray pointer to real array
  * \param numColAdd number of column added
  */
-extern void addColumnToArray_real_T(emxArray_real_T *emxArray, const int32_T numColAdd);
+EXTERN_C void addColumnToArray_real_T(emxArray_real_T *emxArray, const int32_T numColAdd);
 
 /*!
  * \brief Add column to boolean array
@@ -127,7 +127,7 @@ extern void addColumnToArray_real_T(emxArray_real_T *emxArray, const int32_T num
  * \param emxArray pointer to boolean array
  * \param numColAdd number of column added
  */
-extern void addColumnToArray_boolean_T(emxArray_boolean_T *emxArray, const int32_T numColAdd);
+EXTERN_C void addColumnToArray_boolean_T(emxArray_boolean_T *emxArray, const int32_T numColAdd);
 
 /*!
  * \brief Add row to int array
@@ -135,7 +135,7 @@ extern void addColumnToArray_boolean_T(emxArray_boolean_T *emxArray, const int32
  * \param emxArray pointer to int array
  * \param numColAdd number of row added
  */
-extern void addRowToArray_int32_T(emxArray_int32_T *emxArray, const int32_T numRowAdd);
+EXTERN_C void addRowToArray_int32_T(emxArray_int32_T *emxArray, const int32_T numRowAdd);
 
 /*!
  * \brief Add row to real array
@@ -143,7 +143,7 @@ extern void addRowToArray_int32_T(emxArray_int32_T *emxArray, const int32_T numR
  * \param emxArray pointer to real array
  * \param numColAdd number of row added
  */
-extern void addRowToArray_real_T(emxArray_real_T *emxArray, const int32_T numRowAdd);
+EXTERN_C void addRowToArray_real_T(emxArray_real_T *emxArray, const int32_T numRowAdd);
 
 /*!
  * \brief Add row to boolean array
@@ -151,11 +151,11 @@ extern void addRowToArray_real_T(emxArray_real_T *emxArray, const int32_T numRow
  * \param emxArray pointer to boolean array
  * \param numColAdd number of row added
  */
-extern void addRowToArray_boolean_T(emxArray_boolean_T *emxArray, const int32_T numRowAdd);
+EXTERN_C void addRowToArray_boolean_T(emxArray_boolean_T *emxArray, const int32_T numRowAdd);
 
-extern void printArray_int32_T(const emxArray_int32_T *emxArray);
-extern void printArray_real_T(const emxArray_real_T *emxArray);
-extern void printArray_boolean_T(const emxArray_boolean_T *emxArray);
+EXTERN_C void printArray_int32_T(const emxArray_int32_T *emxArray);
+EXTERN_C void printArray_real_T(const emxArray_real_T *emxArray);
+EXTERN_C void printArray_boolean_T(const emxArray_boolean_T *emxArray);
 
 /*!
  * \brief Block sending a N-dimensional boolean array
@@ -169,7 +169,7 @@ extern void printArray_boolean_T(const emxArray_boolean_T *emxArray);
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void sendND_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag, MPI_Comm comm);
+EXTERN_C void sendND_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block sending a N-dimensional int array
@@ -183,7 +183,7 @@ extern void sendND_boolean_T(const emxArray_boolean_T *array_send, const int dst
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void sendND_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag, MPI_Comm comm);
+EXTERN_C void sendND_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block sending a N-dimensional double array
@@ -197,7 +197,7 @@ extern void sendND_int32_T(const emxArray_int32_T *array_send, const int dst, co
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void sendND_real_T(const emxArray_real_T *array_send, const int dst, const int tag, MPI_Comm comm);
+EXTERN_C void sendND_real_T(const emxArray_real_T *array_send, const int dst, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block receiving a N-dimensional boolean array
@@ -211,7 +211,7 @@ extern void sendND_real_T(const emxArray_real_T *array_send, const int dst, cons
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void recvND_boolean_T(emxArray_boolean_T **array_recv, const int src, const int tag, MPI_Comm comm);
+EXTERN_C void recvND_boolean_T(emxArray_boolean_T **array_recv, const int src, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block receiving a N-dimensional int array
@@ -225,7 +225,7 @@ extern void recvND_boolean_T(emxArray_boolean_T **array_recv, const int src, con
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void recvND_int32_T(emxArray_int32_T **array_recv, const int src, const int tag, MPI_Comm comm);
+EXTERN_C void recvND_int32_T(emxArray_int32_T **array_recv, const int src, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block receiving a N-dimensional double array
@@ -239,7 +239,7 @@ extern void recvND_int32_T(emxArray_int32_T **array_recv, const int src, const i
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void recvND_real_T(emxArray_real_T **array_recv, const int src, const int tag, MPI_Comm comm);
+EXTERN_C void recvND_real_T(emxArray_real_T **array_recv, const int src, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block sending a 2D boolean array
@@ -251,7 +251,7 @@ extern void recvND_real_T(emxArray_real_T **array_recv, const int src, const int
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void send2D_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag, MPI_Comm comm);
+EXTERN_C void send2D_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block sending a 2D int array
@@ -263,7 +263,7 @@ extern void send2D_boolean_T(const emxArray_boolean_T *array_send, const int dst
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void send2D_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag, MPI_Comm comm);
+EXTERN_C void send2D_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block sending a 2D double array
@@ -275,7 +275,7 @@ extern void send2D_int32_T(const emxArray_int32_T *array_send, const int dst, co
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void send2D_real_T(const emxArray_real_T *array_send, const int dst, const int tag, MPI_Comm comm);
+EXTERN_C void send2D_real_T(const emxArray_real_T *array_send, const int dst, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block receiving a 2D boolean array
@@ -288,7 +288,7 @@ extern void send2D_real_T(const emxArray_real_T *array_send, const int dst, cons
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void recv2D_boolean_T(emxArray_boolean_T **array_recv, const int src, const int tag, MPI_Comm comm);
+EXTERN_C void recv2D_boolean_T(emxArray_boolean_T **array_recv, const int src, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block receiving a 2D int array
@@ -301,7 +301,7 @@ extern void recv2D_boolean_T(emxArray_boolean_T **array_recv, const int src, con
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void recv2D_int32_T(emxArray_int32_T **array_recv, const int src, const int tag, MPI_Comm comm);
+EXTERN_C void recv2D_int32_T(emxArray_int32_T **array_recv, const int src, const int tag, MPI_Comm comm);
 
 /*!
  * \brief Block receiving a 2D double array
@@ -314,7 +314,7 @@ extern void recv2D_int32_T(emxArray_int32_T **array_recv, const int src, const i
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void recv2D_real_T(emxArray_real_T **array_recv, const int src, const int tag, MPI_Comm comm);
+EXTERN_C void recv2D_real_T(emxArray_real_T **array_recv, const int src, const int tag, MPI_Comm comm);
 
 /*!
  * \brief NonBlock receiving a 2D boolean array
@@ -327,7 +327,7 @@ extern void recv2D_real_T(emxArray_real_T **array_recv, const int src, const int
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void isend2D_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag,
+EXTERN_C void isend2D_boolean_T(const emxArray_boolean_T *array_send, const int dst, const int tag,
 			      MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
 
 /*!
@@ -341,7 +341,7 @@ extern void isend2D_boolean_T(const emxArray_boolean_T *array_send, const int ds
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void isend2D_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag,
+EXTERN_C void isend2D_int32_T(const emxArray_int32_T *array_send, const int dst, const int tag,
 			    MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
 
 /*!
@@ -355,19 +355,19 @@ extern void isend2D_int32_T(const emxArray_int32_T *array_send, const int dst, c
  * \param tag tag for this non blocking send
  * \param comm MPI communicator
  */
-extern void isend2D_real_T(const emxArray_real_T *array_send, const int dst, const int tag,
+EXTERN_C void isend2D_real_T(const emxArray_real_T *array_send, const int dst, const int tag,
 			   MPI_Comm comm, MPI_Request *req_com, MPI_Request *req_data);
 
 
 
-extern void determine_opposite_halfedge_tri(int32_T nv, const emxArray_int32_T *tris ,emxArray_int32_T *opphes);
+EXTERN_C void determine_opposite_halfedge_tri(int32_T nv, const emxArray_int32_T *tris ,emxArray_int32_T *opphes);
 
-extern void determine_incident_halfedges(const emxArray_int32_T *elems, const emxArray_int32_T *opphes, emxArray_int32_T *v2he);
+EXTERN_C void determine_incident_halfedges(const emxArray_int32_T *elems, const emxArray_int32_T *opphes, emxArray_int32_T *v2he);
 
-extern void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const emxArray_int32_T *v2he, emxArray_int32_T *ngbvs, emxArray_boolean_T *vtags, emxArray_boolean_T *ftags, emxArray_int32_T *ngbfs, int32_T *nverts, int32_T *nfaces);
+EXTERN_C void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const emxArray_int32_T *v2he, emxArray_int32_T *ngbvs, emxArray_boolean_T *vtags, emxArray_boolean_T *ftags, emxArray_int32_T *ngbfs, int32_T *nverts, int32_T *nfaces);
 
-extern void compute_diffops_surf(const emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, real_T ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs, emxArray_real_T *prdirs, int32_T param);
+EXTERN_C void compute_diffops_surf(const emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, real_T ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs, emxArray_real_T *prdirs, int32_T param);
 
-extern void test_walf_tri(const emxArray_real_T *ps, const emxArray_int32_T *tris, int32_T degree, const emxArray_real_T *param, emxArray_real_T *pnts);
+EXTERN_C void test_walf_tri(const emxArray_real_T *ps, const emxArray_int32_T *tris, int32_T degree, const emxArray_real_T *param, emxArray_real_T *pnts);
 
 #endif
