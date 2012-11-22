@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
     }
 
     int num_old_ps = mesh->ps->size[0];
+    int num_old_tris = mesh->tris->size[0];
 
     hpGetNbProcListAuto(mesh);
     printf("\n GetNbProcInfo passed, proc %d \n", rank);
@@ -62,17 +63,148 @@ int main(int argc, char* argv[])
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
 
-    hpBuildNRingGhost(mesh, 5);
-    printf("\nafter build nring ghost, num tris = %d\n", mesh->tris->size[0]);
-    printf("\nafter build nring ghost, num ps = %d\n", mesh->ps->size[0]);
-
+    hpBuildNRingGhost(mesh, 3);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
+
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
 
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
-/*
+
+
+    emxArray_real_T *para = emxCreate_real_T(2, 2);
+    para->data[I2dm(1,1,para->size)] = 2.0/3.0;
+    para->data[I2dm(1,2,para->size)] = 1.0/3.0;
+    para->data[I2dm(2,1,para->size)] = 1.0/3.0;
+    para->data[I2dm(2,2,para->size)] = 2.0/3.0;
+
+    int new_num_tris = mesh->tris->size[0];
+
+    emxArray_real_T *result = emxCreate_real_T(new_num_tris, 6);
+    
+    test_walf_tri(mesh->ps, mesh->tris, 2, para, result);
+
+    char trisid_filename[200];
+    sprintf(trisid_filename, "trisid-p%s.data", rank_str);
+    FILE *infile = fopen(trisid_filename, "r");
+
+    int *trisid = (int *) calloc(num_old_tris, sizeof(int));
+
+    for (i = 0; i < num_old_tris; i++)
+	fscanf(infile, "%d", &(trisid[i]));
+
+    fclose(infile);
+
+
+    int num_interior_tris = 0;
+
+    char pnt_filename[200];
+    sprintf(pnt_filename, "pnt-p%s.out", rank_str);
+    FILE *pnt_outfile = fopen(pnt_filename, "w");
+
+    fprintf(pnt_outfile, "xi = %g eta = %g\n", para->data[I2dm(1,1,para->size)], para->data[I2dm(1,2,para->size)]);
+    for (i = 1; i <= mesh->tris->size[0]; i++)
+    {
+	int head = mesh->tris_pinfo->head[I1dm(i)];
+	if (mesh->tris_pinfo->pdata[I1dm(head)].proc == rank)
+	{
+	    fprintf(pnt_outfile, "%22.16g %22.16g %22.16g\n", result->data[I2dm(i,1,result->size)], result->data[I2dm(i,2,result->size)], result->data[I2dm(i,3,result->size)]);
+	    num_interior_tris++;
+	}
+
+    }
+
+    fprintf(pnt_outfile, "xi = %g eta = %g\n", para->data[I2dm(2,1,para->size)], para->data[I2dm(2,2,para->size)]);
+    for (i = 1; i <= mesh->tris->size[0]; i++)
+    {
+	int head = mesh->tris_pinfo->head[I1dm(i)];
+	if (mesh->tris_pinfo->pdata[I1dm(head)].proc == rank)
+	{
+	    fprintf(pnt_outfile, "%22.16g %22.16g %22.16g\n", result->data[I2dm(i,4,result->size)], result->data[I2dm(i,5,result->size)], result->data[I2dm(i,6,result->size)]);
+	}
+
+    }
+    fclose(pnt_outfile);
+
+    int out_num_all_tris = 0;
+
+    MPI_Allreduce(&num_interior_tris, &out_num_all_tris, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    printf("\n Num of all tris = %d \n", out_num_all_tris);
+
+    double *in1 = (double *) calloc(out_num_all_tris, sizeof(double));
+    double *in2 = (double *) calloc(out_num_all_tris, sizeof(double));
+    double *in3 = (double *) calloc(out_num_all_tris, sizeof(double));
+
+    double *in4 = (double *) calloc(out_num_all_tris, sizeof(double));
+    double *in5 = (double *) calloc(out_num_all_tris, sizeof(double));
+    double *in6 = (double *) calloc(out_num_all_tris, sizeof(double));
+
+    double *out1 = (double *) calloc(out_num_all_tris, sizeof(double));
+    double *out2 = (double *) calloc(out_num_all_tris, sizeof(double));
+    double *out3 = (double *) calloc(out_num_all_tris, sizeof(double));
+
+    double *out4 = (double *) calloc(out_num_all_tris, sizeof(double));
+    double *out5 = (double *) calloc(out_num_all_tris, sizeof(double));
+    double *out6 = (double *) calloc(out_num_all_tris, sizeof(double));
+
+
+    for (i = 1; i <= mesh->tris->size[0]; i++)
+    {
+	int head = mesh->tris_pinfo->head[I1dm(i)];
+	if (mesh->tris_pinfo->pdata[I1dm(head)].proc == rank)
+	{
+	    in1[trisid[i-1]-1] = result->data[I2dm(i,1,result->size)];
+	    in2[trisid[i-1]-1] = result->data[I2dm(i,2,result->size)];
+	    in3[trisid[i-1]-1] = result->data[I2dm(i,3,result->size)];
+	    in4[trisid[i-1]-1] = result->data[I2dm(i,4,result->size)];
+	    in5[trisid[i-1]-1] = result->data[I2dm(i,5,result->size)];
+	    in6[trisid[i-1]-1] = result->data[I2dm(i,6,result->size)];
+	}
+    }
+
+    MPI_Allreduce(in1, out1, out_num_all_tris, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(in2, out2, out_num_all_tris, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(in3, out3, out_num_all_tris, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    MPI_Allreduce(in4, out4, out_num_all_tris, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(in5, out5, out_num_all_tris, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(in6, out6, out_num_all_tris, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    if (rank == 0)
+    {
+	char ptfilename[200];
+	sprintf(ptfilename, "pnt.out");
+	FILE *ptout = fopen(ptfilename, "w");
+
+	fprintf(ptout, "xi = %g eta = %g\n", para->data[I2dm(1,1,para->size)], para->data[I2dm(1,2,para->size)]);
+	for (i = 0; i < out_num_all_tris; i++)
+	    fprintf(ptout, "%22.16g %22.16g %22.16g\n",
+		    out1[i], out2[i], out3[i]);
+
+	fprintf(ptout, "xi = %g eta = %g\n", para->data[I2dm(2,1,para->size)], para->data[I2dm(2,2,para->size)]);
+	for (i = 0; i < out_num_all_tris; i++)
+	    fprintf(ptout, "%22.16g %22.16g %22.16g\n",
+		    out4[i], out5[i], out6[i]);
+
+    }
+
+    free(trisid);
+    free(in1); free(in2); free(in3);
+    free(in4); free(in5); free(in6);
+    free(out1); free(out2); free(out3);
+    free(out4); free(out5); free(out6);
+
+    hpDeleteMesh(&mesh);
+
+    printf("Success processor %d\n", rank);
+
+    MPI_Finalize();
+
+    return 1;
+
+/*                      This part about testing obtain_nring 
     if (rank == 0)
     {
 	emxArray_int32_T *ngbvs, *ngbfs;
@@ -121,6 +253,9 @@ int main(int argc, char* argv[])
 
     }
 */
+    
+    /*                      This part about testing computing normals and
+     *                      curvatures 
     hpComputeDiffops(mesh, 5);
 
 
@@ -234,14 +369,10 @@ int main(int argc, char* argv[])
     free(incurv1); free(incurv2);
     free(outcurv1); free(outcurv2);
 
-    hpDeleteMesh(&mesh);
+    */
 
-    printf("Success processor %d\n", rank);
-
-    MPI_Finalize();
-
-    return 1;
-/*
+/*                 This part about testing build ghost for bounding box 
+ *
     hpBuildNRingGhost(mesh, 4);
     double *bounding_box = (double *) calloc(6, sizeof(double));
 
