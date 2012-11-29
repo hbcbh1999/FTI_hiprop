@@ -114,6 +114,10 @@ EXTERN_C void hpFreeMesh(hiPropMesh *pmesh);
  */
 EXTERN_C void hpDeleteMesh(hiPropMesh **pmesh);
 
+/*!
+ * \brief Delete a hiProp parallel info list and set the pointer to NULL
+ * \param plist address of the hpPInfoList
+ */
 EXTERN_C void hpDeletePInfoList(hpPInfoList **plist);
 /*!
  * Read an ascii triangular vtk file with data type POLYGON.
@@ -299,7 +303,7 @@ EXTERN_C void hpObtainNRingTris(const hiPropMesh *mesh,
  * and tris_pinfo is freed.
  * \param mesh The submeshes to be cleaned.
  */
-void hpCleanMeshByPinfo(hiPropMesh* mesh);
+EXTERN_C void hpCleanMeshByPinfo(hiPropMesh* mesh);
 
 
 /*!
@@ -312,7 +316,18 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh);
  */
 EXTERN_C void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring);
 
-EXTERN_C void hpBuidBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
+
+/*!
+ * \brief Build ghost neighborhood on the current hiProp mesh based on the
+ * bounding boxes
+ * \detail The bounding box for each processor could overlap with each other.
+ * After building the ghost triangles, the neighbor processor information might
+ * need to be updated.
+ * \param mesh pointer to hiProp mesh
+ * \param bd_box The bounding box for current processor, stored in order:
+ * x_low, x_upper, y_low, y_upper, z_low, z_upper.
+ */
+EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
 
 /*!
  * \brief Collect the n-ring neighborhood for a list of points

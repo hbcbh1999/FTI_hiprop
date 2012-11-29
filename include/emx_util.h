@@ -187,8 +187,25 @@ EXTERN_C void emxFree_real_T(emxArray_real_T **pEmxArray);
  */
 EXTERN_C void emxEnsureCapacity(emxArray__common *emxArray, int32_T oldNumel, int32_T elementSize);
 
+/*!
+ * \brief wrapper function for emxFree_int32_T
+ *
+ * \param emxArray address of the array being deallocated
+ */
 EXTERN_C void emxDestroyArray_int32_T(emxArray_int32_T *emxArray);
+
+/*!
+ * \brief wrapper function for emxFree_real_T
+ *
+ * \param emxArray address of the array being deallocated
+ */
 EXTERN_C void emxDestroyArray_real_T(emxArray_real_T *emxArray);
+
+/*!
+ * \brief wrapper function for emxFree_boolean_T
+ *
+ * \param emxArray address of the array being deallocated
+ */
 EXTERN_C void emxDestroyArray_boolean_T(emxArray_boolean_T *emxArray);
 
 

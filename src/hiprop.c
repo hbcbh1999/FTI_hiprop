@@ -12,6 +12,61 @@
 #include "hiprop.h"
 #include "metis.h"
 
+/*!
+ * \brief Determine whether 2 triangles are the same base on floating point
+ * comparison
+ * \param ps1 points list 1
+ * \param tri1 triangle list 1
+ * \param tri_index1 triangle index in tri1 for comparison
+ * \param ps2 points list 2
+ * \param tri2 triangle list 2
+ * \param tri_index2 triangle index in tri2 for comparison
+ */
+
+static boolean_T sameTriangle(const emxArray_real_T* ps1,
+			      const emxArray_int32_T* tri1,
+			      const int tri_index1,
+			      const emxArray_real_T* ps2,
+			      const emxArray_int32_T* tri2,
+			      const int tri_index2,
+			      const double eps);
+
+
+
+
+static boolean_T sameTriangle(const emxArray_real_T* ps1,
+			      const emxArray_int32_T* tri1,
+			      const int tri_index1,
+			      const emxArray_real_T* ps2,
+			      const emxArray_int32_T* tri2, 
+			      const int tri_index2,
+			      const double eps)
+{
+    int p11 = tri1->data[I2dm(tri_index1,1,tri1->size)];
+    int p12 = tri1->data[I2dm(tri_index1,2,tri1->size)];
+    int p13 = tri1->data[I2dm(tri_index1,3,tri1->size)];
+
+    int p21 = tri2->data[I2dm(tri_index2,1,tri2->size)];
+    int p22 = tri2->data[I2dm(tri_index2,2,tri2->size)];
+    int p23 = tri2->data[I2dm(tri_index2,3,tri2->size)];
+
+
+    if ( (fabs(ps1->data[I2dm(p11,1,ps1->size)] - ps2->data[I2dm(p21,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p11,2,ps1->size)] - ps2->data[I2dm(p21,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p11,3,ps1->size)] - ps2->data[I2dm(p21,3,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,1,ps1->size)] - ps2->data[I2dm(p22,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,2,ps1->size)] - ps2->data[I2dm(p22,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,3,ps1->size)] - ps2->data[I2dm(p22,3,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,1,ps1->size)] - ps2->data[I2dm(p23,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,2,ps1->size)] - ps2->data[I2dm(p23,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,3,ps1->size)] - ps2->data[I2dm(p23,3,ps2->size)]) < eps)
+       )
+	return 1;
+    else
+	return 0;
+}
+
+
 void hpInitMesh(hiPropMesh **pmesh)
 {
     hiPropMesh *mesh;
@@ -2020,8 +2075,8 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 	/************* Debugging output **********************************
 	char rank_str[5];
 	char nb_rank_str[5];
-	right_flush(cur_proc,4,rank_str);
-	right_flush(mesh->nb_proc->data[I1dm(i)], 4, nb_rank_str);
+	numIntoString(cur_proc,4,rank_str);
+	numIntoString(mesh->nb_proc->data[I1dm(i)], 4, nb_rank_str);
 	char debug_out_name[250];
 	sprintf(debug_out_name, "debugout-p%s-to-p%s.vtk", rank_str, nb_rank_str);
 	hpDebugOutput(mesh, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)], debug_out_name);

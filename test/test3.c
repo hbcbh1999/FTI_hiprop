@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     char out_name[200];
     char id_out_name[200];
 
-    right_flush(rank,4,rank_str);
+    numIntoString(rank,4,rank_str);
     sprintf(out_name, "data/parallel/%s-p%s.vtk",argv[1], rank_str);
     sprintf(id_out_name, "trisid-p%s.data",rank_str);
 

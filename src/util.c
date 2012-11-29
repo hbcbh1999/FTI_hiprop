@@ -53,7 +53,7 @@ static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
 }
 */
 
-void right_flush(const int n, int ndigits, char *s)
+void numIntoString(const int n, int ndigits, char *s)
 {
 	int i;
 
@@ -99,38 +99,6 @@ int findString(FILE *file, const char *in_string)
     }
     else
 	return 1;
-}
-
-boolean_T sameTriangle(const emxArray_real_T* ps1,
-		       const emxArray_int32_T* tri1,
-		       const int tri_index1,
-		       const emxArray_real_T* ps2,
-		       const emxArray_int32_T* tri2, 
-		       const int tri_index2,
-		       const double eps)
-{
-    int p11 = tri1->data[I2dm(tri_index1,1,tri1->size)];
-    int p12 = tri1->data[I2dm(tri_index1,2,tri1->size)];
-    int p13 = tri1->data[I2dm(tri_index1,3,tri1->size)];
-
-    int p21 = tri2->data[I2dm(tri_index2,1,tri2->size)];
-    int p22 = tri2->data[I2dm(tri_index2,2,tri2->size)];
-    int p23 = tri2->data[I2dm(tri_index2,3,tri2->size)];
-
-
-    if ( (fabs(ps1->data[I2dm(p11,1,ps1->size)] - ps2->data[I2dm(p21,1,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p11,2,ps1->size)] - ps2->data[I2dm(p21,2,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p11,3,ps1->size)] - ps2->data[I2dm(p21,3,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p12,1,ps1->size)] - ps2->data[I2dm(p22,1,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p12,2,ps1->size)] - ps2->data[I2dm(p22,2,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p12,3,ps1->size)] - ps2->data[I2dm(p22,3,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p13,1,ps1->size)] - ps2->data[I2dm(p23,1,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p13,2,ps1->size)] - ps2->data[I2dm(p23,2,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p13,3,ps1->size)] - ps2->data[I2dm(p23,3,ps2->size)]) < eps)
-       )
-	return 1;
-    else
-	return 0;
 }
 
 

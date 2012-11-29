@@ -26,7 +26,7 @@ int main (int argc, char *argv[])
 
     char runlog_filename[200];
     char rank_str[5];
-    right_flush(rank,4,rank_str);
+    numIntoString(rank,4,rank_str);
     sprintf(runlog_filename, "run-log.%s",rank_str);
     FILE *runlog_stream;
     if((runlog_stream = freopen(runlog_filename, "w", stdout)) == NULL)

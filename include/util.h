@@ -55,7 +55,7 @@
  * \param ndigits number of digits for the output
  * \param in_string output string
  */
-EXTERN_C void right_flush(const int n, const int ndigits, char *in_string);
+EXTERN_C void numIntoString(const int n, const int ndigits, char *in_string);
 
 /*!
  * \brief Locate the current cursor after the searching string, if string not found,
@@ -65,31 +65,13 @@ EXTERN_C void right_flush(const int n, const int ndigits, char *in_string);
  */
 EXTERN_C int findString(FILE* file, const char* in_string);
 
-/*!
- * \brief Determine whether 2 triangles are the same base on floating point
- * comparison
- * \param ps1 points list 1
- * \param tri1 triangle list 1
- * \param tri_index1 triangle index in tri1 for comparison
- * \param ps2 points list 2
- * \param tri2 triangle list 2
- * \param tri_index2 triangle index in tri2 for comparison
- */
-
-EXTERN_C boolean_T sameTriangle(const emxArray_real_T* ps1,
-			      const emxArray_int32_T* tri1,
-			      const int tri_index1,
-			      const emxArray_real_T* ps2,
-			      const emxArray_int32_T* tri2,
-			      const int tri_index2,
-			      const double eps);
-
 /*
-inline int32_T I2d(int32_T i, int32_T j, int32_T *size)
+extern inline int32_T I2d(int32_T i, int32_T j, int32_T *size)
 {
     return (j-1)*size[0] + (i-1);
 }
-inline int32_T I3d(int32_T i, int32_T j, int32_T k, int32_T *size)
+
+extern inline int32_T I3d(int32_T i, int32_T j, int32_T k, int32_T *size)
 {
     return ((k-1)*size[1] + (j-1))*size[0] + (i-1);
 }
@@ -360,6 +342,11 @@ EXTERN_C void isend2D_real_T(const emxArray_real_T *array_send, const int dst, c
 
 
 
+/*!
+ *
+ *
+ *
+ */
 EXTERN_C void determine_opposite_halfedge_tri(int32_T nv, const emxArray_int32_T *tris ,emxArray_int32_T *opphes);
 
 EXTERN_C void determine_incident_halfedges(const emxArray_int32_T *elems, const emxArray_int32_T *opphes, emxArray_int32_T *v2he);
