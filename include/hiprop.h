@@ -342,10 +342,11 @@ EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
  * \param out_tris address of the pointer to the output triangle ids
  */
 EXTERN_C void hpCollectNRingTris(const hiPropMesh *mesh,
-			       const emxArray_int32_T *in_psid,
-			       const real_T num_ring,
-			       emxArray_int32_T **out_ps,
-			       emxArray_int32_T **out_tris);
+				 const int nb_proc_index,
+				 const emxArray_int32_T *in_psid,
+				 const real_T num_ring,
+				 emxArray_int32_T **out_ps,
+				 emxArray_int32_T **out_tris);
 
 /*!
  * \brief This function is a subfunction for hpBuildNRingGhost.
