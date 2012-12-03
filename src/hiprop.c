@@ -78,6 +78,7 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->curv = (emxArray_real_T *) NULL;
 
     mesh->nb_proc = (emxArray_int32_T *) NULL;
+    mesh->part_bdry = (emxArray_boolean_T *) NULL;
     mesh->ps_pinfo = (hpPInfoList *) NULL;
     mesh->tris_pinfo = (hpPInfoList *) NULL;
 
@@ -88,6 +89,11 @@ void hpInitMesh(hiPropMesh **pmesh)
 
     mesh->opphe = (emxArray_int32_T *) NULL;
     mesh->inhe = (emxArray_int32_T *) NULL;
+    mesh->est_nor = (emxArray_real_T *) NULL;
+
+    mesh->num_int_ps = 0;
+    mesh->num_int_tris = 0;
+    mesh->num_int_pspinfo = 0;
 }
 
 void hpFreeMeshAugmentInfo(hiPropMesh *pmesh)
@@ -96,6 +102,8 @@ void hpFreeMeshAugmentInfo(hiPropMesh *pmesh)
 	emxFree_int32_T(&(pmesh->opphe));
     if (pmesh->inhe != ((emxArray_int32_T *) NULL))
 	emxFree_int32_T(&(pmesh->inhe));
+    if (pmesh->est_nor != ((emxArray_real_T *) NULL))
+	emxFree_real_T(&(pmesh->est_nor));
 }
 
 void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
@@ -145,6 +153,9 @@ void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
 
     if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->nb_proc));
+
+    if (pmesh->part_bdry != ((emxArray_boolean_T *) NULL) )
+	emxFree_boolean_T(&(pmesh->part_bdry));
 }
 
 void hpFreeMeshBasicInfo(hiPropMesh *pmesh)
@@ -165,6 +176,9 @@ void hpFreeMesh(hiPropMesh *pmesh)
     hpFreeMeshParallelInfo(pmesh);
     hpFreeMeshAugmentInfo(pmesh);
     hpFreeMeshBasicInfo(pmesh);
+    pmesh->num_int_ps = 0;
+    pmesh->num_int_tris = 0;
+    pmesh->num_int_pspinfo = 0;
 }
 
 void hpDeleteMesh(hiPropMesh **pmesh)
@@ -1140,6 +1154,10 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     free(send_req_list);
     free(send_status_list);
 
+    mesh->num_int_ps = mesh->ps->size[0];
+    mesh->num_int_tris = mesh->tris->size[0];
+    mesh->num_int_pspinfo = mesh->ps_pinfo->allocated_len;
+
 }
 
 void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
@@ -1782,6 +1800,10 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	mesh->tris_pinfo->tail[I1dm(i)] = i;
     }
     mesh->tris_pinfo->allocated_len = num_tris_tmp;
+
+    mesh->num_int_ps = mesh->ps->size[0];
+    mesh->num_int_tris = mesh->tris->size[0];
+    mesh->num_int_pspinfo = mesh->ps_pinfo->allocated_len;
 }
 
 void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
@@ -4427,5 +4449,292 @@ void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree)
     compute_diffops_surf(mesh->ps, mesh->tris, in_degree, in_ring, false, mesh->nor, mesh->curv, in_prdirs, 0);
 
     emxFree_real_T(&(in_prdirs));
+}
+
+void hpBuildPartitionBoundary(hiPropMesh *mesh)
+{
+    int i;
+    int *ps_phead = mesh->ps_pinfo->head;
+    int *ps_ptail = mesh->ps_pinfo->tail;
+
+    if( mesh->part_bdry != ((emxArray_boolean_T *) NULL) )
+	emxFree_boolean_T(&(mesh->part_bdry));
+
+    int num_ps = mesh->num_int_ps;
+
+    mesh->part_bdry = emxCreateND_boolean_T(1, &num_ps);
+
+    for (i = 1; i <= num_ps; i++)
+    {
+	if (ps_phead[I1dm(i)] != ps_ptail[I1dm(i)])
+	    mesh->part_bdry->data[I1dm(i)] = 1;
+    }
+}
+
+void hpComputeEstimatedNormal(hiPropMesh *mesh)
+{
+    if (mesh->est_nor != ((emxArray_real_T *) NULL) )
+	emxFree_real_T(&(mesh->est_nor));
+
+    int num_ps = mesh->ps->size[0];
+
+    mesh->est_nor = emxCreate_real_T(num_ps, 3);
+
+    emxArray_real_T *xs = mesh->ps;
+    emxArray_int32_T *tris = mesh->tris;
+    emxArray_real_T *nrms = mesh->est_nor;
+
+    /*Codes from here are duplicate from matlab generated function
+     * average_vertex_normal tri */
+
+  int32_T ntris;
+  int32_T nv;
+  int32_T i0;
+  int32_T ix;
+  int32_T ii;
+  int32_T iy;
+  real_T a[3];
+  real_T b[3];
+  real_T nrm[3];
+  int32_T k;
+  real_T y;
+
+  /* AVERAGE_VERTEX_NORMAL_TRI Compute average vertex normal for surface  */
+  /*  triangulation. */
+  /*  AVERAGE_VERTEX_NORMAL_TRI(XS,TRIS,OPT,FLABEL,OPPHES) Computes the average  */
+  /*  vertex normal for surface triangulation, provided vertices XS, triangles */
+  /*  TRIS, weighting options OPT, face-labels FLABEL and opposite vertices in  */
+  /*  mx3 OPPHES. */
+  /*   */
+  /*  AVERAGE_VERTEX_NORMAL_TRI(XS,TRIS) Same as above. See below for default  */
+  /*  OPT and FLABEL values. */
+  /*  */
+  /*  AVERAGE_VERTEX_NORMAL_TRI(XS,TRIS,OPT) Same as above. See below for  */
+  /*  default FLABEL values. */
+  /*  */
+  /*  AVERAGE_VERTEX_NORMAL_TRI(XS,TRIS,OPT,FLABEL) Same as above. */
+  /*      */
+  /*  Set OPT to 'area', 'unit', 'angle', 'sphere', and 'bisect'. Default is  */
+  /*  'area'. If FLABEL is given, then only faces with zero labels are  */
+  /*  considered. */
+  /*  */
+  /*  See also AVERAGE_VERTEX_NORMAL_CURV */
+  ntris = tris->size[0];
+  nv = xs->size[0];
+  i0 = nrms->size[0] * nrms->size[1];
+  nrms->size[0] = nv;
+  nrms->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)nrms, i0, (int32_T)sizeof(real_T));
+  ix = nv * 3 - 1;
+  for (i0 = 0; i0 <= ix; i0++) {
+    nrms->data[i0] = 0.0;
+  }
+
+  for (ii = 0; ii + 1 <= ntris; ii++) {
+    ix = tris->data[ii + (tris->size[0] << 1)];
+    iy = tris->data[ii + tris->size[0]];
+    for (i0 = 0; i0 < 3; i0++) {
+      a[i0] = xs->data[(ix + xs->size[0] * i0) - 1] - xs->data[(iy + xs->size[0]
+        * i0) - 1];
+    }
+
+    ix = tris->data[ii];
+    iy = tris->data[ii + (tris->size[0] << 1)];
+    for (i0 = 0; i0 < 3; i0++) {
+      b[i0] = xs->data[(ix + xs->size[0] * i0) - 1] - xs->data[(iy + xs->size[0]
+        * i0) - 1];
+    }
+
+    /* CROSS_COL Efficient routine for computing cross product of two  */
+    /* 3-dimensional column vectors. */
+    /*  CROSS_COL(A,B) Efficiently computes the cross product between */
+    /*  3-dimensional column vector A, and 3-dimensional column vector B. */
+    nrm[0] = a[1] * b[2] - a[2] * b[1];
+    nrm[1] = a[2] * b[0] - a[0] * b[2];
+    nrm[2] = a[0] * b[1] - a[1] * b[0];
+    for (k = 0; k < 3; k++) {
+      ix = tris->data[ii + tris->size[0] * k];
+      iy = tris->data[ii + tris->size[0] * k];
+      for (i0 = 0; i0 < 3; i0++) {
+        a[i0] = nrms->data[(iy + nrms->size[0] * i0) - 1] + nrm[i0];
+      }
+
+      for (i0 = 0; i0 < 3; i0++) {
+        nrms->data[(ix + nrms->size[0] * i0) - 1] = a[i0];
+      }
+    }
+  }
+
+  for (ii = 0; ii + 1 <= nv; ii++) {
+    for (i0 = 0; i0 < 3; i0++) {
+      nrm[i0] = nrms->data[ii + nrms->size[0] * i0];
+    }
+
+    y = 0.0;
+    ix = 0;
+    iy = 0;
+    for (k = 0; k < 3; k++) {
+      y += nrms->data[ii + nrms->size[0] * ix] * nrm[iy];
+      ix++;
+      iy++;
+    }
+
+    y = sqrt(y + 1.0E-100);
+    for (i0 = 0; i0 < 3; i0++) {
+      nrms->data[ii + nrms->size[0] * i0] /= y;
+    }
+  }
+}
+
+void hpUpdateEstimatedNormal(hiPropMesh *mesh)
+{
+    int i, tag_send, tag_recv, j;
+    int proc_send, proc_recv;
+    int num_proc, rank;
+
+    emxArray_real_T *est_nor = mesh->est_nor;
+    emxArray_int32_T *nb_proc = mesh->nb_proc;
+
+    hpPInfoList *ps_pinfo = mesh->ps_pinfo;
+    hpPInfoNode *ps_pdata = ps_pinfo->pdata;
+    int *ps_phead = ps_pinfo->head;
+
+
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int num_nbp = nb_proc->size[0];
+
+    /* First build the buffer est_nor and corresponding lindex for send */
+    emxArray_real_T **buf_enor = (emxArray_real_T **) calloc(num_nbp, sizeof(emxArray_real_T *));
+    int **buf_lindex = (int **) calloc(num_nbp, sizeof(int *));
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	int nb_procid = nb_proc->data[I1dm(i)];
+	int num_overlay_ps = 0;
+	unsigned char *ps_flag = (unsigned char *) calloc(mesh->ps->size[0], sizeof(unsigned char));
+
+	for (j = 1; j <= mesh->ps->size[0]; j++)
+	{
+	    int next_node = ps_phead[I1dm(j)];
+	    if (next_node != rank)
+		continue;
+	    else
+	    {
+		next_node = ps_pdata[I1dm(next_node)].next;
+		while(next_node != -1)
+		{
+		    if (ps_pdata[I1dm(next_node)].proc == nb_procid)
+		    {
+			ps_flag[I1dm(j)] = 1;
+			num_overlay_ps++;
+			break;
+		    }
+		    else
+			next_node = ps_pdata[I1dm(next_node)].next;
+		}
+
+	    }
+	}
+
+	buf_enor[I1dm(i)] = emxCreate_real_T(num_overlay_ps, 3);
+	buf_lindex[I1dm(i)]= (int *) calloc(num_overlay_ps, sizeof(int));
+
+	emxArray_real_T *benor = buf_enor[I1dm(i)];
+	int *blindex = buf_lindex[I1dm(i)];
+
+	int cur_pos = 1;
+	for (j = 1; j <= mesh->ps->size[0]; j++)
+	{
+	    if (ps_flag[I1dm(j)] == 1)
+	    {
+		benor->data[I2dm(cur_pos,1,benor->size)] = est_nor->data[I2dm(j,1,est_nor->size)];
+		benor->data[I2dm(cur_pos,2,benor->size)] = est_nor->data[I2dm(j,2,est_nor->size)];
+		benor->data[I2dm(cur_pos,3,benor->size)] = est_nor->data[I2dm(j,3,est_nor->size)];
+		blindex[I1dm(cur_pos)] = j;
+		cur_pos++;
+	    }
+	}
+	free(ps_flag);
+    }
+
+    /* Send the information */
+    MPI_Request *send_req_list = (MPI_Request *) malloc( 3*num_nbp*sizeof(MPI_Request) );
+
+    MPI_Status *send_status_list = (MPI_Status *) malloc( 3*num_nbp*sizeof(MPI_Status) );
+
+    MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
+
+    /* Stores the received array size */
+
+    int *recv_size = (int *) calloc ( 2*num_nbp, sizeof(int));
+    
+    for (i = 1; i <= num_nbp; i++)
+    {
+	proc_send = nb_proc->data[I1dm(i)];
+	tag_send = proc_send;
+	isend2D_real_T(buf_enor[I1dm(i)], proc_send, tag_send, MPI_COMM_WORLD,
+		       &(send_req_list[I1dm(i)]), &(send_req_list[I1dm(i)+num_nbp]));
+	MPI_Isend(buf_lindex[I1dm(i)], (buf_enor[I1dm(i)])->size[0], MPI_INT, proc_send, tag_send+3, MPI_COMM_WORLD, &(send_req_list[I1dm(i)+2*num_nbp])); 
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	proc_recv = nb_proc->data[I1dm(i)];
+	tag_recv = rank;
+	MPI_Irecv(&(recv_size[2*I1dm(i)]), 2, MPI_INT, proc_recv, tag_recv+1, MPI_COMM_WORLD, &(recv_req_list[I1dm(i)]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	emxArray_real_T *nor_recv;
+	int *lindex_recv;
+
+	tag_recv = rank;
+	MPI_Status recv_status1;
+	MPI_Status recv_status2;
+	MPI_Status recv_status3;
+	int recv_index;
+	
+	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status1);
+
+	proc_recv = recv_status1.MPI_SOURCE;
+
+	nor_recv = emxCreate_real_T(recv_size[2*recv_index], recv_size[2*recv_index+1]);
+	lindex_recv = (int *) calloc(recv_size[2*recv_index], sizeof(int));
+
+	MPI_Recv(nor_recv->data, recv_size[2*recv_index]*recv_size[2*recv_index+1], MPI_DOUBLE, proc_recv, tag_recv+2, MPI_COMM_WORLD, &recv_status2);
+	MPI_Recv(lindex_recv, recv_size[2*recv_index], MPI_INT, proc_recv, tag_recv+3, MPI_COMM_WORLD, &recv_status3);
+
+	for (j = 1; j <= recv_size[2*recv_index]; j++)
+	{
+	    int cur_index = lindex_recv[I1dm(j)];
+	    est_nor->data[I2dm(cur_index,1,est_nor->size)] = nor_recv->data[I2dm(j,1,nor_recv->size)];
+	    est_nor->data[I2dm(cur_index,2,est_nor->size)] = nor_recv->data[I2dm(j,2,nor_recv->size)];
+	    est_nor->data[I2dm(cur_index,3,est_nor->size)] = nor_recv->data[I2dm(j,3,nor_recv->size)];
+	}
+	emxFree_real_T(&nor_recv);
+	free(lindex_recv);
+    }
+
+    free(recv_size);
+    free(recv_req_list);
+
+    MPI_Waitall(3*num_nbp, send_req_list, send_status_list);
+
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	emxFree_real_T(&(buf_enor[I1dm(i)]));
+	free(buf_lindex[I1dm(i)]);
+    }
+
+    free(buf_enor);
+    free(buf_lindex);
+    free(send_req_list);
+    free(send_status_list);
 
 }
+
+

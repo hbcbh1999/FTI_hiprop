@@ -59,18 +59,26 @@ typedef struct hiPropMesh
     emxArray_real_T *ps;		/*!< point positions, # of points = n */
     emxArray_int32_T *tris;		/*!< triangles, # of triangles = m */
     emxArray_real_T *nor;		/*!< point normals */
-    emxArray_real_T *curv;		/*!< point curvatures */
+    emxArray_real_T *curv;		/*!< point main curvatures */
+
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
+    emxArray_boolean_T *part_bdry;	/*!< partition boundary flag for points */
+
     hpPInfoList *ps_pinfo;		/*!< parallel information for points */
     hpPInfoList *tris_pinfo;		/*!< parallel information for tris */
     
     emxArray_int32_T *opphe;		/*!< opposite half edge */
     emxArray_int32_T *inhe;		/*!< incident half edge */
+    emxArray_real_T *est_nor;		/*!< estimated normal, given by tri normal average */
 
     emxArray_int32_T **ps_send_index;
     emxArray_real_T **ps_send_buffer;
     emxArray_int32_T **ps_recv_index;
     emxArray_real_T **ps_recv_buffer;
+
+    int32_T num_int_ps;			/*!< number of points with no overlapping triangles */
+    int32_T num_int_tris;		/*!< number of tris with no overlapping triangles */
+    int32_T num_int_pspinfo;		/*!< number of ps pinfo with no overlapping triangles */
     
 } hiPropMesh;
 
@@ -239,6 +247,18 @@ EXTERN_C void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
 EXTERN_C void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
 
 /*!
+ * \brief Build the partition boundary information for a "clean" hiProp mesh
+ * (with not overlapping triangles).
+ * \detail Before calling this function, a parallel hiProp mesh with no
+ * overlapping triangles and correct parallel information is required. The
+ * result is output to the boolean array mesh->part_bdry. If
+ * mesh->part_bdry->data[I1dm(i)] = 1, it means point i is a partition boundary
+ * for the submesh on the current processor.
+ * \param mesh pointer to the hiProp mesh.
+ */
+EXTERN_C void hpBuildPartitionBoundary(hiPropMesh *mesh);
+
+/*!
  * \brief Build the parallel update information for submesh 
  * \detail This uses the ps_pinfo,
  * so hpBuildPInfoNoOverlappingTris or hpBuildPInfoWithOverlappingTris or hpConstrPInfoFromGlobalLocalInfo
@@ -251,7 +271,7 @@ EXTERN_C void hpBuildPUpdateInfo(hiPropMesh *mesh);
  * \brief Wrapper for building the opposite half edge structure for triangular
  * mesh
  * \detail Fill the mesh->opphe data
- * \param mesh hiPropMesh on this processor
+ * \param mesh pointer to the hiProp mesh
  */
 EXTERN_C void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
 
@@ -259,7 +279,7 @@ EXTERN_C void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
  * \brief Wrapper for building the incident half edge structure for triangular
  * mesh
  * \detail Fill the mesh->inhe data
- * \param mesh hiPropMesh on this processor
+ * \param mesh pointer to the hiProp mesh
  */
 EXTERN_C void hpBuildIncidentHalfEdge(hiPropMesh *mesh);
 
@@ -298,19 +318,23 @@ EXTERN_C void hpObtainNRingTris(const hiPropMesh *mesh,
 			      int32_T *in_nverts,
 			      int32_T *in_nfaces);
 /*!
- * \brief Make all submeshes to be clean (no overlapping triangles).
- * This function uses tris_pinfo and nb_proc. In the end, nb_proc is rebuilt
+ * \brief Make all submeshes to be clean (no overlapping triangles) and update
+ * the parallel information.
+ * \detail This function uses tris_pinfo and nb_proc. In the end, nb_proc is rebuilt
  * and tris_pinfo is freed.
- * \param mesh The submeshes to be cleaned.
+ * \param mesh pointer to the hiProp mesh with overlapping triangles across
+ * different processors.
  */
 EXTERN_C void hpCleanMeshByPinfo(hiPropMesh* mesh);
 
 
 /*!
  * \brief Build a n-ring ghost neighborhood on the current hiProp mesh
- * \detail The input mesh could have ghost points and triangles. After building
- * the n-ring ghost neighborhood, the neighbor processor information might need
- * to be updated.
+ * \detail The input mesh could have ghost points and triangles. Correct
+ * parallel information is needed for both points and triangles before calling
+ * this function. The parallel information would also be updated after this
+ * function is called. At the mean time, the neighboring processor information
+ * is checked and might also need to be updated.
  * \param mesh pointer to hiProp Mesh
  * \param num_ring number of rings needed to be built
  */
@@ -321,8 +345,10 @@ EXTERN_C void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring);
  * \brief Build ghost neighborhood on the current hiProp mesh based on the
  * bounding boxes
  * \detail The bounding box for each processor could overlap with each other.
- * After building the ghost triangles, the neighbor processor information might
- * need to be updated.
+ * Correct parallel information is needed for both points and triangles before
+ * calling this function. The parallel information would also be updated after 
+ * this function is called. At the mean time, the neighboring processor
+ * information is checked and might also need to be updated.
  * \param mesh pointer to hiProp mesh
  * \param bd_box The bounding box for current processor, stored in order:
  * x_low, x_upper, y_low, y_upper, z_low, z_upper.
@@ -470,7 +496,30 @@ EXTERN_C void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 				  int *tpinfot,
 				  int *tpinfol,
 				  int *tpinfop);
-
+/*!
+ * \brief Calculates the high-order normal and curvature
+ * \detail The unit normal of each point output to mesh->nor, the 2 main
+ * curvatures output to mesh->curv. Before calling this function, the adaptive
+ * n-ring neighborhood should be construced based on the degree of fitting the
+ * function needs. The minimun requirement of # of rings = (degree + 2)/2.
+ * \param mesh pointer to a hiProp Mesh
+ * \param in_degree the order of accuracy 
+ */
 EXTERN_C void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree);
+
+/*!
+ * \brief Calculates the estimated normal by averaging face normals 
+ * \detail The result is saved in est_nor. At least one-ring ghost is needed
+ * before calling this function.
+ * \param mesh pointer to a hiProp Mesh
+ */
+EXTERN_C void hpComputeEstimatedNormal(hiPropMesh *mesh);
+
+/*!
+ * \brief Update the estimated normal of the ghost points from master
+ * processors.
+ * \param mesh pointer to a hiProp Mesh
+ */
+EXTERN_C void hpUpdateEstimatedNormal(hiPropMesh *mesh);
 
 #endif
