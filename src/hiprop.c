@@ -12,6 +12,61 @@
 #include "hiprop.h"
 #include "metis.h"
 
+/*!
+ * \brief Determine whether 2 triangles are the same base on floating point
+ * comparison
+ * \param ps1 points list 1
+ * \param tri1 triangle list 1
+ * \param tri_index1 triangle index in tri1 for comparison
+ * \param ps2 points list 2
+ * \param tri2 triangle list 2
+ * \param tri_index2 triangle index in tri2 for comparison
+ */
+
+static boolean_T sameTriangle(const emxArray_real_T* ps1,
+			      const emxArray_int32_T* tri1,
+			      const int tri_index1,
+			      const emxArray_real_T* ps2,
+			      const emxArray_int32_T* tri2,
+			      const int tri_index2,
+			      const double eps);
+
+
+
+
+static boolean_T sameTriangle(const emxArray_real_T* ps1,
+			      const emxArray_int32_T* tri1,
+			      const int tri_index1,
+			      const emxArray_real_T* ps2,
+			      const emxArray_int32_T* tri2, 
+			      const int tri_index2,
+			      const double eps)
+{
+    int p11 = tri1->data[I2dm(tri_index1,1,tri1->size)];
+    int p12 = tri1->data[I2dm(tri_index1,2,tri1->size)];
+    int p13 = tri1->data[I2dm(tri_index1,3,tri1->size)];
+
+    int p21 = tri2->data[I2dm(tri_index2,1,tri2->size)];
+    int p22 = tri2->data[I2dm(tri_index2,2,tri2->size)];
+    int p23 = tri2->data[I2dm(tri_index2,3,tri2->size)];
+
+
+    if ( (fabs(ps1->data[I2dm(p11,1,ps1->size)] - ps2->data[I2dm(p21,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p11,2,ps1->size)] - ps2->data[I2dm(p21,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p11,3,ps1->size)] - ps2->data[I2dm(p21,3,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,1,ps1->size)] - ps2->data[I2dm(p22,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,2,ps1->size)] - ps2->data[I2dm(p22,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,3,ps1->size)] - ps2->data[I2dm(p22,3,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,1,ps1->size)] - ps2->data[I2dm(p23,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,2,ps1->size)] - ps2->data[I2dm(p23,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,3,ps1->size)] - ps2->data[I2dm(p23,3,ps2->size)]) < eps)
+       )
+	return 1;
+    else
+	return 0;
+}
+
+
 void hpInitMesh(hiPropMesh **pmesh)
 {
     hiPropMesh *mesh;
@@ -1814,6 +1869,8 @@ void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
     emxArray_real_T *ps = mesh->ps;
     int num_tris = tris->size[0];
     int num_ps = ps->size[0];
+    hpPInfoNode *tris_pdata = mesh->tris_pinfo->pdata;
+    int *tris_phead = mesh->tris_pinfo->head;
 
     int nb_proc = mesh->nb_proc->data[I1dm(nb_proc_index)];
 
@@ -1881,13 +1938,32 @@ void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
 	   ) /* one of tri_bd_box point is in the big bd_box */
 	{
 	    tris_flag[I1dm(i)] = 1;
-	    for (j = 1; j <= 3; j++)
+	    /* Only send the tris & points not existing on the nb proc */
+
+	    int next_node = tris_phead[I1dm(i)];
+	    while (next_node != -1)
 	    {
-		psi = tris->data[I2dm(i,j,tris->size)];
-		ps_flag[I1dm(psi)] = 1;
+		int proc_id = tris_pdata[I1dm(next_node)].proc;
+		if (proc_id == nb_proc)
+		{
+		    tris_flag[I1dm(i)] = 0;
+		    break;
+		}
+		else
+		    next_node = tris_pdata[I1dm(next_node)].next;
+	    }
+
+	    if (tris_flag[I1dm(i)] == 1)
+	    {
+		for (j = 1; j <= 3; j++)
+		{
+		    psi = tris->data[I2dm(i,j,tris->size)];
+		    ps_flag[I1dm(psi)] = 1;
+		}
 	    }
 	}
     }
+
     int num_buf_ps = 0;
     int num_buf_tris = 0;
 
@@ -1985,7 +2061,7 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
     int j;
 
     {
-	hpCollectNRingTris(mesh, psid_proc, num_ring,
+	hpCollectNRingTris(mesh, nb_proc_index, psid_proc, num_ring,
 			   ps_ring_proc, tris_ring_proc);
 
 	int num_ps_buffer = (*ps_ring_proc)->size[0];
@@ -2020,8 +2096,8 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 	/************* Debugging output **********************************
 	char rank_str[5];
 	char nb_rank_str[5];
-	right_flush(cur_proc,4,rank_str);
-	right_flush(mesh->nb_proc->data[I1dm(i)], 4, nb_rank_str);
+	numIntoString(cur_proc,4,rank_str);
+	numIntoString(mesh->nb_proc->data[I1dm(i)], 4, nb_rank_str);
 	char debug_out_name[250];
 	sprintf(debug_out_name, "debugout-p%s-to-p%s.vtk", rank_str, nb_rank_str);
 	hpDebugOutput(mesh, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)], debug_out_name);
@@ -4037,6 +4113,7 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 }
 
 void hpCollectNRingTris(const hiPropMesh *mesh,
+			const int nb_proc_index,
 			const emxArray_int32_T *in_psid,
 			const real_T num_ring,
 			emxArray_int32_T **out_ps,
@@ -4048,6 +4125,13 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
     int num_tris = mesh->tris->size[0];
     int max_b_numps = 128;
     int max_b_numtris = 256;
+
+    hpPInfoNode *tris_pdata = mesh->tris_pinfo->pdata;
+    int *tris_phead = mesh->tris_pinfo->head;
+    int *nb_proc = mesh->nb_proc->data;
+    emxArray_int32_T *tris = mesh->tris;
+    int *tris_data = tris->data;
+
 
     /* For denote whether each ps and tris belongs to the 2-ring buffer for
      * in_psid. If ps_flag[I1dm(i)] = true, then point i is in the 2-ring
@@ -4074,22 +4158,61 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
 			  mesh->inhe, in_ngbvs, in_vtags, in_ftags, 
 			  in_ngbfs, &num_ps_ring, &num_tris_ring);
 
-	ps_flag->data[I1dm(cur_ps)] = true; /*cur_ps itself in the list */
+       	/*cur_ps itself in the list */
+	/*
+	ps_flag->data[I1dm(cur_ps)] = true;
+	*/
 
+	/*
 	for (j = 1; j <= num_ps_ring; j++)
 	{
-	    /* j-th point in the n-ring nb */
 	    int ps_buf_index = in_ngbvs->data[I1dm(j)];
 	    ps_flag->data[I1dm(ps_buf_index)] = true;
 	}
+	*/
 
 	for (j = 1; j <= num_tris_ring; j++)
 	{
-	    /* j-th triangle in the n-ring nb */
+	    /* Only send the triangles which does not exists on the nb proc */
 	    int tris_buf_index = in_ngbfs->data[I1dm(j)];
 	    tris_flag->data[I1dm(tris_buf_index)] = true;
+
+	    int next_node = tris_phead[I1dm(tris_buf_index)];
+	    while(next_node != -1)
+	    {
+		int proc_id = tris_pdata[I1dm(next_node)].proc;
+		/* If also exists on other processor, do not send it */
+		if (proc_id == nb_proc[I1dm(nb_proc_index)])
+		{
+		    tris_flag->data[I1dm(tris_buf_index)] = false;
+		    break;
+		}
+		else
+		    next_node = tris_pdata[I1dm(next_node)].next;
+	    }
+
+	    /*
+	    tris_flag->data[I1dm(tris_buf_index)] = true;
+	    */
 	}
     }
+
+    /* Set the points needed to be send based on tris */
+
+    for (i = 1; i <= num_tris; i++)
+    {
+	if (tris_flag->data[I1dm(i)] == true)
+	{
+	    int bufpi[3];
+	    bufpi[0] = tris_data[I2dm(i,1,tris->size)];
+	    bufpi[1] = tris_data[I2dm(i,2,tris->size)];
+	    bufpi[2] = tris_data[I2dm(i,3,tris->size)];
+	    ps_flag->data[bufpi[0]-1] = true;
+	    ps_flag->data[bufpi[1]-1] = true;
+	    ps_flag->data[bufpi[2]-1] = true;
+	}
+    }
+
 
     /* Get total number of ps and tris in n-ring nb */
 

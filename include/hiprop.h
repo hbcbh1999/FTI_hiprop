@@ -79,66 +79,70 @@ typedef struct hiPropMesh
  * \brief Initialize a hiProp mesh and set the initial pointer to be NULL
  * \param pmesh Address of the hiProp mesh pointer
  */
-extern void hpInitMesh(hiPropMesh **pmesh);
+EXTERN_C void hpInitMesh(hiPropMesh **pmesh);
 /*!
  * \brief Free a hiProp mesh update info and set the pointer to be NULL
  * \param pmesh pointer to hiProp mesh
  */
-extern void hpFreeMeshUpdateInfo(hiPropMesh *pmesh);
+EXTERN_C void hpFreeMeshUpdateInfo(hiPropMesh *pmesh);
 /*!
  * \brief Free a hiProp mesh parallel info and set the pointer to be NULL
  * \param pmesh pointer to hiProp mesh
  */
-extern void hpFreeMeshParallelInfo(hiPropMesh *pmesh);
+EXTERN_C void hpFreeMeshParallelInfo(hiPropMesh *pmesh);
 
 /*!
  * \brief Free a hiProp mesh basic info and set the pointer to be NULL
  * \param pmesh pointer to hiProp mesh
  */
-extern void hpFreeMeshBasicInfo(hiPropMesh *pmesh);
+EXTERN_C void hpFreeMeshBasicInfo(hiPropMesh *pmesh);
 
 /*!
  * \brief Free a hiProp mesh augment info and set the pointer to be NULL
  * \param pmesh pointer to hiProp mesh
  */
-extern void hpFreeMeshAugmentInfo(hiPropMesh *pmesh);
+EXTERN_C void hpFreeMeshAugmentInfo(hiPropMesh *pmesh);
 /*!
  * \brief Free the data of a hiProp mesh 
  * \param pmesh hiProp mesh pointer
  */
-extern void hpFreeMesh(hiPropMesh *pmesh);
+EXTERN_C void hpFreeMesh(hiPropMesh *pmesh);
 
 /*!
  * \brief Delete a hiProp mesh and set the pointer to NULL
  * \param pmesh address of the hiProp mesh pointer
  */
-extern void hpDeleteMesh(hiPropMesh **pmesh);
+EXTERN_C void hpDeleteMesh(hiPropMesh **pmesh);
 
-extern void hpDeletePInfoList(hpPInfoList **plist);
+/*!
+ * \brief Delete a hiProp parallel info list and set the pointer to NULL
+ * \param plist address of the hpPInfoList
+ */
+EXTERN_C void hpDeletePInfoList(hpPInfoList **plist);
 /*!
  * Read an ascii triangular vtk file with data type POLYGON.
  * \param name input file name
  * \param mesh mesh for storing the data read from file
  */
-extern int hpReadPolyMeshVtk3d(const char *name, hiPropMesh *mesh);
+EXTERN_C int hpReadPolyMeshVtk3d(const char *name, hiPropMesh *mesh);
 /*!
  * Write an ascii triangular vtk file with data type POLYGON.
  * \param name output file name
  * \param mesh mesh for output
  */
-extern int hpWritePolyMeshVtk3d(const char *name, hiPropMesh *mesh);
+EXTERN_C int hpWritePolyMeshVtk3d(const char *name, hiPropMesh *mesh);
 /*!
  * Read an ascii triangular vtk file with data type UNSTURCTURED_GRID.
  * \param name input file name
  * \param mesh mesh for storing the data read from file
  */
-extern int hpReadUnstrMeshVtk3d(const char *name, hiPropMesh *mesh);
+EXTERN_C int hpReadUnstrMeshVtk3d(const char *name, hiPropMesh *mesh);
 /*!
  * \brief Write an ascii triangular vtk file with data type UNSTRUCTURED_GRID.
  * \param name output file name
  * \param mesh mesh for output
  */
-extern int hpWriteUnstrMeshVtk3d(const char *name, hiPropMesh *mesh);
+EXTERN_C int hpWriteUnstrMeshVtk3d(const char *name, hiPropMesh *mesh);
 
 /*!
  * \brief Partition the mesh into nparts, using the routine of METIS_PartMeshDual,
@@ -153,7 +157,7 @@ extern int hpWriteUnstrMeshVtk3d(const char *name, hiPropMesh *mesh);
  * 	the function will give the part index the point is partitioned into,
  *	memory allocated inside the function
  */
-extern int hpMetisPartMesh(hiPropMesh *mesh, const int nparts, int **tri_part, int **pt_part);
+EXTERN_C int hpMetisPartMesh(hiPropMesh *mesh, const int nparts, int **tri_part, int **pt_part);
 
 /*!
  * \brief Distribute the mesh according to tri_part array got in hpMetisPartMesh,
@@ -166,7 +170,7 @@ extern int hpMetisPartMesh(hiPropMesh *mesh, const int nparts, int **tri_part, i
  * \param ps_globalid The global id of each point on each submesh, memory allocated inside the function
  * \param tri_globalid The global id of each triangle on each submesh, memory allocated inside the function
  */
-extern int hpDistMesh(int root, hiPropMesh *in_mesh, hiPropMesh *mesh, int *tri_part, int tag,
+EXTERN_C int hpDistMesh(int root, hiPropMesh *in_mesh, hiPropMesh *mesh, int *tri_part, int tag,
        	emxArray_int32_T **ps_globalid, emxArray_int32_T **tri_globalid);
 
 /*!
@@ -178,7 +182,7 @@ extern int hpDistMesh(int root, hiPropMesh *in_mesh, hiPropMesh *mesh, int *tri_
  * l2gindex[I1dm(i)] is the global index of the i-th point on the submesh
  * \param rank the rank of the current proc
  */
-extern void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
+EXTERN_C void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
 	int** g2lindex, int* l2gindex, int rank);
 
 /*!
@@ -186,7 +190,7 @@ extern void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
  * mesh points
  * \param mesh parallel hiPropMesh with overlapping points and triangles
  */
-extern void hpGetNbProcListAuto(hiPropMesh *mesh);
+EXTERN_C void hpGetNbProcListAuto(hiPropMesh *mesh);
 
 /*!
  * \brief Get the neighboring processor ID and fill the nb_proc list from the
@@ -195,7 +199,7 @@ extern void hpGetNbProcListAuto(hiPropMesh *mesh);
  * \param num_nb_proc number of neighboring processor
  * \param in_nb_proc array of neighboring processors with length num_nb_proc
  */
-extern void hpGetNbProcListInput(hiPropMesh *mesh,
+EXTERN_C void hpGetNbProcListInput(hiPropMesh *mesh,
 				 const int num_nb_proc, 
 				 const int *in_nb_proc);
 
@@ -208,7 +212,7 @@ extern void hpGetNbProcListInput(hiPropMesh *mesh,
  * For tris_pinfo, a similar initialization is carried out.
  * \param mesh hiPropMesh mesh with no parallel information.
  */
-extern void hpInitPInfo(hiPropMesh *mesh);
+EXTERN_C void hpInitPInfo(hiPropMesh *mesh);
 
 /*!
  * \brief Build the parallel information for submeshes with no overlapping
@@ -216,14 +220,14 @@ extern void hpInitPInfo(hiPropMesh *mesh);
  * \detail Need a hpInitPInfo before this function
  * \param mesh hiPropMesh mesh with no overlapping triangles
  */
-extern void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh);
+EXTERN_C void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh);
 
 /*!
  * \brief Build the parallel information for submeshes with overlapping triangles 
  * \detail Need a hpInitPInfo before this function
  * \param mesh hiPropMesh mesh with overlapping triangles
  */
-extern void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
+EXTERN_C void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
 
 /*!
  * \brief Utility function for automatically increase the parallel info list
@@ -232,7 +236,7 @@ extern void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
  * automatically increase itself by 10% to include more elements
  * \param pinfo A parallel information list
  */
-extern void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
+EXTERN_C void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
 
 /*!
  * \brief Build the parallel update information for submesh 
@@ -241,7 +245,7 @@ extern void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
  * should be called before this function
  * \param mesh The submesh to build the parallel update info
  */
-extern void hpBuildPUpdateInfo(hiPropMesh *mesh);
+EXTERN_C void hpBuildPUpdateInfo(hiPropMesh *mesh);
 
 /*!
  * \brief Wrapper for building the opposite half edge structure for triangular
@@ -249,7 +253,7 @@ extern void hpBuildPUpdateInfo(hiPropMesh *mesh);
  * \detail Fill the mesh->opphe data
  * \param mesh hiPropMesh on this processor
  */
-extern void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
+EXTERN_C void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
 
 /*!
  * \brief Wrapper for building the incident half edge structure for triangular
@@ -257,7 +261,7 @@ extern void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
  * \detail Fill the mesh->inhe data
  * \param mesh hiPropMesh on this processor
  */
-extern void hpBuildIncidentHalfEdge(hiPropMesh *mesh);
+EXTERN_C void hpBuildIncidentHalfEdge(hiPropMesh *mesh);
 
 /*!
  * \brief Wrapper for getting the n-ring neighborhood of a point
@@ -281,7 +285,7 @@ extern void hpBuildIncidentHalfEdge(hiPropMesh *mesh);
  * \param in_nverts address of the number of output points
  * \param in_nfaces address of the number of output tris
  */
-extern void hpObtainNRingTris(const hiPropMesh *mesh,
+EXTERN_C void hpObtainNRingTris(const hiPropMesh *mesh,
 			      const int32_T in_vid,
 			      const real_T in_ring,
 			      const int32_T in_minpnts,
@@ -299,7 +303,7 @@ extern void hpObtainNRingTris(const hiPropMesh *mesh,
  * and tris_pinfo is freed.
  * \param mesh The submeshes to be cleaned.
  */
-void hpCleanMeshByPinfo(hiPropMesh* mesh);
+EXTERN_C void hpCleanMeshByPinfo(hiPropMesh* mesh);
 
 
 /*!
@@ -310,9 +314,20 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh);
  * \param mesh pointer to hiProp Mesh
  * \param num_ring number of rings needed to be built
  */
-extern void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring);
+EXTERN_C void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring);
 
-extern void hpBuidBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
+
+/*!
+ * \brief Build ghost neighborhood on the current hiProp mesh based on the
+ * bounding boxes
+ * \detail The bounding box for each processor could overlap with each other.
+ * After building the ghost triangles, the neighbor processor information might
+ * need to be updated.
+ * \param mesh pointer to hiProp mesh
+ * \param bd_box The bounding box for current processor, stored in order:
+ * x_low, x_upper, y_low, y_upper, z_low, z_upper.
+ */
+EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
 
 /*!
  * \brief Collect the n-ring neighborhood for a list of points
@@ -326,11 +341,12 @@ extern void hpBuidBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
  * \param out_ps address of the pointer to the output point ids
  * \param out_tris address of the pointer to the output triangle ids
  */
-extern void hpCollectNRingTris(const hiPropMesh *mesh,
-			       const emxArray_int32_T *in_psid,
-			       const real_T num_ring,
-			       emxArray_int32_T **out_ps,
-			       emxArray_int32_T **out_tris);
+EXTERN_C void hpCollectNRingTris(const hiPropMesh *mesh,
+				 const int nb_proc_index,
+				 const emxArray_int32_T *in_psid,
+				 const real_T num_ring,
+				 emxArray_int32_T **out_ps,
+				 emxArray_int32_T **out_tris);
 
 /*!
  * \brief This function is a subfunction for hpBuildNRingGhost.
@@ -345,16 +361,16 @@ extern void hpCollectNRingTris(const hiPropMesh *mesh,
  * \param out_psid array of pointers to the overlaying point ids for neighboring
  * processors.
  */
-extern void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
+EXTERN_C void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
 
-extern void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh);
+EXTERN_C void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh);
 
-extern void hpDebugOutput(const hiPropMesh *mesh,
+EXTERN_C void hpDebugOutput(const hiPropMesh *mesh,
 			  const emxArray_int32_T *debug_ps,
 			  const emxArray_int32_T *debug_tris,
 			  char *debug_file_name);
 
-extern void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
+EXTERN_C void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 				      const int nb_proc_index,
 				      const real_T num_ring,
 				      emxArray_int32_T *psid_proc,
@@ -363,7 +379,7 @@ extern void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 				      emxArray_real_T **buffer_ps,
 				      emxArray_int32_T **buffer_tris);
 
-extern void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
+EXTERN_C void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
 					   const int nb_proc_index,
 					   const double *bd_box,
 					   emxArray_int32_T **ps_ring_proc,
@@ -371,7 +387,7 @@ extern void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
 					   emxArray_real_T **buffer_ps,
 					   emxArray_int32_T **buffer_tris);
 
-extern void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
+EXTERN_C void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   const int nb_proc_index,
 					   emxArray_int32_T *ps_ring_proc,
 					   emxArray_int32_T *tris_ring_proc,
@@ -382,7 +398,7 @@ extern void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   int **buffer_tris_pinfo_lindex,
 					   int **buffer_tris_pinfo_proc);
 
-extern void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
+EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					const int rcv_id,
 					emxArray_real_T *bps,
 					emxArray_int32_T *btris,
@@ -393,47 +409,47 @@ extern void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					int *tpinfol,
 					int *tpinfop);
 
-extern void hpUpdatePInfo(hiPropMesh *mesh);
+EXTERN_C void hpUpdatePInfo(hiPropMesh *mesh);
 
-extern void hpUpdateMasterPInfo(hiPropMesh *mesh);
-extern void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh);
+EXTERN_C void hpUpdateMasterPInfo(hiPropMesh *mesh);
+EXTERN_C void hpUpdateAllPInfoFromMaster(hiPropMesh *mesh);
 
-extern void hpUpdateNbWithPInfo(hiPropMesh *mesh);
+EXTERN_C void hpUpdateNbWithPInfo(hiPropMesh *mesh);
 
-extern void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
+EXTERN_C void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 					const int nb_proc_index,
 					emxArray_int32_T *ps_ring_proc,
 					emxArray_int32_T *tris_ring_proc);
 
-extern void hpCollectAllGhostPs(hiPropMesh *mesh,
+EXTERN_C void hpCollectAllGhostPs(hiPropMesh *mesh,
 			 	const int nbp_index,
 				int *sizep,
 				int **ppinfol);
 
-extern void hpCollectAllGhostTris(hiPropMesh *mesh,
+EXTERN_C void hpCollectAllGhostTris(hiPropMesh *mesh,
 			 	  const int nbp_index,
 				  int *sizet,
 				  int **tpinfol);
 
 
-extern void hpMergeOverlayPsPInfo(hiPropMesh *mesh,
+EXTERN_C void hpMergeOverlayPsPInfo(hiPropMesh *mesh,
 			   	  const int rcv_id,
 				  int nump,
 				  int *ppinfol);
 
-extern void hpMergeOverlayTrisPInfo(hiPropMesh *mesh,
+EXTERN_C void hpMergeOverlayTrisPInfo(hiPropMesh *mesh,
 			     	    const int rcv_id,
 				    int numt,
 				    int *tpinfol);
 
-extern void hpCollectAllOverlayPs(hiPropMesh *mesh,
+EXTERN_C void hpCollectAllOverlayPs(hiPropMesh *mesh,
 				  const int nbp_index,
 				  int *sizep,
 				  int **ppinfot,
 				  int **ppinfol,
 				  int **ppinfop);
 
-extern void hpCollectAllOverlayTris(hiPropMesh *mesh,
+EXTERN_C void hpCollectAllOverlayTris(hiPropMesh *mesh,
 				    const int nbp_index,
 				    int *sizet,
 				    int **tpinfot,
@@ -441,20 +457,20 @@ extern void hpCollectAllOverlayTris(hiPropMesh *mesh,
 				    int **tpinfop);
 
 
-extern void hpMergeGhostPsPInfo(hiPropMesh *mesh,
+EXTERN_C void hpMergeGhostPsPInfo(hiPropMesh *mesh,
 			   	const int rcv_id,
 				int nump,
 				int *ppinfot,
 				int *ppinfol,
 				int *ppinfop);
 
-extern void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
+EXTERN_C void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 			     	  const int rcv_id,
 				  int numt,
 				  int *tpinfot,
 				  int *tpinfol,
 				  int *tpinfop);
 
-extern void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree);
+EXTERN_C void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree);
 
 #endif
