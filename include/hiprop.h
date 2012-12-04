@@ -56,29 +56,32 @@ typedef struct hpPInfoList
  */
 typedef struct hiPropMesh
 {
-    emxArray_real_T *ps;		/*!< point positions, # of points = n */
-    emxArray_int32_T *tris;		/*!< triangles, # of triangles = m */
-    emxArray_real_T *nor;		/*!< point normals */
-    emxArray_real_T *curv;		/*!< point main curvatures */
+    emxArray_real_T *ps;		/*!< point positions, # of points = num_ps */
+    emxArray_int32_T *tris;		/*!< triangles, # of triangles = num_tris */
+    emxArray_real_T *nor;		/*!< point normals, size num_ps */
+    emxArray_real_T *curv;		/*!< point main curvatures, size num_ps */
 
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
-    emxArray_boolean_T *part_bdry;	/*!< partition boundary flag for points */
+    emxArray_boolean_T *part_bdry;	/*!< partition boundary flag for points, size num_int_ps*/
+    emxArray_int32_T *ps_type;		/*!< point type, 0 INTERIOR, 1 OVERLAY, 2 GHOST, size num_ps */
 
     hpPInfoList *ps_pinfo;		/*!< parallel information for points */
     hpPInfoList *tris_pinfo;		/*!< parallel information for tris */
     
     emxArray_int32_T *opphe;		/*!< opposite half edge */
     emxArray_int32_T *inhe;		/*!< incident half edge */
-    emxArray_real_T *est_nor;		/*!< estimated normal, given by tri normal average */
+    emxArray_real_T *est_nor;		/*!< estimated normal, given by tri normal average, size num_ps */
 
     emxArray_int32_T **ps_send_index;
     emxArray_real_T **ps_send_buffer;
     emxArray_int32_T **ps_recv_index;
     emxArray_real_T **ps_recv_buffer;
 
-    int32_T num_int_ps;			/*!< number of points with no overlapping triangles */
-    int32_T num_int_tris;		/*!< number of tris with no overlapping triangles */
-    int32_T num_int_pspinfo;		/*!< number of ps pinfo with no overlapping triangles */
+    int32_T num_int_ps;			/*!< number of points for the clean mesh (with no overlapping triangles) */
+    int32_T num_int_tris;		/*!< number of tris for the clean mesh (with no overlapping triangles) */
+    int32_T num_int_pspinfo;		/*!< number of ps pinfo for the clean mesh (with no overlapping triangles) */
+    boolean_T is_clean;			/*!< flag to denote whether current mesh is clean,
+					     0 with overlapping triangles, 1 without overlapping triangles */
     
 } hiPropMesh;
 
@@ -257,6 +260,19 @@ EXTERN_C void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
  * \param mesh pointer to the hiProp mesh.
  */
 EXTERN_C void hpBuildPartitionBoundary(hiPropMesh *mesh);
+
+/*!
+ * \brief Build the point type information for a hiProp mesh
+ * \detail Before calling this function, a parallel hiProp mesh with parrallel
+ * info is required. The result is output to the boolean array mesh->ps_type.
+ * Point type = 0: INTERIOR point, only exists to current processor.
+ * Point type = 1: OVERLAY point, owned by current processor and exists on other
+ * processors.
+ * Point type = 2: GHOST point, exists on current processor but owned by another
+ * processor.
+ * \param mesh pointer to the hiProp mesh.
+ */
+EXTERN_C void hpBuildPsType(hiPropMesh *mesh);
 
 /*!
  * \brief Build the parallel update information for submesh 

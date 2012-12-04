@@ -79,6 +79,7 @@ void hpInitMesh(hiPropMesh **pmesh)
 
     mesh->nb_proc = (emxArray_int32_T *) NULL;
     mesh->part_bdry = (emxArray_boolean_T *) NULL;
+    mesh->ps_type = (emxArray_int32_T *) NULL;
     mesh->ps_pinfo = (hpPInfoList *) NULL;
     mesh->tris_pinfo = (hpPInfoList *) NULL;
 
@@ -94,6 +95,7 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->num_int_ps = 0;
     mesh->num_int_tris = 0;
     mesh->num_int_pspinfo = 0;
+    mesh->is_clean = 1;
 }
 
 void hpFreeMeshAugmentInfo(hiPropMesh *pmesh)
@@ -156,6 +158,9 @@ void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
 
     if (pmesh->part_bdry != ((emxArray_boolean_T *) NULL) )
 	emxFree_boolean_T(&(pmesh->part_bdry));
+
+    if (pmesh->ps_type != ((emxArray_int32_T *) NULL) )
+	emxFree_int32_T(&(pmesh->ps_type));
 }
 
 void hpFreeMeshBasicInfo(hiPropMesh *pmesh)
@@ -179,6 +184,7 @@ void hpFreeMesh(hiPropMesh *pmesh)
     pmesh->num_int_ps = 0;
     pmesh->num_int_tris = 0;
     pmesh->num_int_pspinfo = 0;
+    pmesh->is_clean = 1;
 }
 
 void hpDeleteMesh(hiPropMesh **pmesh)
@@ -1157,6 +1163,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     mesh->num_int_ps = mesh->ps->size[0];
     mesh->num_int_tris = mesh->tris->size[0];
     mesh->num_int_pspinfo = mesh->ps_pinfo->allocated_len;
+    mesh->is_clean = 1;
 
 }
 
@@ -1188,6 +1195,8 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
     int *ps_recv_size = (int *) calloc (2*num_nbp, sizeof(int));
     
+    unsigned char is_overlapping_tri = 0;
+
     for (i = 1; i <= num_nbp; i++)
     {
 	proc_send = nb_proc->data[I1dm(i)];
@@ -1271,6 +1280,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	    }
 	}
 
+
 	/* Build the tris pinfo */
 	for (j = 1; j <= tris->size[0]; j++)
 	{
@@ -1278,6 +1288,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	    {
 		if ( sameTriangle(ps, tris, j, ps_recv, tris_recv, k, eps) )
 		{
+		    is_overlapping_tri = 1;
 		    hpEnsurePInfoCapacity(tris_pinfo); /* first ensure 
 							  list has enough space */
 		    tris_pinfo->allocated_len++; /* new node */
@@ -1320,6 +1331,22 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
     free(send_req_list);
     free(send_status_list);
+
+    if (is_overlapping_tri == 1)
+	mesh->is_clean = 0;
+    else
+    {
+	mesh->is_clean = 1;
+	mesh->num_int_ps = mesh->ps->size[0];
+	mesh->num_int_tris = mesh->tris->size[0];
+	mesh->num_int_pspinfo = mesh->ps_pinfo->allocated_len;
+    }
+
+    boolean_T out_clean;
+
+    MPI_Allreduce(&(mesh->is_clean), &(out_clean), 1, MPI_UNSIGNED_CHAR, MPI_MIN, MPI_COMM_WORLD);
+
+    mesh->is_clean = out_clean;
 }
 
 void hpBuildOppositeHalfEdge(hiPropMesh *mesh)
@@ -1804,6 +1831,7 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     mesh->num_int_ps = mesh->ps->size[0];
     mesh->num_int_tris = mesh->tris->size[0];
     mesh->num_int_pspinfo = mesh->ps_pinfo->allocated_len;
+    mesh->is_clean = 1;
 }
 
 void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
@@ -4737,4 +4765,33 @@ void hpUpdateEstimatedNormal(hiPropMesh *mesh)
 
 }
 
+void hpBuildPsType(hiPropMesh *mesh)
+{
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int num_ps = mesh->ps->size[0];
+    hpPInfoNode *ps_pdata = mesh->ps_pinfo->pdata;
+    int *ps_phead = mesh->ps_pinfo->head;
+    int *ps_ptail = mesh->ps_pinfo->tail;
+
+    if (mesh->ps_type != (emxArray_int32_T *) NULL )
+	emxFree_int32_T(&(mesh->ps_type));
+
+    mesh->ps_type = emxCreateND_int32_T(1, &num_ps);
+    int i;
+
+    for (i = 1; i <= num_ps; i++)
+    {
+	int cur_head = ps_phead[I1dm(i)];
+	int cur_tail = ps_ptail[I1dm(i)];
+	if (ps_pdata[I1dm(cur_head)].proc == rank) /* current proc is master */
+	{
+	    if (cur_head != cur_tail) /* If exists on other processor */
+		mesh->ps_type->data[I1dm(i)] = 1;
+	}
+	else /* If current proc is not master */
+	    mesh->ps_type->data[I1dm(i)] = 2;
+    }
+}
 
