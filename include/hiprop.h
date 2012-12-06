@@ -383,6 +383,13 @@ EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
  * \param out_ps address of the pointer to the output point ids
  * \param out_tris address of the pointer to the output triangle ids
  */
+
+EXTERN_C void hpCommPsTrisWithPInfo(hiPropMesh *mesh,
+				    emxArray_int32_T **ps_ring_proc,
+				    emxArray_int32_T **tris_ring_proc,
+				    emxArray_real_T **buffer_ps,
+				    emxArray_int32_T **buffer_tris);
+
 EXTERN_C void hpCollectNRingTris(const hiPropMesh *mesh,
 				 const int nb_proc_index,
 				 const emxArray_int32_T *in_psid,
@@ -537,5 +544,19 @@ EXTERN_C void hpComputeEstimatedNormal(hiPropMesh *mesh);
  * \param mesh pointer to a hiProp Mesh
  */
 EXTERN_C void hpUpdateEstimatedNormal(hiPropMesh *mesh);
+
+/*!
+ * \brief Build the adaptive ghost for partition boundary with different ring
+ * size
+ * \detail The input ring size of the function could be inconsistent between
+ * different processors. The first step of the function is to do a parallel
+ * reduction on the ring size of each partiontion boundary point. The second
+ * step is to build ghost based on the ring size for each partition boundary
+ * point.
+ * \param mesh mesh pointer to a hiProp mesh
+ * \param ring_size ring size for each partition boundary point, size of the
+ * array = size of the part_bdry array
+ */
+EXTERN_C void hpBuildPartBdryGhost(hiPropMesh *mesh, const emxArray_int32_T *ring_size);
 
 #endif
