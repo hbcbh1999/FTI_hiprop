@@ -78,7 +78,7 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->curv = (emxArray_real_T *) NULL;
 
     mesh->nb_proc = (emxArray_int32_T *) NULL;
-    mesh->part_bdry = (emxArray_boolean_T *) NULL;
+    mesh->part_bdry = (emxArray_int32_T *) NULL;
     mesh->ps_type = (emxArray_int32_T *) NULL;
     mesh->ps_pinfo = (hpPInfoList *) NULL;
     mesh->tris_pinfo = (hpPInfoList *) NULL;
@@ -156,8 +156,8 @@ void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
     if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->nb_proc));
 
-    if (pmesh->part_bdry != ((emxArray_boolean_T *) NULL) )
-	emxFree_boolean_T(&(pmesh->part_bdry));
+    if (pmesh->part_bdry != ((emxArray_int32_T *) NULL) )
+	emxFree_int32_T(&(pmesh->part_bdry));
 
     if (pmesh->ps_type != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->ps_type));
@@ -4281,8 +4281,8 @@ void hpBuildPartitionBoundary(hiPropMesh *mesh)
     int *ps_phead = mesh->ps_pinfo->head;
     int *ps_ptail = mesh->ps_pinfo->tail;
 
-    if( mesh->part_bdry != ((emxArray_boolean_T *) NULL) )
-	emxFree_boolean_T(&(mesh->part_bdry));
+    if( mesh->part_bdry != ((emxArray_int32_T *) NULL) )
+	emxFree_int32_T(&(mesh->part_bdry));
 
     int num_ps = mesh->num_int_ps;
 
@@ -4294,7 +4294,7 @@ void hpBuildPartitionBoundary(hiPropMesh *mesh)
 	    num_pbdry++;
     }
 
-    mesh->part_bdry = emxCreateND_boolean_T(1, &num_pbdry);
+    mesh->part_bdry = emxCreateND_int32_T(1, &num_pbdry);
 
     int j = 0;
     for (i = 1; i <= num_ps; i++)

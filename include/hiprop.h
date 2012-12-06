@@ -62,7 +62,7 @@ typedef struct hiPropMesh
     emxArray_real_T *curv;		/*!< point main curvatures, size num_ps */
 
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
-    emxArray_boolean_T *part_bdry;	/*!< partition boundary flag for points, size num_int_ps*/
+    emxArray_int32_T *part_bdry;	/*!< partition boundary flag for points, size num_int_ps*/
     emxArray_int32_T *ps_type;		/*!< point type, 0 INTERIOR, 1 OVERLAY, 2 GHOST, size num_ps */
 
     hpPInfoList *ps_pinfo;		/*!< parallel information for points */
