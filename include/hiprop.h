@@ -62,7 +62,7 @@ typedef struct hiPropMesh
     emxArray_real_T *curv;		/*!< point main curvatures, size num_ps */
 
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
-    emxArray_int32_T *part_bdry;	/*!< partition boundary flag for points, size num_int_ps*/
+    emxArray_int32_T *part_bdry;	/*!< partition boundary points*/
     emxArray_int32_T *ps_type;		/*!< point type, 0 INTERIOR, 1 OVERLAY, 2 GHOST, size num_ps */
 
     hpPInfoList *ps_pinfo;		/*!< parallel information for points */
@@ -557,6 +557,22 @@ EXTERN_C void hpUpdateEstimatedNormal(hiPropMesh *mesh);
  * \param ring_size ring size for each partition boundary point, size of the
  * array = size of the part_bdry array
  */
-EXTERN_C void hpBuildPartBdryGhost(hiPropMesh *mesh, const emxArray_int32_T *ring_size);
+EXTERN_C void hpBuildPartBdryGhost(hiPropMesh *mesh, emxArray_real_T *ring_size);
+
+EXTERN_C void hpReducePartBdryGhostRingSize(hiPropMesh *mesh, emxArray_real_T *ring_size);
+
+EXTERN_C void hpBuildPartBdryGhostPsTrisForSend(const hiPropMesh *mesh,
+						const int nb_proc_index,
+						const emxArray_real_T *num_ring,
+						emxArray_int32_T **ps_ring_proc,
+						emxArray_int32_T **tris_ring_proc,
+						emxArray_real_T **buffer_ps,
+						emxArray_int32_T **buffer_tris);
+
+EXTERN_C void hpCollectPartBdryNRingTris(const hiPropMesh *mesh,
+					 const int nb_proc_index,
+					 const emxArray_real_T *num_ring,
+					 emxArray_int32_T **out_ps,
+					 emxArray_int32_T **out_tris);
 
 #endif

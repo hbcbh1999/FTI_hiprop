@@ -2097,15 +2097,12 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 			       emxArray_real_T **buffer_ps,
 			       emxArray_int32_T **buffer_tris)
 {
-    /* Get nring nb between current proc and all nb processors and
-     * updated temp pinfo for both ps and tris.
+    /* Get nring nb between current proc and all nb processors  
      *
      * Point positions stored in k_i*3 double matrices buffer_ps[i] where
      * k = # of points in the n-ring buffer for mesh->nb_proc->data[i].
      * Triangle indices mapped to the index for buffer_ps[i] and stored
      * in buffer_tris[i];
-     * ps/tris temp pinfo are updated from original pinfo, adding the
-     * information where the ps/tri is being sent to
      */
     int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
     int j;
@@ -4599,3 +4596,266 @@ void hpBuildPsType(hiPropMesh *mesh)
 	    mesh->ps_type->data[I1dm(i)] = 2;
     }
 }
+
+void hpBuildPartBdryGhost(hiPropMesh *mesh, emxArray_real_T *ring_size)
+{
+
+    hpReducePartBdryGhostRingSize(mesh, ring_size);
+
+    int i;
+
+    int num_nb_proc = mesh->nb_proc->size[0];
+
+    emxArray_int32_T **ps_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+    emxArray_int32_T **tris_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+    emxArray_real_T **buffer_ps = (emxArray_real_T **) calloc(num_nb_proc, sizeof(emxArray_real_T *));
+    emxArray_int32_T **buffer_tris = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+	hpBuildPartBdryGhostPsTrisForSend(mesh, i, ring_size,
+					  &(ps_ring_proc[I1dm(i)]), &(tris_ring_proc[I1dm(i)]), 
+					  &(buffer_ps[I1dm(i)]), &(buffer_tris[I1dm(i)]));
+    }
+
+
+    hpCommPsTrisWithPInfo(mesh, ps_ring_proc, tris_ring_proc, buffer_ps, buffer_tris);
+
+}
+
+
+void hpReducePartBdryGhostRingSize(hiPropMesh *mesh, emxArray_real_T *ring_size)
+{
+
+
+
+}
+
+
+void hpBuildPartBdryGhostPsTrisForSend(const hiPropMesh *mesh,
+				       const int nb_proc_index,
+				       const emxArray_real_T *num_ring,
+				       emxArray_int32_T **ps_ring_proc,
+				       emxArray_int32_T **tris_ring_proc,
+				       emxArray_real_T **buffer_ps,
+				       emxArray_int32_T **buffer_tris)
+{
+    // Get nring nb for partition boundary 
+    // between current proc and all nb processors  
+    // 
+    // Point positions stored in k_i*3 double matrices buffer_ps[i] where
+    // k = # of points in the n-ring buffer for mesh->nb_proc->data[i].
+    // Triangle indices mapped to the index for buffer_ps[i] and stored
+    // in buffer_tris[i];
+    //
+    
+    int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
+    int j;
+
+    {
+	hpCollectPartBdryNRingTris(mesh, nb_proc_index, num_ring,
+				   ps_ring_proc, tris_ring_proc);
+
+	int num_ps_buffer = (*ps_ring_proc)->size[0];
+	int num_tris_buffer = (*tris_ring_proc)->size[0];
+
+	
+	(*buffer_ps) = emxCreate_real_T(num_ps_buffer, 3);
+	(*buffer_tris) = emxCreate_int32_T(num_tris_buffer, 3);
+
+	for (j = 1; j <= num_ps_buffer; j++)
+	{
+	    int cur_buf_ps_index = (*ps_ring_proc)->data[I1dm(j)];
+	    (*buffer_ps)->data[I2dm(j,1,(*buffer_ps)->size)] =
+		mesh->ps->data[I2dm(cur_buf_ps_index,1,mesh->ps->size)];
+	    (*buffer_ps)->data[I2dm(j,2,(*buffer_ps)->size)] =
+		mesh->ps->data[I2dm(cur_buf_ps_index,2,mesh->ps->size)];
+	    (*buffer_ps)->data[I2dm(j,3,(*buffer_ps)->size)] =
+		mesh->ps->data[I2dm(cur_buf_ps_index,3,mesh->ps->size)];
+
+	    ps_mapping[I1dm(cur_buf_ps_index)] = j;
+	}
+	for (j = 1; j <= num_tris_buffer; j++)
+	{
+	    int cur_buf_tris_index = (*tris_ring_proc)->data[I1dm(j)];
+	    (*buffer_tris)->data[I2dm(j,1,(*buffer_tris)->size)] =
+		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,1,mesh->tris->size)]-1];
+	    (*buffer_tris)->data[I2dm(j,2,(*buffer_tris)->size)] =
+		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,2,mesh->tris->size)]-1];
+	    (*buffer_tris)->data[I2dm(j,3,(*buffer_tris)->size)] =
+		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,3,mesh->tris->size)]-1];
+	}
+
+    }
+    free(ps_mapping);
+}
+
+void hpCollectPartBdryNRingTris(const hiPropMesh *mesh,
+				const int nb_proc_index,
+				const emxArray_real_T *num_ring,
+				emxArray_int32_T **out_ps,
+				emxArray_int32_T **out_tris)
+{
+    int i, j;
+
+    int num_ps = mesh->ps->size[0];
+    int num_tris = mesh->tris->size[0];
+    int max_b_numps = 128;
+    int max_b_numtris = 256;
+
+    hpPInfoNode *ps_pdata = mesh->ps_pinfo->pdata;
+    hpPInfoNode *tris_pdata = mesh->tris_pinfo->pdata;
+
+    int *ps_phead = mesh->ps_pinfo->head;
+    int *tris_phead = mesh->tris_pinfo->head;
+
+    int *nb_proc = mesh->nb_proc->data;
+
+    emxArray_int32_T *tris = mesh->tris;
+
+    int *tris_data = tris->data;
+
+    emxArray_int32_T *part_bdry = mesh->part_bdry;
+
+    int dst_proc = nb_proc[I1dm(nb_proc_index)];
+
+
+    // For denote whether each ps and tris belongs to the 2-ring buffer for
+    // in_psid. If ps_flag[I1dm(i)] = true, then point i is in the 2-ring
+    // buffer, if tris_flag[I1dm(j)] = true, then triangle j is in the 2-ring
+    // buffer 
+    emxArray_boolean_T *ps_flag = emxCreateND_boolean_T(1, &num_ps);
+    emxArray_boolean_T *tris_flag = emxCreateND_boolean_T(1, &num_tris);
+
+    // Used for obtain_nring_surf, initialized as false 
+    emxArray_boolean_T *in_vtags = emxCreateND_boolean_T(1, &num_ps);
+    emxArray_boolean_T *in_ftags = emxCreateND_boolean_T(1, &num_tris);
+
+    // Used for storing outputs of obtain_nring_surf 
+    emxArray_int32_T *in_ngbvs = emxCreateND_int32_T(1, &max_b_numps);
+    emxArray_int32_T *in_ngbfs = emxCreateND_int32_T(1, &max_b_numtris);
+
+    int num_ps_ring, num_tris_ring;
+
+    for (i = 1; i <= part_bdry->size[0]; i++)
+    {
+	int cur_ps = part_bdry->data[I1dm(i)];
+
+	// Decide whether current boundary point is between dst_proc and
+	// cur_proc
+
+	unsigned char ps_do_send = 0;
+	int ps_next_node = ps_phead[I1dm(cur_ps)];
+	while (ps_next_node != -1)
+	{
+	    int ps_proc_id = ps_pdata[I1dm(ps_next_node)].proc;
+	    if (ps_proc_id == dst_proc)
+	    {
+		ps_do_send = 1;
+		break;
+	    }
+	    else
+		ps_next_node = ps_pdata[I1dm(ps_next_node)].next;
+	}
+
+
+	if (ps_do_send == 1)
+	{
+	    obtain_nring_surf(cur_ps, num_ring->data[I1dm(i)], 0, mesh->tris, mesh->opphe,
+		    mesh->inhe, in_ngbvs, in_vtags, in_ftags, 
+		    in_ngbfs, &num_ps_ring, &num_tris_ring);
+	}
+
+	for (j = 1; j <= num_tris_ring; j++)
+	{
+	    //  Only send the triangles which does not exists on the nb proc
+	    int tris_buf_index = in_ngbfs->data[I1dm(j)];
+	    tris_flag->data[I1dm(tris_buf_index)] = true;
+
+	    int next_node = tris_phead[I1dm(tris_buf_index)];
+	    while(next_node != -1)
+	    {
+		int proc_id = tris_pdata[I1dm(next_node)].proc;
+		// If also exists on other processor, do not send it
+		if (proc_id == dst_proc)
+		{
+		    tris_flag->data[I1dm(tris_buf_index)] = false;
+		    break;
+		}
+		else
+		    next_node = tris_pdata[I1dm(next_node)].next;
+	    }
+	}
+    }
+
+    // Set the points needed to be send based on tris
+
+    for (i = 1; i <= num_tris; i++)
+    {
+	if (tris_flag->data[I1dm(i)] == true)
+	{
+	    int bufpi[3];
+	    bufpi[0] = tris_data[I2dm(i,1,tris->size)];
+	    bufpi[1] = tris_data[I2dm(i,2,tris->size)];
+	    bufpi[2] = tris_data[I2dm(i,3,tris->size)];
+	    ps_flag->data[bufpi[0]-1] = true;
+	    ps_flag->data[bufpi[1]-1] = true;
+	    ps_flag->data[bufpi[2]-1] = true;
+	}
+    }
+
+
+    // Get total number of ps and tris in n-ring nb 
+
+    int num_ps_ring_all = 0;
+    int num_tris_ring_all = 0;
+
+    for (i = 1; i <= num_ps; i++)
+    {
+	if (ps_flag->data[I1dm(i)] == true)
+	    num_ps_ring_all++;
+    }
+
+    for (i = 1; i <= num_tris; i++)
+    {
+	if (tris_flag->data[I1dm(i)] == true)
+	    num_tris_ring_all++;
+    }
+
+    // Create n-ring ps and tris for output 
+    (*out_ps) = emxCreateND_int32_T(1, &num_ps_ring_all);
+    (*out_tris) = emxCreateND_int32_T(1, &num_tris_ring_all);
+
+    // Fill the out_ps and out_tris based on the flags 
+    j = 1;
+    for (i = 1; i <= num_ps; i++)
+    {
+	if (ps_flag->data[I1dm(i)] == true)
+	{
+	    (*out_ps)->data[I1dm(j)] = i;
+	    j++;
+	}
+    }
+
+    j = 1;
+    for (i = 1; i <= num_tris; i++)
+    {
+	if (tris_flag->data[I1dm(i)] == true)
+	{
+	    (*out_tris)->data[I1dm(j)] = i;
+	    j++;
+	}
+    }
+
+    emxFree_int32_T(&in_ngbvs);
+    emxFree_int32_T(&in_ngbfs);
+
+    emxFree_boolean_T(&in_vtags);
+    emxFree_boolean_T(&in_ftags);
+
+    emxFree_boolean_T(&ps_flag);
+    emxFree_boolean_T(&tris_flag);
+}
+
+
+
