@@ -4416,6 +4416,173 @@ void hpComputeEstimatedNormal(hiPropMesh *mesh)
   }
 }
 
+void hpUpdatedNorCurv(hiPropMesh *mesh)
+{
+    int i, tag_send, tag_recv, j;
+    int proc_send, proc_recv;
+    int num_proc, rank;
+
+    emxArray_real_T *nor = mesh->nor;
+    emxArray_real_T *curv = mesh->curv;
+
+    emxArray_int32_T *nb_proc = mesh->nb_proc;
+
+    hpPInfoList *ps_pinfo = mesh->ps_pinfo;
+    hpPInfoNode *ps_pdata = ps_pinfo->pdata;
+    int *ps_phead = ps_pinfo->head;
+
+
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int num_nbp = nb_proc->size[0];
+
+    /* First build the buffer nor/curv and corresponding lindex for send */
+    emxArray_real_T **buf_nor = (emxArray_real_T **) calloc(num_nbp, sizeof(emxArray_real_T *));
+    emxArray_real_T **buf_curv = (emxArray_real_T **) calloc(num_nbp, sizeof(emxArray_real_T *));
+    int **buf_lindex = (int **) calloc(num_nbp, sizeof(int *));
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	int nb_procid = nb_proc->data[I1dm(i)];
+	int num_overlay_ps = 0;
+	unsigned char *ps_flag = (unsigned char *) calloc(mesh->ps->size[0], sizeof(unsigned char));
+
+	for (j = 1; j <= mesh->ps->size[0]; j++)
+	{
+	    int next_node = ps_phead[I1dm(j)];
+	    if (next_node != rank)
+		continue;
+	    else
+	    {
+		next_node = ps_pdata[I1dm(next_node)].next;
+		while(next_node != -1)
+		{
+		    if (ps_pdata[I1dm(next_node)].proc == nb_procid)
+		    {
+			ps_flag[I1dm(j)] = 1;
+			num_overlay_ps++;
+			break;
+		    }
+		    else
+			next_node = ps_pdata[I1dm(next_node)].next;
+		}
+
+	    }
+	}
+
+	buf_nor[I1dm(i)] = emxCreate_real_T(num_overlay_ps, 3);
+	buf_curv[I1dm(i)] = emxCreate_real_T(num_overlay_ps, 2);
+	buf_lindex[I1dm(i)]= (int *) calloc(num_overlay_ps, sizeof(int));
+
+	emxArray_real_T *bnor = buf_nor[I1dm(i)];
+	emxArray_real_T *bcurv = buf_curv[I1dm(i)];
+	int *blindex = buf_lindex[I1dm(i)];
+
+	int cur_pos = 1;
+	for (j = 1; j <= mesh->ps->size[0]; j++)
+	{
+	    if (ps_flag[I1dm(j)] == 1)
+	    {
+		bnor->data[I2dm(cur_pos,1,bnor->size)] = nor->data[I2dm(j,1,nor->size)];
+		bnor->data[I2dm(cur_pos,2,bnor->size)] = nor->data[I2dm(j,2,nor->size)];
+		bnor->data[I2dm(cur_pos,3,bnor->size)] = nor->data[I2dm(j,3,nor->size)];
+		bcurv->data[I2dm(cur_pos,1,bcurv->size)] = curv->data[I2dm(j,1,curv->size)];
+		bcurv->data[I2dm(cur_pos,2,bcurv->size)] = curv->data[I2dm(j,2,curv->size)];
+		blindex[I1dm(cur_pos)] = j;
+		cur_pos++;
+	    }
+	}
+	free(ps_flag);
+    }
+
+    /* Send the information */
+    MPI_Request *send_req_list = (MPI_Request *) malloc( 5*num_nbp*sizeof(MPI_Request) );
+
+    MPI_Status *send_status_list = (MPI_Status *) malloc( 5*num_nbp*sizeof(MPI_Status) );
+
+    MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
+
+    /* Stores the received array size */
+
+    int *recv_size = (int *) calloc ( 2*num_nbp, sizeof(int));
+    
+    for (i = 1; i <= num_nbp; i++)
+    {
+	proc_send = nb_proc->data[I1dm(i)];
+	tag_send = proc_send;
+	isend2D_real_T(buf_nor[I1dm(i)], proc_send, tag_send, MPI_COMM_WORLD,
+		       &(send_req_list[I1dm(i)]), &(send_req_list[I1dm(i)+num_nbp]));
+	MPI_Isend(buf_lindex[I1dm(i)], (buf_nor[I1dm(i)])->size[0], MPI_INT, proc_send, tag_send+3, MPI_COMM_WORLD, &(send_req_list[I1dm(i)+2*num_nbp])); 
+	isend2D_real_T(buf_curv[I1dm(i)], proc_send, tag_send+4, MPI_COMM_WORLD,
+		       &(send_req_list[I1dm(i)+3*num_nbp]), &(send_req_list[I1dm(i)+4*num_nbp]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	proc_recv = nb_proc->data[I1dm(i)];
+	tag_recv = rank;
+	MPI_Irecv(&(recv_size[2*I1dm(i)]), 2, MPI_INT, proc_recv, tag_recv+1, MPI_COMM_WORLD, &(recv_req_list[I1dm(i)]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	emxArray_real_T *nor_recv;
+	emxArray_real_T *curv_recv;
+	int *lindex_recv;
+
+	tag_recv = rank;
+	MPI_Status recv_status1;
+	MPI_Status recv_status2;
+	MPI_Status recv_status3;
+	int recv_index;
+	
+	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status1);
+
+	proc_recv = recv_status1.MPI_SOURCE;
+
+	nor_recv = emxCreate_real_T(recv_size[2*recv_index], recv_size[2*recv_index+1]);
+	lindex_recv = (int *) calloc(recv_size[2*recv_index], sizeof(int));
+	nor_recv = emxCreate_real_T(recv_size[2*recv_index], 2);
+	MPI_Recv(nor_recv->data, recv_size[2*recv_index]*recv_size[2*recv_index+1], MPI_DOUBLE, proc_recv, tag_recv+2, MPI_COMM_WORLD, &recv_status2);
+	MPI_Recv(lindex_recv, recv_size[2*recv_index], MPI_INT, proc_recv, tag_recv+3, MPI_COMM_WORLD, &recv_status3);
+	recv2D_real_T(&(curv_recv), proc_recv, tag_recv+4, MPI_COMM_WORLD);
+
+	for (j = 1; j <= recv_size[2*recv_index]; j++)
+	{
+	    int cur_index = lindex_recv[I1dm(j)];
+	    nor->data[I2dm(cur_index,1,nor->size)] = nor_recv->data[I2dm(j,1,nor_recv->size)];
+	    nor->data[I2dm(cur_index,2,nor->size)] = nor_recv->data[I2dm(j,2,nor_recv->size)];
+	    nor->data[I2dm(cur_index,3,nor->size)] = nor_recv->data[I2dm(j,3,nor_recv->size)];
+	    curv->data[I2dm(cur_index,1,curv->size)] = curv_recv->data[I2dm(j,1,curv_recv->size)];
+	    curv->data[I2dm(cur_index,2,curv->size)] = curv_recv->data[I2dm(j,2,curv_recv->size)];
+	}
+	emxFree_real_T(&nor_recv);
+	emxFree_real_T(&curv_recv);
+	free(lindex_recv);
+    }
+
+    free(recv_size);
+    free(recv_req_list);
+
+    MPI_Waitall(5*num_nbp, send_req_list, send_status_list);
+
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	emxFree_real_T(&(buf_nor[I1dm(i)]));
+	emxFree_real_T(&(buf_curv[I1dm(i)]));
+	free(buf_lindex[I1dm(i)]);
+    }
+
+    free(buf_nor);
+    free(buf_curv);
+    free(buf_lindex);
+    free(send_req_list);
+    free(send_status_list);
+}
+
+
 void hpUpdateEstimatedNormal(hiPropMesh *mesh)
 {
     int i, tag_send, tag_recv, j;

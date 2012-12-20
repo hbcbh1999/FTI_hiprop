@@ -574,9 +574,16 @@ EXTERN_C void hpComputeEstimatedNormal(hiPropMesh *mesh);
 /*!
  * \brief Update the estimated normal of the ghost points from master
  * processors.
- * \param mesh pointer to a hiProp Mesh
+ * \param mesh pointer to a hiProp mesh
  */
 EXTERN_C void hpUpdateEstimatedNormal(hiPropMesh *mesh);
+
+/*!
+ * \brief Update the calculated normal and curvature of the ghost points from
+ * master processors.
+ * \param mesh pointer to a hiProp mesh
+ */
+EXTERN_C void hpUpdateNorCurv(hiPropMesh *mesh);
 
 /*!
  * \brief Build the adaptive ghost for partition boundary with different ring
