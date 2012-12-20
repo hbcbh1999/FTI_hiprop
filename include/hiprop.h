@@ -371,6 +371,46 @@ EXTERN_C void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring);
  */
 EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
 
+
+/*!
+ * \brief Send ghost ps and tris to neighbor processors and receive ghost ps and
+ * tris from neighbor processors with parallel information
+ * \detail This function works as a subfunction for 3 types of building ghost
+ * ps/tris. Before calling this function, for each neighbor processor, we need
+ * to pick up the points and triangle that we want to send and put the local
+ * indices into ps_ring_proc and tris_ring_proc. For conveniece we also put the
+ * exact point positions and connective of the ghost mesh that we want to send
+ * into buffer_ps and buffer_tris. There are three main steps in the function:
+ * 1. Before communication, update the ps_pinfo and tris_pinfo partially. For a
+ * point/triangle which does not exist on the neighbor processor but is to be
+ * sent, we don't know the exact local index of the point/triangle on the new
+ * processor, thus we could only partially construct the paralle information.
+ * 2. Build up the parallel information for send.
+ * 3. Send the buffer_ps, buffer_tris and the corresponding parallel information
+ * to the neighbor processors.
+ * 4. Receive the ghost points and triangles with parallel information coming
+ * from the neighboring processors and add the ghost points and triangles to the
+ * current mesh.
+ * 5. Update the parallel information across differrent processors to make it
+ * consistent.
+ * 6. Update the nb_proc as the neighbor processors could be changed after
+ * building ghost points and triangles.
+ * \param mesh pointer to a hiProp mesh
+ * \param ps_ring_proc local index of the ghost points that is to be sent to the
+ * neighboring processors
+ * \param tris_ring_proc local index of the ghost triangles that is to be sent
+ * to the neighboring processors 
+ * \param buffer_ps point positions of the ghost points that is to be sent to
+ * the neighboring processors
+ * \param buffer_tris triangle connectivity of the ghost triangles that is to be
+ * sent to the neighboring processors. The elements in buffer_tris are index in
+ * buffer_ps rather than ps_ring_proc. 
+ */
+EXTERN_C void hpCommPsTrisWithPInfo(hiPropMesh *mesh,
+				    emxArray_int32_T **ps_ring_proc,
+				    emxArray_int32_T **tris_ring_proc,
+				    emxArray_real_T **buffer_ps,
+				    emxArray_int32_T **buffer_tris);
 /*!
  * \brief Collect the n-ring neighborhood for a list of points
  * \detail Before calling this function, mesh has to have the opposite half edge
@@ -383,13 +423,6 @@ EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
  * \param out_ps address of the pointer to the output point ids
  * \param out_tris address of the pointer to the output triangle ids
  */
-
-EXTERN_C void hpCommPsTrisWithPInfo(hiPropMesh *mesh,
-				    emxArray_int32_T **ps_ring_proc,
-				    emxArray_int32_T **tris_ring_proc,
-				    emxArray_real_T **buffer_ps,
-				    emxArray_int32_T **buffer_tris);
-
 EXTERN_C void hpCollectNRingTris(const hiPropMesh *mesh,
 				 const int nb_proc_index,
 				 const emxArray_int32_T *in_psid,
@@ -559,6 +592,13 @@ EXTERN_C void hpUpdateEstimatedNormal(hiPropMesh *mesh);
  */
 EXTERN_C void hpBuildPartBdryGhost(hiPropMesh *mesh, emxArray_real_T *ring_size);
 
+/*!
+ * \brief Reduce the ghost ring size on the part_bdry to make sure the same
+ * point on different processors would have the same ring of neighborhood
+ * \param mesh mesh pointer to a hiProp mesh
+ * \param ring_size input and output ring size for each partition boundary
+ * point
+ */
 EXTERN_C void hpReducePartBdryGhostRingSize(hiPropMesh *mesh, emxArray_real_T *ring_size);
 
 EXTERN_C void hpBuildPartBdryGhostPsTrisForSend(const hiPropMesh *mesh,
