@@ -73,13 +73,11 @@ typedef struct hiPropMesh
     emxArray_real_T *est_nor;		/*!< estimated normal, given by tri normal average, size num_ps */
 
     emxArray_int32_T **ps_send_index;
-    emxArray_real_T **ps_send_buffer;
     emxArray_int32_T **ps_recv_index;
-    emxArray_real_T **ps_recv_buffer;
 
-    int32_T num_int_ps;			/*!< number of points for the clean mesh (with no overlapping triangles) */
-    int32_T num_int_tris;		/*!< number of tris for the clean mesh (with no overlapping triangles) */
-    int32_T num_int_pspinfo;		/*!< number of ps pinfo for the clean mesh (with no overlapping triangles) */
+    int32_T nps_clean;			/*!< number of points for the clean mesh (with no overlapping triangles) */
+    int32_T ntris_clean;		/*!< number of tris for the clean mesh (with no overlapping triangles) */
+    int32_T npspi_clean;		/*!< number of ps pinfo for the clean mesh (with no overlapping triangles) */
     boolean_T is_clean;			/*!< flag to denote whether current mesh is clean,
 					     0 with overlapping triangles, 1 without overlapping triangles */
     
@@ -621,5 +619,11 @@ EXTERN_C void hpCollectPartBdryNRingTris(const hiPropMesh *mesh,
 					 const emxArray_real_T *num_ring,
 					 emxArray_int32_T **out_ps,
 					 emxArray_int32_T **out_tris);
+
+EXTERN_C void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array);
+
+EXTERN_C void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array);
+
+EXTERN_C void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *array);
 
 #endif

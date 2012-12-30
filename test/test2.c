@@ -9,7 +9,7 @@
 
 int main(int argc, char* argv[])
 {
-    int i;
+    int i, j;
     int num_proc, rank;
     int tag = 1;
     int root = 0;
@@ -41,9 +41,6 @@ int main(int argc, char* argv[])
 	return 0;
     }
 
-    int num_old_ps = mesh->ps->size[0];
-    int num_old_tris = mesh->tris->size[0];
-
     hpGetNbProcListAuto(mesh);
     printf("\n GetNbProcInfo passed, proc %d \n", rank);
 
@@ -59,6 +56,18 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
+    hpBuildNRingGhost(mesh, 2);
+    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+
+    hpBuildPUpdateInfo(mesh);
+    printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
+
+    /*
+    hpBuildOppositeHalfEdge(mesh);
+    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+
+    hpBuildIncidentHalfEdge(mesh);
+    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
     hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
@@ -79,7 +88,7 @@ int main(int argc, char* argv[])
     char debug_filename2[200];
     sprintf(debug_filename2, "debugout2-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
-
+    */
 
 
     hpDeleteMesh(&mesh);
@@ -425,6 +434,82 @@ int main(int argc, char* argv[])
     free(out1); free(out2); free(out3);
     free(out4); free(out5); free(out6);
     */
+
+/*  This part is for testing the updating function
+ *
+    emxArray_real_T *test_array = emxCreate_real_T(mesh->ps->size[0], 3);
+
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	test_array->data[I2dm(i, 1, test_array->size)] = (real_T) rank;
+	test_array->data[I2dm(i, 2, test_array->size)] = (real_T)i;
+	test_array->data[I2dm(i, 3, test_array->size)] = (real_T)i - 1.0;
+    }
+
+    hpUpdateGhostPointData_real_T(mesh, test_array);
+
+
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	int cur_node = mesh->ps_pinfo->head[I1dm(i)];
+	while(cur_node != -1)
+	{
+	    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
+	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+	}
+	printf("   (%10.8g, %10.8g, %10.8g)\n", test_array->data[I2dm(i, 1, test_array->size)], test_array->data[I2dm(i, 2, test_array->size)], test_array->data[I2dm(i, 3, test_array->size)]);
+    }
+
+
+    int num_nbp = mesh->nb_proc->size[0];
+
+    for (i = 0; i < num_proc; i++)
+    {
+	emxArray_int32_T *cur_psi = mesh->ps_send_index[i];
+	if (cur_psi == (emxArray_int32_T *) NULL)
+	    printf("\nNot sending to proc %d\n", i);
+	else
+	{
+	    printf("\nSending to proc %d:\n", i);
+	    for (j = 1; j <= cur_psi->size[0]; j++)
+	    {
+		int cur_id = cur_psi->data[I1dm(j)];
+		int cur_node = mesh->ps_pinfo->head[I1dm(cur_id)];
+		while(cur_node != -1)
+		{
+		    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
+		    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+		}
+		printf("\n");
+	    }
+
+	}
+    }
+
+    for (i = 0; i < num_proc; i++)
+    {
+	emxArray_int32_T *cur_pri = mesh->ps_recv_index[i];
+	if (cur_pri == (emxArray_int32_T *) NULL)
+	    printf("\nNot receiving from proc %d\n", i);
+	else
+	{
+	    printf("\nReceiving from proc %d:\n", i);
+	    for (j = 1; j <= cur_pri->size[0]; j++)
+	    {
+		int cur_id = cur_pri->data[I1dm(j)];
+		int cur_node = mesh->ps_pinfo->head[I1dm(cur_id)];
+		while(cur_node != -1)
+		{
+		    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
+		    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+		}
+		printf("\n");
+	    }
+
+	}
+    }
+*/
+
 
 }
 

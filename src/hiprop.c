@@ -85,16 +85,14 @@ void hpInitMesh(hiPropMesh **pmesh)
 
     mesh->ps_send_index = (emxArray_int32_T **) NULL;
     mesh->ps_recv_index = (emxArray_int32_T **) NULL;
-    mesh->ps_send_buffer = (emxArray_real_T **) NULL;
-    mesh->ps_recv_buffer = (emxArray_real_T **) NULL;
 
     mesh->opphe = (emxArray_int32_T *) NULL;
     mesh->inhe = (emxArray_int32_T *) NULL;
     mesh->est_nor = (emxArray_real_T *) NULL;
 
-    mesh->num_int_ps = 0;
-    mesh->num_int_tris = 0;
-    mesh->num_int_pspinfo = 0;
+    mesh->nps_clean = 0;
+    mesh->ntris_clean = 0;
+    mesh->npspi_clean = 0;
     mesh->is_clean = 1;
 }
 
@@ -110,42 +108,31 @@ void hpFreeMeshAugmentInfo(hiPropMesh *pmesh)
 
 void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
 {
-    int rank, num_proc;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int num_proc;
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
 
     int i;
+
     if (pmesh->ps_send_index != ((emxArray_int32_T **) NULL) )
     {
 	for (i = 0; i < num_proc; i++)
 	{
 	    if (pmesh->ps_send_index[i] != ((emxArray_int32_T *) NULL) )
-	    {
 		emxFree_int32_T(&(pmesh->ps_send_index[i]));
-		emxFree_real_T(&(pmesh->ps_send_buffer[i]));
-	    }
 	}
 	free(pmesh->ps_send_index);
-	free(pmesh->ps_send_buffer);
 	pmesh->ps_send_index = NULL;
-	pmesh->ps_send_buffer = NULL;
     }
     if (pmesh->ps_recv_index != ((emxArray_int32_T **) NULL) )
     {
 	for (i = 0; i < num_proc; i++)
 	{
 	    if (pmesh->ps_recv_index[i] != ((emxArray_int32_T *) NULL) )
-	    {
 		emxFree_int32_T(&(pmesh->ps_recv_index[i]));
-		emxFree_real_T(&(pmesh->ps_recv_buffer[i]));
-	    }
 	}
 	free(pmesh->ps_recv_index);
-	free(pmesh->ps_recv_buffer);
 	pmesh->ps_recv_index = NULL;
-	pmesh->ps_recv_buffer = NULL;
     }
-    
 }
 
 void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
@@ -181,9 +168,9 @@ void hpFreeMesh(hiPropMesh *pmesh)
     hpFreeMeshParallelInfo(pmesh);
     hpFreeMeshAugmentInfo(pmesh);
     hpFreeMeshBasicInfo(pmesh);
-    pmesh->num_int_ps = 0;
-    pmesh->num_int_tris = 0;
-    pmesh->num_int_pspinfo = 0;
+    pmesh->nps_clean = 0;
+    pmesh->ntris_clean = 0;
+    pmesh->npspi_clean = 0;
     pmesh->is_clean = 1;
 }
 
@@ -1160,9 +1147,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     free(send_req_list);
     free(send_status_list);
 
-    mesh->num_int_ps = mesh->ps->size[0];
-    mesh->num_int_tris = mesh->tris->size[0];
-    mesh->num_int_pspinfo = mesh->ps_pinfo->allocated_len;
+    mesh->nps_clean = mesh->ps->size[0];
+    mesh->ntris_clean = mesh->tris->size[0];
+    mesh->npspi_clean = mesh->ps_pinfo->allocated_len;
     mesh->is_clean = 1;
 
 }
@@ -1337,9 +1324,9 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     else
     {
 	mesh->is_clean = 1;
-	mesh->num_int_ps = mesh->ps->size[0];
-	mesh->num_int_tris = mesh->tris->size[0];
-	mesh->num_int_pspinfo = mesh->ps_pinfo->allocated_len;
+	mesh->nps_clean = mesh->ps->size[0];
+	mesh->ntris_clean = mesh->tris->size[0];
+	mesh->npspi_clean = mesh->ps_pinfo->allocated_len;
     }
 
     boolean_T out_clean;
@@ -1417,47 +1404,43 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
 
     int num_nb_proc = mesh->nb_proc->size[0];
     int num_pt = mesh->ps->size[0];
+    int num_proc;
     int cur_head, cur_node, cur_proc;
     int master;
-    int rank, i, j, num_proc;
+    int rank, i, j;
     int buffer_size[1];
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
 
+    int *ps_head = mesh->ps_pinfo->head;
+    hpPInfoNode *ps_pdata = mesh->ps_pinfo->pdata;
+
     /* initialization of pointers */
     mesh->ps_send_index = (emxArray_int32_T **) calloc(num_proc, sizeof(emxArray_int32_T*));
     mesh->ps_recv_index = (emxArray_int32_T **) calloc(num_proc, sizeof(emxArray_int32_T*));
-    mesh->ps_send_buffer = (emxArray_real_T **) calloc(num_proc, sizeof(emxArray_real_T*));
-    mesh->ps_recv_buffer = (emxArray_real_T **) calloc(num_proc, sizeof(emxArray_real_T*));
-    for (i = 0; i<num_proc; i++)
+    for (i = 0; i < num_proc; i++)
     {
 	mesh->ps_send_index[i] = (emxArray_int32_T *) NULL;
 	mesh->ps_recv_index[i] = (emxArray_int32_T *) NULL;
-	mesh->ps_send_buffer[i] = (emxArray_real_T *) NULL;
-	mesh->ps_recv_buffer[i] = (emxArray_real_T *) NULL;
     }
 
     /* compute the length of the buffers */
     int* pt_send_buffer_length = (int*) calloc(num_proc, sizeof(int));
     int* pt_recv_buffer_length = (int*) calloc(num_proc, sizeof(int));
-    for (i = 0; i< num_proc; i++)
+
+    for(i = 1; i <= num_pt; i++)
     {
-	pt_send_buffer_length[i] = 0;
-	pt_recv_buffer_length[i] = 0;
-    }
-    for(i = 1; i<=num_pt; i++)
-    {
-	cur_head = mesh->ps_pinfo->head[I1dm(i)];
-	master = (mesh->ps_pinfo->pdata[I1dm(cur_head)]).proc;
+	cur_head = ps_head[I1dm(i)];
+	master = ps_pdata[I1dm(cur_head)].proc;
 	if (master == rank)	/* the current proc is the master, send to all other */
 	{
-	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_head)].next;
+	    cur_node = ps_pdata[I1dm(cur_head)].next;
 	    while(cur_node!=-1)
 	    {
-		cur_proc = mesh->ps_pinfo->pdata[I1dm(cur_node)].proc;
+		cur_proc = ps_pdata[I1dm(cur_node)].proc;
 		pt_send_buffer_length[cur_proc]++;
-		cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+		cur_node = ps_pdata[I1dm(cur_node)].next;
 	    }
 	}
 	else	/* the current proc is not the master, recv this point from master */
@@ -1473,72 +1456,61 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
     int** remoteid = (int**) calloc(num_proc, sizeof(int*));	    
 
     /* allocate memory for index and buffer array, also for remoteid */
-    for (i = 0; i<num_nb_proc; i++)
+    for (i = 0; i < num_nb_proc; i++)
     {
 	cur_proc = mesh->nb_proc->data[i];
-	if(pt_recv_buffer_length[cur_proc]!=0)		/*  for the recv case. 
+	if(pt_recv_buffer_length[cur_proc] != 0)	/*  for the recv case. 
 					 		 *  In this case, we need to sort the points on this proc, 
 					 		 *  so allocate memory for remoteid */
 	{
 	    buffer_size[0] = pt_recv_buffer_length[cur_proc];
 	    mesh->ps_recv_index[cur_proc] = emxCreateND_int32_T(1, buffer_size);
-	    mesh->ps_recv_buffer[cur_proc] = emxCreate_real_T(buffer_size[0], 3);
 	    remoteid[cur_proc] = (int*) calloc(pt_recv_buffer_length[cur_proc], sizeof(int));
 	}
 	if(pt_send_buffer_length[cur_proc]!=0)	/* for the send case */
 	{
 	    buffer_size[0] = pt_send_buffer_length[cur_proc];
 	    mesh->ps_send_index[cur_proc] = emxCreateND_int32_T(1, buffer_size);
-	    mesh->ps_send_buffer[cur_proc] = emxCreate_real_T(buffer_size[0], 3);
 	}
     }
 
 
-    int* cur_size;
     int* p_send_index = (int*) calloc(num_proc, sizeof(int));	/* index to the end of the list */
     int* p_recv_index = (int*) calloc(num_proc, sizeof(int));	/* index to the end of the list */
     int tmp_id;
     int tmp_pt;
-    for(i = 0; i<num_proc; i++)
+    for(i = 0; i < num_proc; i++)
     {
 	p_send_index[i] = 1;
 	p_recv_index[i] = 1;
     }
-    for(i = 1; i<=num_pt; i++)
+    for(i = 1; i <= num_pt; i++)
     {
-	cur_head = mesh->ps_pinfo->head[I1dm(i)];
-	master = (mesh->ps_pinfo->pdata[I1dm(cur_head)]).proc;
+	cur_head = ps_head[I1dm(i)];
+	master = ps_pdata[I1dm(cur_head)].proc;
 	if (master == rank)	/* the current proc is the master, send to all others */
 	{
-	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_head)].next;
+	    cur_node = ps_pdata[I1dm(cur_head)].next;
 	    while(cur_node!=-1)
 	    {
-		cur_proc = mesh->ps_pinfo->pdata[I1dm(cur_node)].proc;
+		cur_proc = ps_pdata[I1dm(cur_node)].proc;
 
 		mesh->ps_send_index[cur_proc]->data[I1dm(p_send_index[cur_proc])]= i;
-		cur_size = mesh->ps_send_buffer[cur_proc]->size;
-		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_send_index[cur_proc],1,cur_size)]
-		    = mesh->ps->data[I2dm(i, 1, mesh->ps->size)];
-		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_send_index[cur_proc],2,cur_size)]
-		    = mesh->ps->data[I2dm(i, 2, mesh->ps->size)];
-		mesh->ps_send_buffer[cur_proc]->data[I2dm(p_send_index[cur_proc],3,cur_size)]
-		    = mesh->ps->data[I2dm(i, 3, mesh->ps->size)];
-
 		p_send_index[cur_proc]++;
-		cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+		cur_node = ps_pdata[I1dm(cur_node)].next;
 	    }
 	}
 	else	/* the current proc is not the master, recv this point from master, sorted by insertion sort */
 	{
 
-	    remoteid[master][I1dm(p_recv_index[master])] = mesh->ps_pinfo->pdata[I1dm(cur_head)].lindex;
+	    remoteid[master][I1dm(p_recv_index[master])] = ps_pdata[I1dm(cur_head)].lindex;
 	    mesh->ps_recv_index[master]->data[I1dm(p_recv_index[master])] = i;
 
-	    if(p_recv_index[master]>1)	/* sort by the key of remoteid[master], the value is mesh->ps_recv_index[master]->data[] */
+	    if(p_recv_index[master] > 1)	/* sort by the key of remoteid[master], the value is mesh->ps_recv_index[master]->data[] */
 	    {
-		for (j = p_recv_index[master]; j>1; j-- )
+		for (j = p_recv_index[master]; j > 1; j--)
 		{
-		    if(remoteid[master][I1dm(j)]<remoteid[master][I1dm(j-1)])
+		    if(remoteid[master][I1dm(j)] < remoteid[master][I1dm(j-1)])
 		    {
 			tmp_pt = mesh->ps_recv_index[master]->data[I1dm(j)];
 			mesh->ps_recv_index[master]->data[I1dm(j)] = mesh->ps_recv_index[master]->data[I1dm(j-1)];
@@ -1560,11 +1532,10 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
     free(pt_recv_buffer_length);
     free(p_send_index);
     free(p_recv_index);
-    for (i = 0; i<num_proc; i++)
-	if(remoteid[i]!=NULL)
+    for (i = 0; i < num_proc; i++)
+	if(remoteid[i] != NULL)
 	    free(remoteid[i]);
-
-    free(remoteid);	   
+    free(remoteid);
 }
 
 void hpCleanMeshByPinfo(hiPropMesh* mesh)
@@ -1828,9 +1799,9 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     }
     mesh->tris_pinfo->allocated_len = num_tris_tmp;
 
-    mesh->num_int_ps = mesh->ps->size[0];
-    mesh->num_int_tris = mesh->tris->size[0];
-    mesh->num_int_pspinfo = mesh->ps_pinfo->allocated_len;
+    mesh->nps_clean = mesh->ps->size[0];
+    mesh->ntris_clean = mesh->tris->size[0];
+    mesh->npspi_clean = mesh->ps_pinfo->allocated_len;
     mesh->is_clean = 1;
 }
 
@@ -4281,7 +4252,7 @@ void hpBuildPartitionBoundary(hiPropMesh *mesh)
     if( mesh->part_bdry != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(mesh->part_bdry));
 
-    int num_ps = mesh->num_int_ps;
+    int num_ps = mesh->nps_clean;
 
     int num_pbdry = 0;
 
@@ -5023,6 +4994,424 @@ void hpCollectPartBdryNRingTris(const hiPropMesh *mesh,
     emxFree_boolean_T(&ps_flag);
     emxFree_boolean_T(&tris_flag);
 }
+
+
+void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
+{
+    int num_proc, rank, num_nbp;
+    int i, j, k;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    num_nbp = mesh->nb_proc->size[0];
+
+    int32_T **send_buf = (int32_T **) calloc(num_nbp, sizeof(int32_T *));
+    int32_T **recv_buf = (int32_T **) calloc(num_nbp, sizeof(int32_T *));
+
+    int *send_size = (int *) calloc(num_nbp, sizeof(int));
+    int *recv_size = (int *) calloc(num_nbp, sizeof(int));
+
+    /* initialize send/recv buffer */
+    for (i = 0; i < num_nbp; i++)
+	send_buf[i] = recv_buf[i] = (int *) NULL;
+
+    /* fill in the send buffer and allocate recv buffer */
+    for (i = 1; i <= num_nbp; i++)
+    {
+	int nbp_id = mesh->nb_proc->data[I1dm(i)];
+	emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
+	emxArray_int32_T *cur_pri = mesh->ps_recv_index[nbp_id];
+	if (cur_psi != (emxArray_int32_T *) NULL)
+	{
+	    int num_overlay_ps = cur_psi->size[0];
+	    int size_col = array->size[1];
+
+	    send_size[I1dm(i)] = num_overlay_ps*size_col;
+	    send_buf[I1dm(i)] = (int *) calloc(send_size[I1dm(i)], sizeof(int));
+
+	}
+	if (cur_pri != (emxArray_int32_T *) NULL)
+	{
+	    int num_ghost_ps = cur_pri->size[0];
+	    int size_col = array->size[1];
+
+	    recv_size[I1dm(i)] = num_ghost_ps*size_col;
+	    recv_buf[I1dm(i)] = (int *) calloc(recv_size[I1dm(i)], sizeof(int));
+	}
+    }
+
+    /* communicate the send buffer to recv buffer and update*/
+
+    MPI_Request *send_req_list = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+
+    MPI_Status *send_status_list = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+
+    MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
+
+    for (i = 0; i < num_nbp; i++)
+    {
+	send_req_list[i] = MPI_REQUEST_NULL;
+	recv_req_list[i] = MPI_REQUEST_NULL;
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	if (send_size[I1dm(i)] != 0)
+	{
+	    int *cur_send_buf = send_buf[I1dm(i)];
+	    int cur_pos = 0;
+	    int nbp_id = mesh->nb_proc->data[I1dm(i)];
+	    
+	    emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
+    	    
+	    for (k = 1; k <= array->size[1]; k++)
+	    {
+		for (j = 1; j <= cur_psi->size[0]; j++)
+		{
+		    int overlay_ps_id = cur_psi->data[I1dm(j)];
+		    cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+		    cur_pos++;
+		}
+	    }
+	    
+	    MPI_Isend(send_buf[I1dm(i)], send_size[I1dm(i)], MPI_INT, 
+		    mesh->nb_proc->data[I1dm(i)], 1, MPI_COMM_WORLD, &(send_req_list[i-1]));
+	}
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	if (recv_size[I1dm(i)] != 0)
+	    MPI_Irecv(recv_buf[I1dm(i)], recv_size[I1dm(i)], MPI_INT, 
+		    mesh->nb_proc->data[I1dm(i)], 1, MPI_COMM_WORLD, &(recv_req_list[i-1]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	int recv_index;
+	int recv_proc;
+	MPI_Status recv_status;
+
+	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status);
+
+	if (recv_index == MPI_UNDEFINED) /* means all the recv_requests are NULL */
+	    break;
+
+	recv_proc = recv_status.MPI_SOURCE;
+	emxArray_int32_T *cur_pri = mesh->ps_recv_index[recv_proc];
+
+	int *cur_recv_buf = recv_buf[recv_index];
+	int cur_recv_pos = 0;
+
+	for (k = 1; k <= array->size[1]; k++)
+	{
+	    for (j = 1; j <= cur_pri->size[0]; j++)
+	    {
+		int ghost_ps_id = cur_pri->data[I1dm(j)];
+		array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		cur_recv_pos++;
+	    }
+	}
+
+    }
+
+    free(recv_req_list);
+
+    MPI_Waitall(num_nbp, send_req_list, send_status_list);
+
+    free(send_req_list);
+    free(send_status_list);
+
+
+    for (i = 0; i < num_nbp; i++)
+    {
+	free(send_buf[i]);
+	free(recv_buf[i]);
+    }
+    free(send_buf);
+    free(recv_buf);
+
+    free(send_size);
+    free(recv_size);
+    
+}
+
+void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
+{
+    int num_proc, rank, num_nbp;
+    int i, j, k;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    num_nbp = mesh->nb_proc->size[0];
+
+    real_T **send_buf = (real_T **) calloc(num_nbp, sizeof(real_T *));
+    real_T **recv_buf = (real_T **) calloc(num_nbp, sizeof(real_T *));
+
+    int *send_size = (int *) calloc(num_nbp, sizeof(int));
+    int *recv_size = (int *) calloc(num_nbp, sizeof(int));
+
+    /* initialize send/recv buffer */
+    for (i = 0; i < num_nbp; i++)
+	send_buf[i] = recv_buf[i] = (real_T *) NULL;
+
+    /* fill in the send buffer and allocate recv buffer */
+    for (i = 1; i <= num_nbp; i++)
+    {
+	int nbp_id = mesh->nb_proc->data[I1dm(i)];
+	emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
+	emxArray_int32_T *cur_pri = mesh->ps_recv_index[nbp_id];
+	if (cur_psi != (emxArray_int32_T *) NULL)
+	{
+	    int num_overlay_ps = cur_psi->size[0];
+	    int size_col = array->size[1];
+
+	    send_size[I1dm(i)] = num_overlay_ps*size_col;
+	    send_buf[I1dm(i)] = (real_T *) calloc(send_size[I1dm(i)], sizeof(real_T));
+
+	}
+	if (cur_pri != (emxArray_int32_T *) NULL)
+	{
+	    int num_ghost_ps = cur_pri->size[0];
+	    int size_col = array->size[1];
+
+	    recv_size[I1dm(i)] = num_ghost_ps*size_col;
+	    recv_buf[I1dm(i)] = (real_T *) calloc(recv_size[I1dm(i)], sizeof(real_T));
+	}
+    }
+
+    /* communicate the send buffer to recv buffer and update*/
+
+    MPI_Request *send_req_list = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+
+    MPI_Status *send_status_list = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+
+    MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
+
+    for (i = 0; i < num_nbp; i++)
+    {
+	send_req_list[i] = MPI_REQUEST_NULL;
+	recv_req_list[i] = MPI_REQUEST_NULL;
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	if (send_size[I1dm(i)] != 0)
+	{
+	    real_T *cur_send_buf = send_buf[I1dm(i)];
+	    int cur_pos = 0;
+	    int nbp_id = mesh->nb_proc->data[I1dm(i)];
+	    
+	    emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
+    	    
+	    for (k = 1; k <= array->size[1]; k++)
+	    {
+		for (j = 1; j <= cur_psi->size[0]; j++)
+		{
+		    int overlay_ps_id = cur_psi->data[I1dm(j)];
+		    cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+		    cur_pos++;
+		}
+	    }
+	    
+	    MPI_Isend(send_buf[I1dm(i)], send_size[I1dm(i)], MPI_DOUBLE, 
+		    mesh->nb_proc->data[I1dm(i)], 1, MPI_COMM_WORLD, &(send_req_list[i-1]));
+	}
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	if (recv_size[I1dm(i)] != 0)
+	    MPI_Irecv(recv_buf[I1dm(i)], recv_size[I1dm(i)], MPI_DOUBLE, 
+		    mesh->nb_proc->data[I1dm(i)], 1, MPI_COMM_WORLD, &(recv_req_list[i-1]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	int recv_index;
+	int recv_proc;
+	MPI_Status recv_status;
+
+	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status);
+
+	if (recv_index == MPI_UNDEFINED) /* means all the recv_requests are NULL */
+	    break;
+
+	recv_proc = recv_status.MPI_SOURCE;
+	emxArray_int32_T *cur_pri = mesh->ps_recv_index[recv_proc];
+
+	real_T *cur_recv_buf = recv_buf[recv_index];
+	int cur_recv_pos = 0;
+
+	for (k = 1; k <= array->size[1]; k++)
+	{
+	    for (j = 1; j <= cur_pri->size[0]; j++)
+	    {
+		int ghost_ps_id = cur_pri->data[I1dm(j)];
+		array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		cur_recv_pos++;
+	    }
+	}
+
+    }
+
+    free(recv_req_list);
+
+    MPI_Waitall(num_nbp, send_req_list, send_status_list);
+
+    free(send_req_list);
+    free(send_status_list);
+
+
+    for (i = 0; i < num_nbp; i++)
+    {
+	free(send_buf[i]);
+	free(recv_buf[i]);
+    }
+    free(send_buf);
+    free(recv_buf);
+
+    free(send_size);
+    free(recv_size);
+}
+
+void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *array)
+{
+    int num_proc, rank, num_nbp;
+    int i, j, k;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    num_nbp = mesh->nb_proc->size[0];
+
+    boolean_T **send_buf = (boolean_T **) calloc(num_nbp, sizeof(boolean_T *));
+    boolean_T **recv_buf = (boolean_T **) calloc(num_nbp, sizeof(boolean_T *));
+
+    int *send_size = (int *) calloc(num_nbp, sizeof(int));
+    int *recv_size = (int *) calloc(num_nbp, sizeof(int));
+
+    /* initialize send/recv buffer */
+    for (i = 0; i < num_nbp; i++)
+	send_buf[i] = recv_buf[i] = (boolean_T *) NULL;
+
+    /* fill in the send buffer and allocate recv buffer */
+    for (i = 1; i <= num_nbp; i++)
+    {
+	int nbp_id = mesh->nb_proc->data[I1dm(i)];
+	emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
+	emxArray_int32_T *cur_pri = mesh->ps_recv_index[nbp_id];
+	if (cur_psi != (emxArray_int32_T *) NULL)
+	{
+	    int num_overlay_ps = cur_psi->size[0];
+	    int size_col = array->size[1];
+
+	    send_size[I1dm(i)] = num_overlay_ps*size_col;
+	    send_buf[I1dm(i)] = (boolean_T *) calloc(send_size[I1dm(i)], sizeof(boolean_T));
+
+	}
+	if (cur_pri != (emxArray_int32_T *) NULL)
+	{
+	    int num_ghost_ps = cur_pri->size[0];
+	    int size_col = array->size[1];
+
+	    recv_size[I1dm(i)] = num_ghost_ps*size_col;
+	    recv_buf[I1dm(i)] = (boolean_T *) calloc(recv_size[I1dm(i)], sizeof(boolean_T));
+	}
+    }
+
+    /* communicate the send buffer to recv buffer and update*/
+
+    MPI_Request *send_req_list = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
+
+    MPI_Status *send_status_list = (MPI_Status *) malloc( num_nbp*sizeof(MPI_Status) );
+
+    MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
+
+    for (i = 0; i < num_nbp; i++)
+    {
+	send_req_list[i] = MPI_REQUEST_NULL;
+	recv_req_list[i] = MPI_REQUEST_NULL;
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	if (send_size[I1dm(i)] != 0)
+	{
+	    boolean_T *cur_send_buf = send_buf[I1dm(i)];
+	    int cur_pos = 0;
+	    int nbp_id = mesh->nb_proc->data[I1dm(i)];
+	    
+	    emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
+    	    
+	    for (k = 1; k <= array->size[1]; k++)
+	    {
+		for (j = 1; j <= cur_psi->size[0]; j++)
+		{
+		    int overlay_ps_id = cur_psi->data[I1dm(j)];
+		    cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+		    cur_pos++;
+		}
+	    }
+	    
+	    MPI_Isend(send_buf[I1dm(i)], send_size[I1dm(i)], MPI_UNSIGNED_CHAR, 
+		    mesh->nb_proc->data[I1dm(i)], 1, MPI_COMM_WORLD, &(send_req_list[i-1]));
+	}
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	if (recv_size[I1dm(i)] != 0)
+	    MPI_Irecv(recv_buf[I1dm(i)], recv_size[I1dm(i)], MPI_UNSIGNED_CHAR, 
+		    mesh->nb_proc->data[I1dm(i)], 1, MPI_COMM_WORLD, &(recv_req_list[i-1]));
+    }
+
+    for (i = 1; i <= num_nbp; i++)
+    {
+	int recv_index;
+	int recv_proc;
+	MPI_Status recv_status;
+
+	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status);
+
+	if (recv_index == MPI_UNDEFINED) /* means all the recv_requests are NULL */
+	    break;
+
+	recv_proc = recv_status.MPI_SOURCE;
+	emxArray_int32_T *cur_pri = mesh->ps_recv_index[recv_proc];
+
+	boolean_T *cur_recv_buf = recv_buf[recv_index];
+	int cur_recv_pos = 0;
+
+	for (k = 1; k <= array->size[1]; k++)
+	{
+	    for (j = 1; j <= cur_pri->size[0]; j++)
+	    {
+		int ghost_ps_id = cur_pri->data[I1dm(j)];
+		array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		cur_recv_pos++;
+	    }
+	}
+
+    }
+
+    free(recv_req_list);
+
+    MPI_Waitall(num_nbp, send_req_list, send_status_list);
+
+    free(send_req_list);
+    free(send_status_list);
+
+
+    for (i = 0; i < num_nbp; i++)
+    {
+	free(send_buf[i]);
+	free(recv_buf[i]);
+    }
+    free(send_buf);
+    free(recv_buf);
+
+    free(send_size);
+    free(recv_size);
+
+}
+
 
 
 
