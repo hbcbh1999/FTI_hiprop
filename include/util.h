@@ -347,16 +347,56 @@ EXTERN_C void isend2D_real_T(const emxArray_real_T *array_send, const int dst, c
  *
  *
  */
-EXTERN_C void determine_opposite_halfedge_tri(int32_T nv, const emxArray_int32_T *tris ,emxArray_int32_T *opphes);
+EXTERN_C void determine_opposite_halfedge_tri(int32_T nv,
+					      const emxArray_int32_T *tris,
+					      emxArray_int32_T *opphes);
 
-EXTERN_C void determine_incident_halfedges(const emxArray_int32_T *elems, const emxArray_int32_T *opphes, emxArray_int32_T *v2he);
+EXTERN_C void determine_incident_halfedges(const emxArray_int32_T *elems,
+					   const emxArray_int32_T *opphes,
+					   emxArray_int32_T *v2he);
 
-EXTERN_C void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const emxArray_int32_T *v2he, emxArray_int32_T *ngbvs, emxArray_boolean_T *vtags, emxArray_boolean_T *ftags, emxArray_int32_T *ngbfs, int32_T *nverts, int32_T *nfaces);
+EXTERN_C void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
+			        const emxArray_int32_T *tris,
+				const emxArray_int32_T *opphes, const emxArray_int32_T *v2he,
+				emxArray_int32_T *ngbvs, emxArray_boolean_T *vtags,
+				emxArray_boolean_T *ftags, emxArray_int32_T *ngbfs,
+				int32_T *nverts, int32_T *nfaces);
 
-EXTERN_C void compute_diffops_surf(const emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, real_T ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs, emxArray_real_T *prdirs, int32_T param);
+EXTERN_C void compute_diffops_surf(const emxArray_real_T *xs,
+				   const emxArray_int32_T *tris,
+				   int32_T degree, real_T ring,
+				   boolean_T iterfit,
+				   emxArray_real_T *nrms, emxArray_real_T *curs,
+				   emxArray_real_T *prdirs, int32_T param);
 
-EXTERN_C void test_walf_tri(const emxArray_real_T *ps, const emxArray_int32_T *tris, int32_T degree, const emxArray_real_T *param, emxArray_real_T *pnts);
+EXTERN_C void test_walf_tri(const emxArray_real_T *ps,
+			    const emxArray_int32_T *tris,
+			    int32_T degree,
+			    const emxArray_real_T *param,
+			    emxArray_real_T *pnts);
 
-EXTERN_C void average_vertex_normal_tri_cleanmesh(int32_T nv_clean, const emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T *flabel, emxArray_real_T *nrms);
+EXTERN_C void average_vertex_normal_tri_cleanmesh(int32_T nv_clean,
+						  const emxArray_real_T *xs,
+						  const emxArray_int32_T *tris,
+						  const emxArray_real_T *flabel,
+						  emxArray_real_T *nrms);
+
+EXTERN_C void obtain_ringsz_cleanmesh(int32_T nv_clean,
+				      const emxArray_int32_T *part_bdry,
+				      const emxArray_real_T *xs,
+				      const emxArray_int32_T *elems,
+				      int32_T degree,
+				      emxArray_real_T *ring_sz);
+
+EXTERN_C void compute_diffops_surf_cleanmesh(int32_T nv_clean,
+					     const emxArray_real_T *xs,
+					     const emxArray_int32_T *tris,
+					     const emxArray_real_T *nrms_proj,
+					     int32_T degree,
+					     real_T ring,
+					     boolean_T iterfit,
+					     emxArray_real_T *nrms,
+					     emxArray_real_T *curs,
+					     emxArray_real_T *prdirs); 
 
 #endif

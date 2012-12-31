@@ -626,4 +626,5 @@ EXTERN_C void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *a
 
 EXTERN_C void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *array);
 
+EXTERN_C void hpAdaptiveBuildGhost(hiPropMesh *mesh, const int32_T in_degree);
 #endif

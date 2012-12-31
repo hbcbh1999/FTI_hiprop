@@ -5314,6 +5314,30 @@ void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *arra
 
 }
 
+void hpAdaptiveBuildGhost(hiPropMesh *mesh, const int32_T in_degree)
+{
+    int num_ps_clean = mesh->nps_clean;
+    int num_ps_pbdry = mesh->part_bdry->size[0];
+    emxArray_real_T *ring_clean = emxCreateND_real_T(1, &num_ps_clean);
+    emxArray_real_T *ring_pbdry = emxCreateND_real_T(1, &num_ps_pbdry);
+
+    obtain_ringsz_cleanmesh(num_ps_clean, mesh->part_bdry, mesh->ps, mesh->tris,
+	    in_degree, ring_clean);
+
+    int i;
+
+    for (i = 1; i <= num_ps_pbdry; i++)
+    {
+	int cur_id = mesh->part_bdry->data[I1dm(i)];
+	ring_pbdry->data[I1dm(i)] = ring_clean->data[I1dm(cur_id)];
+    }
+
+    emxFree_real_T(&ring_clean);
+
+    hpBuildPartBdryGhost(mesh, ring_pbdry);
+}
+
+
 
 
 
