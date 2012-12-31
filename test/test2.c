@@ -59,8 +59,32 @@ int main(int argc, char* argv[])
     hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
 
+    hpBuildOppositeHalfEdge(mesh);
+    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+
+    hpBuildIncidentHalfEdge(mesh);
+    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
+
+    hpComputeEstimatedNormal(mesh);
+    printf("\n ComputeEstimatedNormal passed, proc %d \n", rank);
+
+    hpUpdateGhostPointData_real_T(mesh, mesh->est_nor);
+
+    char est_nor_filename[200];
+    sprintf(est_nor_filename, "estnor-p%s.out", rank_str);
+    FILE *estnor_outfile = fopen(est_nor_filename, "w");
+
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	fprintf(estnor_outfile, "%22.16g %22.16g %22.16g %22.16g %22.16g %22.16g\n", 
+		mesh->ps->data[I2dm(i,1,mesh->ps->size)], mesh->ps->data[I2dm(i,2,mesh->ps->size)], mesh->ps->data[I2dm(i,3,mesh->ps->size)],
+		mesh->est_nor->data[I2dm(i,1,mesh->est_nor->size)],
+		mesh->est_nor->data[I2dm(i,2,mesh->est_nor->size)], 
+		mesh->est_nor->data[I2dm(i,3,mesh->est_nor->size)]);
+    }
 
     /*
     hpBuildOppositeHalfEdge(mesh);

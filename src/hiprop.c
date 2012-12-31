@@ -4278,113 +4278,15 @@ void hpComputeEstimatedNormal(hiPropMesh *mesh)
 	emxFree_real_T(&(mesh->est_nor));
 
     int num_ps = mesh->ps->size[0];
+    int num_tris = mesh->tris->size[0];
+    int num_ps_clean = mesh->nps_clean;
 
     mesh->est_nor = emxCreate_real_T(num_ps, 3);
 
-    emxArray_real_T *xs = mesh->ps;
-    emxArray_int32_T *tris = mesh->tris;
-    emxArray_real_T *nrms = mesh->est_nor;
+    emxArray_real_T *tmp_flabel = emxCreateND_real_T(1, &num_tris);
+    
+    average_vertex_normal_tri_cleanmesh(num_ps_clean, mesh->ps, mesh->tris, tmp_flabel, mesh->est_nor);
 
-    /*Codes from here are duplicate from matlab generated function
-     * average_vertex_normal tri */
-
-  int32_T ntris;
-  int32_T nv;
-  int32_T i0;
-  int32_T ix;
-  int32_T ii;
-  int32_T iy;
-  real_T a[3];
-  real_T b[3];
-  real_T nrm[3];
-  int32_T k;
-  real_T y;
-
-  /* AVERAGE_VERTEX_NORMAL_TRI Compute average vertex normal for surface  */
-  /*  triangulation. */
-  /*  AVERAGE_VERTEX_NORMAL_TRI(XS,TRIS,OPT,FLABEL,OPPHES) Computes the average  */
-  /*  vertex normal for surface triangulation, provided vertices XS, triangles */
-  /*  TRIS, weighting options OPT, face-labels FLABEL and opposite vertices in  */
-  /*  mx3 OPPHES. */
-  /*   */
-  /*  AVERAGE_VERTEX_NORMAL_TRI(XS,TRIS) Same as above. See below for default  */
-  /*  OPT and FLABEL values. */
-  /*  */
-  /*  AVERAGE_VERTEX_NORMAL_TRI(XS,TRIS,OPT) Same as above. See below for  */
-  /*  default FLABEL values. */
-  /*  */
-  /*  AVERAGE_VERTEX_NORMAL_TRI(XS,TRIS,OPT,FLABEL) Same as above. */
-  /*      */
-  /*  Set OPT to 'area', 'unit', 'angle', 'sphere', and 'bisect'. Default is  */
-  /*  'area'. If FLABEL is given, then only faces with zero labels are  */
-  /*  considered. */
-  /*  */
-  /*  See also AVERAGE_VERTEX_NORMAL_CURV */
-  ntris = tris->size[0];
-  nv = xs->size[0];
-  i0 = nrms->size[0] * nrms->size[1];
-  nrms->size[0] = nv;
-  nrms->size[1] = 3;
-  emxEnsureCapacity((emxArray__common *)nrms, i0, (int32_T)sizeof(real_T));
-  ix = nv * 3 - 1;
-  for (i0 = 0; i0 <= ix; i0++) {
-    nrms->data[i0] = 0.0;
-  }
-
-  for (ii = 0; ii + 1 <= ntris; ii++) {
-    ix = tris->data[ii + (tris->size[0] << 1)];
-    iy = tris->data[ii + tris->size[0]];
-    for (i0 = 0; i0 < 3; i0++) {
-      a[i0] = xs->data[(ix + xs->size[0] * i0) - 1] - xs->data[(iy + xs->size[0]
-        * i0) - 1];
-    }
-
-    ix = tris->data[ii];
-    iy = tris->data[ii + (tris->size[0] << 1)];
-    for (i0 = 0; i0 < 3; i0++) {
-      b[i0] = xs->data[(ix + xs->size[0] * i0) - 1] - xs->data[(iy + xs->size[0]
-        * i0) - 1];
-    }
-
-    /* CROSS_COL Efficient routine for computing cross product of two  */
-    /* 3-dimensional column vectors. */
-    /*  CROSS_COL(A,B) Efficiently computes the cross product between */
-    /*  3-dimensional column vector A, and 3-dimensional column vector B. */
-    nrm[0] = a[1] * b[2] - a[2] * b[1];
-    nrm[1] = a[2] * b[0] - a[0] * b[2];
-    nrm[2] = a[0] * b[1] - a[1] * b[0];
-    for (k = 0; k < 3; k++) {
-      ix = tris->data[ii + tris->size[0] * k];
-      iy = tris->data[ii + tris->size[0] * k];
-      for (i0 = 0; i0 < 3; i0++) {
-        a[i0] = nrms->data[(iy + nrms->size[0] * i0) - 1] + nrm[i0];
-      }
-
-      for (i0 = 0; i0 < 3; i0++) {
-        nrms->data[(ix + nrms->size[0] * i0) - 1] = a[i0];
-      }
-    }
-  }
-
-  for (ii = 0; ii + 1 <= nv; ii++) {
-    for (i0 = 0; i0 < 3; i0++) {
-      nrm[i0] = nrms->data[ii + nrms->size[0] * i0];
-    }
-
-    y = 0.0;
-    ix = 0;
-    iy = 0;
-    for (k = 0; k < 3; k++) {
-      y += nrms->data[ii + nrms->size[0] * ix] * nrm[iy];
-      ix++;
-      iy++;
-    }
-
-    y = sqrt(y + 1.0E-100);
-    for (i0 = 0; i0 < 3; i0++) {
-      nrms->data[ii + nrms->size[0] * i0] /= y;
-    }
-  }
 }
 
 void hpUpdatedNorCurv(hiPropMesh *mesh)

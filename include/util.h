@@ -357,4 +357,6 @@ EXTERN_C void compute_diffops_surf(const emxArray_real_T *xs, const emxArray_int
 
 EXTERN_C void test_walf_tri(const emxArray_real_T *ps, const emxArray_int32_T *tris, int32_T degree, const emxArray_real_T *param, emxArray_real_T *pnts);
 
+EXTERN_C void average_vertex_normal_tri_cleanmesh(int32_T nv_clean, const emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T *flabel, emxArray_real_T *nrms);
+
 #endif
