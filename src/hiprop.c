@@ -4228,19 +4228,29 @@ void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree)
     if( mesh->curv != ((emxArray_real_T *) NULL) )
 	emxFree_real_T(&(mesh->curv));
 
-    real_T tmp = (double) in_degree + 2.0;
+    real_T tmp = (double) in_degree + 1.0;
     real_T in_ring = tmp/2.0;
 
     int num_ps = mesh->ps->size[0];
+    int num_ps_clean = mesh->nps_clean;
 
     mesh->nor = emxCreate_real_T(num_ps, 3);
     mesh->curv = emxCreate_real_T(num_ps, 2);
 
     emxArray_real_T *in_prdirs = emxCreate_real_T(num_ps, 3);
 
+    hpComputeEstimatedNormal(mesh);
+    hpUpdateGhostPointData_real_T(mesh, mesh->est_nor);
+
     compute_diffops_surf(mesh->ps, mesh->tris, in_degree, in_ring, false, mesh->nor, mesh->curv, in_prdirs, 0);
 
+    compute_diffops_surf_cleanmesh(num_ps_clean, mesh->ps, mesh->tris, mesh->est_nor, in_degree, in_ring, false, mesh->nor, mesh->curv, in_prdirs);
+
+    hpUpdateGhostPointData_real_T(mesh, mesh->nor);
+    hpUpdateGhostPointData_real_T(mesh, mesh->curv);
+
     emxFree_real_T(&(in_prdirs));
+    emxFree_real_T(&(mesh->est_nor));
 }
 
 void hpBuildPartitionBoundary(hiPropMesh *mesh)

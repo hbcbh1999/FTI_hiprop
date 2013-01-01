@@ -2,10 +2,7 @@
 
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
   numDimensions);
-static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 static void b_fix(real_T *x);
-static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
-  numDimensions);
 
 static int32_T b_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
   const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const
@@ -32,24 +29,6 @@ static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
   }
 }
 
-static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
-{
-  emxArray_real_T *emxArray;
-  int32_T loop_ub;
-  int32_T i;
-  *pEmxArray = (emxArray_real_T *)malloc(sizeof(emxArray_real_T));
-  emxArray = *pEmxArray;
-  emxArray->data = (real_T *)NULL;
-  emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
-  emxArray->allocatedSize = 0;
-  emxArray->canFreeData = TRUE;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    emxArray->size[i] = 0;
-  }
-}
-
 /*
  *
  */
@@ -59,25 +38,6 @@ static void b_fix(real_T *x)
     *x = floor(*x);
   } else {
     *x = ceil(*x);
-  }
-}
-
-static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
-  numDimensions)
-{
-  emxArray_int32_T *emxArray;
-  int32_T loop_ub;
-  int32_T i;
-  *pEmxArray = (emxArray_int32_T *)malloc(sizeof(emxArray_int32_T));
-  emxArray = *pEmxArray;
-  emxArray->data = (int32_T *)NULL;
-  emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
-  emxArray->allocatedSize = 0;
-  emxArray->canFreeData = TRUE;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    emxArray->size[i] = 0;
   }
 }
 

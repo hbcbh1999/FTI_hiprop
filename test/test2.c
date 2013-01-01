@@ -68,22 +68,21 @@ int main(int argc, char* argv[])
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
-    hpComputeEstimatedNormal(mesh);
-    printf("\n ComputeEstimatedNormal passed, proc %d \n", rank);
+    hpComputeDiffops(mesh, 3);
 
-    hpUpdateGhostPointData_real_T(mesh, mesh->est_nor);
-
-    char est_nor_filename[200];
-    sprintf(est_nor_filename, "estnor-p%s.out", rank_str);
-    FILE *estnor_outfile = fopen(est_nor_filename, "w");
+    char norcurv_filename[200];
+    sprintf(norcurv_filename, "norcurv-p%s.out", rank_str);
+    FILE *norcurv_outfile = fopen(norcurv_filename, "w");
 
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
-	fprintf(estnor_outfile, "%22.16g %22.16g %22.16g %22.16g %22.16g %22.16g\n", 
+	fprintf(norcurv_outfile, "%22.16g %22.16g %22.16g %22.16g %22.16g %22.16g %22.16g %22.16g\n", 
 		mesh->ps->data[I2dm(i,1,mesh->ps->size)], mesh->ps->data[I2dm(i,2,mesh->ps->size)], mesh->ps->data[I2dm(i,3,mesh->ps->size)],
-		mesh->est_nor->data[I2dm(i,1,mesh->est_nor->size)],
-		mesh->est_nor->data[I2dm(i,2,mesh->est_nor->size)], 
-		mesh->est_nor->data[I2dm(i,3,mesh->est_nor->size)]);
+		mesh->nor->data[I2dm(i,1,mesh->nor->size)],
+		mesh->nor->data[I2dm(i,2,mesh->nor->size)], 
+		mesh->nor->data[I2dm(i,3,mesh->nor->size)],
+		mesh->curv->data[I2dm(i,1,mesh->curv->size)],
+		mesh->curv->data[I2dm(i,2,mesh->curv->size)]);
     }
 
     /*
