@@ -22,15 +22,25 @@ static void b_polyfit_lhfgrad_surf_point(int32_T v, const int32_T ngbvs[128],
   int32_T degree, int32_T *deg, real_T prcurvs[2], real_T maxprdir[3]);
 static void backsolve(const emxArray_real_T *R, emxArray_real_T *bs, int32_T
                       cend, const emxArray_real_T *ws);
+static void c_average_vertex_normal_tri_cle(int32_T nv_clean, const
+  emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T
+  *flabel, emxArray_real_T *nrms);
 static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T *degree, const emxArray_real_T *ws);
 static void c_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
   int32_T nverts, const emxArray_real_T *xs, const emxArray_real_T *nrms_coor,
   int32_T degree, real_T nrm[3], int32_T *deg, real_T prcurvs[2], real_T
   maxprdir[3]);
+
+
+static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
+  emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T
+  *nrms_proj, int32_T degree, real_T ring, emxArray_real_T *nrms, const
+  emxArray_real_T *curs, const emxArray_real_T *prdirs);
+
+
 static void compute_qtb(const emxArray_real_T *Q, emxArray_real_T *bs, int32_T
   ncols);
-
 static void eval_curvature_lhf_surf(const real_T grad[2], const real_T H[4],
   real_T curvs[2], real_T dir[3]);
 static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
@@ -43,15 +53,20 @@ static void linfit_lhf_grad_surf_point(const int32_T ngbvs[128], const
   emxArray_real_T *us, const real_T t1[3], const real_T t2[3], const
   emxArray_real_T *nrms, const emxArray_real_T *ws, real_T hess[3]);
 static real_T norm2_vec(const emxArray_real_T *v);
+
+
 static int32_T c_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
   const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const
   emxArray_int32_T *v2he, int32_T ngbvs[128], emxArray_boolean_T *vtags,
   emxArray_boolean_T *ftags, const int32_T ngbfs[256]);
+
+
 static void polyfit_lhf_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T
   *xs, const emxArray_int32_T *tris, const emxArray_real_T *nrms_proj, const
   emxArray_int32_T *opphes, const emxArray_int32_T *v2he, int32_T degree, real_T
-  ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs,
-  emxArray_real_T *prdirs);
+  ring, emxArray_real_T *nrms, emxArray_real_T *curs, emxArray_real_T *prdirs);
+
+
 static void polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128], int32_T
   nverts, const emxArray_real_T *xs, const emxArray_real_T *nrms_coor, int32_T
   degree, real_T nrm[3], int32_T *deg);
@@ -64,7 +79,270 @@ static void rescale_matrix(emxArray_real_T *V, int32_T ncols, emxArray_real_T
   *ts);
 static real_T sum(const emxArray_real_T *x);
 
+static void c_compute_statistics_tris_clean(int32_T nt_clean, const
+  emxArray_real_T *xs, const emxArray_int32_T *tris, real_T *min_angle, real_T
+  *max_angle, real_T *min_area, real_T *max_area);
+static real_T cos_angle(const real_T ts1[3], const real_T ts2[3]);
+
 /* Function Definitions */
+
+
+/* Function Definitions */
+/*
+ * function [min_angle, max_angle, min_area, max_area, min_valence, max_valence] = ...
+ *     compute_statistics_tris_cleanmesh( nt_clean, xs, tris)
+ */
+static void c_compute_statistics_tris_clean(int32_T nt_clean, const
+  emxArray_real_T *xs, const emxArray_int32_T *tris, real_T *min_angle, real_T
+  *max_angle, real_T *min_area, real_T *max_area)
+{
+  real_T max_cos;
+  real_T min_cos;
+  int32_T kk;
+  int32_T ix;
+  int32_T iy;
+  real_T b_xs[9];
+  real_T c_xs[9];
+  real_T d_xs[9];
+  real_T e_xs[9];
+  real_T f_xs[9];
+  real_T g_xs[9];
+  real_T ts_uv[9];
+  real_T b_ts_uv[3];
+  real_T c_ts_uv[3];
+  real_T d_ts_uv[3];
+  real_T e_ts_uv[3];
+  real_T f_ts_uv[3];
+  real_T g_ts_uv[3];
+  real_T angles[3];
+  real_T varargin_1[4];
+  real_T nrm[3];
+  real_T area;
+  int32_T k;
+
+  /*  compute minima and maxima of angles (in degrees), triangle areas, and */
+  /*  vertex valences. */
+  /* 'compute_statistics_tris_cleanmesh:7' coder.inline('never') */
+  /* 'compute_statistics_tris_cleanmesh:8' max_cos = -1; */
+  max_cos = -1.0;
+
+  /* 'compute_statistics_tris_cleanmesh:8' min_cos =1; */
+  min_cos = 1.0;
+
+  /* 'compute_statistics_tris_cleanmesh:9' min_area = realmax; */
+  *min_area = 1.7976931348623157E+308;
+
+  /* 'compute_statistics_tris_cleanmesh:9' max_area = 0; */
+  *max_area = 0.0;
+
+  /* 'compute_statistics_tris_cleanmesh:10' ntri = int32(size(tris,1)); */
+  /* 'compute_statistics_tris_cleanmesh:12' for kk=1:nt_clean */
+  for (kk = 0; kk + 1 <= nt_clean; kk++) {
+    /*      if (tris(kk,1)>nv_clean || tris(kk,2)>nv_clean || tris(kk,3)>nv_clean) */
+    /*          continue; */
+    /*      end */
+    /* 'compute_statistics_tris_cleanmesh:16' xs_tri = xs( tris(kk,:), 1:3); */
+    /* 'compute_statistics_tris_cleanmesh:17' ts_uv = [xs_tri(3,1:3)-xs_tri(2,1:3); xs_tri(1,1:3)-xs_tri(3,1:3); ... */
+    /* 'compute_statistics_tris_cleanmesh:18'         xs_tri(2,1:3)-xs_tri(1,1:3)]; */
+    for (ix = 0; ix < 3; ix++) {
+      for (iy = 0; iy < 3; iy++) {
+        b_xs[iy + 3 * ix] = xs->data[(tris->data[kk + tris->size[0] * iy] +
+          xs->size[0] * ix) - 1];
+      }
+    }
+
+    for (ix = 0; ix < 3; ix++) {
+      for (iy = 0; iy < 3; iy++) {
+        c_xs[iy + 3 * ix] = xs->data[(tris->data[kk + tris->size[0] * iy] +
+          xs->size[0] * ix) - 1];
+      }
+    }
+
+    for (ix = 0; ix < 3; ix++) {
+      for (iy = 0; iy < 3; iy++) {
+        d_xs[iy + 3 * ix] = xs->data[(tris->data[kk + tris->size[0] * iy] +
+          xs->size[0] * ix) - 1];
+      }
+    }
+
+    for (ix = 0; ix < 3; ix++) {
+      for (iy = 0; iy < 3; iy++) {
+        e_xs[iy + 3 * ix] = xs->data[(tris->data[kk + tris->size[0] * iy] +
+          xs->size[0] * ix) - 1];
+      }
+    }
+
+    for (ix = 0; ix < 3; ix++) {
+      for (iy = 0; iy < 3; iy++) {
+        f_xs[iy + 3 * ix] = xs->data[(tris->data[kk + tris->size[0] * iy] +
+          xs->size[0] * ix) - 1];
+      }
+    }
+
+    for (ix = 0; ix < 3; ix++) {
+      for (iy = 0; iy < 3; iy++) {
+        g_xs[iy + 3 * ix] = xs->data[(tris->data[kk + tris->size[0] * iy] +
+          xs->size[0] * ix) - 1];
+      }
+    }
+
+    /* 'compute_statistics_tris_cleanmesh:20' angles = [cos_angle( -ts_uv(2,:)', ts_uv(3,:)'), ... */
+    /* 'compute_statistics_tris_cleanmesh:21'         cos_angle( -ts_uv(3,:)', ts_uv(1,:)'), ... */
+    /* 'compute_statistics_tris_cleanmesh:22'         cos_angle( -ts_uv(1,:)', ts_uv(2,:)')]; */
+    for (ix = 0; ix < 3; ix++) {
+      ts_uv[3 * ix] = b_xs[2 + 3 * ix] - c_xs[1 + 3 * ix];
+      ts_uv[1 + 3 * ix] = d_xs[3 * ix] - e_xs[2 + 3 * ix];
+      ts_uv[2 + 3 * ix] = f_xs[1 + 3 * ix] - g_xs[3 * ix];
+      b_ts_uv[ix] = -ts_uv[1 + 3 * ix];
+      c_ts_uv[ix] = ts_uv[2 + 3 * ix];
+      d_ts_uv[ix] = -ts_uv[2 + 3 * ix];
+      e_ts_uv[ix] = ts_uv[3 * ix];
+      f_ts_uv[ix] = -ts_uv[3 * ix];
+      g_ts_uv[ix] = ts_uv[1 + 3 * ix];
+    }
+
+    angles[0] = cos_angle(b_ts_uv, c_ts_uv);
+    angles[1] = cos_angle(d_ts_uv, e_ts_uv);
+    angles[2] = cos_angle(f_ts_uv, g_ts_uv);
+
+    /* 'compute_statistics_tris_cleanmesh:24' max_cos = max([max_cos, angles]); */
+    varargin_1[0] = max_cos;
+    for (ix = 0; ix < 3; ix++) {
+      varargin_1[ix + 1] = angles[ix];
+    }
+
+    max_cos = varargin_1[0];
+    for (ix = 0; ix < 3; ix++) {
+      if (varargin_1[ix + 1] > max_cos) {
+        max_cos = varargin_1[ix + 1];
+      }
+    }
+
+    /* 'compute_statistics_tris_cleanmesh:25' min_cos = min([min_cos, angles]); */
+    varargin_1[0] = min_cos;
+    for (ix = 0; ix < 3; ix++) {
+      varargin_1[ix + 1] = angles[ix];
+    }
+
+    min_cos = varargin_1[0];
+    for (ix = 0; ix < 3; ix++) {
+      if (varargin_1[ix + 1] < min_cos) {
+        min_cos = varargin_1[ix + 1];
+      }
+    }
+
+    /* nrm = cross_col(ts_uv(1,:),ts_uv(2,:)); */
+    /* 'compute_statistics_tris_cleanmesh:28' nrm = cross_col(ts_uv(1,:),ts_uv(3,:)); */
+    /* CROSS_COL Efficient routine for computing cross product of two  */
+    /* 3-dimensional column vectors. */
+    /*  CROSS_COL(A,B) Efficiently computes the cross product between */
+    /*  3-dimensional column vector A, and 3-dimensional column vector B. */
+    /* 'cross_col:7' c = [a(2)*b(3)-a(3)*b(2); a(3)*b(1)-a(1)*b(3); a(1)*b(2)-a(2)*b(1)]; */
+    nrm[0] = ts_uv[3] * ts_uv[8] - ts_uv[6] * ts_uv[5];
+    nrm[1] = ts_uv[6] * ts_uv[2] - ts_uv[0] * ts_uv[8];
+    nrm[2] = ts_uv[0] * ts_uv[5] - ts_uv[3] * ts_uv[2];
+
+    /* 'compute_statistics_tris_cleanmesh:29' area = sqrt(nrm'*nrm); */
+    area = 0.0;
+    ix = 0;
+    iy = 0;
+    for (k = 0; k < 3; k++) {
+      area += nrm[ix] * nrm[iy];
+      ix++;
+      iy++;
+    }
+
+    area = sqrt(area);
+
+    /* 'compute_statistics_tris_cleanmesh:30' min_area = min(area, min_area); */
+    *min_area = area <= *min_area ? area : *min_area;
+
+    /* 'compute_statistics_tris_cleanmesh:31' max_area = max(area, max_area); */
+    *max_area = area >= *max_area ? area : *max_area;
+  }
+
+  /* 'compute_statistics_tris_cleanmesh:33' if max_cos>1 */
+  if (max_cos > 1.0) {
+    /* 'compute_statistics_tris_cleanmesh:33' max_cos=1; */
+    max_cos = 1.0;
+  }
+
+  /* 'compute_statistics_tris_cleanmesh:34' if min_cos<-1 */
+  if (min_cos < -1.0) {
+    /* 'compute_statistics_tris_cleanmesh:34' min_cos=-1; */
+    min_cos = -1.0;
+  }
+
+  /* 'compute_statistics_tris_cleanmesh:35' max_angle=acos(min_cos)/pi*180; */
+  *max_angle = acos(min_cos) / 3.1415926535897931 * 180.0;
+
+  /* 'compute_statistics_tris_cleanmesh:36' min_angle=acos(max_cos)/pi*180; */
+  *min_angle = acos(max_cos) / 3.1415926535897931 * 180.0;
+
+  /*  First, count the valence of each vertex. */
+  /* 'compute_statistics_tris_cleanmesh:39' if nargout>4 */
+}
+
+/*
+ * function cosa = cos_angle( ts1, ts2)
+ */
+static real_T cos_angle(const real_T ts1[3], const real_T ts2[3])
+{
+  real_T y;
+  int32_T ix;
+  int32_T iy;
+  real_T b_y;
+  int32_T b_ix;
+  int32_T b_iy;
+  real_T c_y;
+  int32_T c_ix;
+  int32_T c_iy;
+  int32_T k;
+
+  /*  subfunction for computing cot of an angle. */
+  /* 'compute_statistics_tris_cleanmesh:52' cosa = (ts1'*ts2)/sqrt((ts1'*ts1)*(ts2'*ts2)+1.e-100); */
+  y = 0.0;
+  ix = 0;
+  iy = 0;
+  b_y = 0.0;
+  b_ix = 0;
+  b_iy = 0;
+  c_y = 0.0;
+  c_ix = 0;
+  c_iy = 0;
+  for (k = 0; k < 3; k++) {
+    y += ts1[ix] * ts2[iy];
+    ix++;
+    iy++;
+    b_y += ts1[b_ix] * ts1[b_iy];
+    b_ix++;
+    b_iy++;
+    c_y += ts2[c_ix] * ts2[c_iy];
+    c_ix++;
+    c_iy++;
+  }
+
+  return y / sqrt(b_y * c_y + 1.0E-100);
+}
+
+/*
+ * function [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris)
+ */
+void compute_statistics_tris_global(int32_T nt_clean, const emxArray_real_T *xs,
+  const emxArray_int32_T *tris, real_T *min_angle, real_T *max_angle, real_T
+  *min_area, real_T *max_area)
+{
+  /* 'compute_statistics_tris_global:3' coder.inline('never') */
+  /*  Step 1:  Compute the quality of the clean mesh for the current processor */
+  /* 'compute_statistics_tris_global:5' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_cleanmesh(nt_clean, xs, tris); */
+  c_compute_statistics_tris_clean(nt_clean, xs, tris, min_angle, max_angle,
+    min_area, max_area);
+
+  /*  Step 2: Obtain the global min_angle, max_angle, min_area, */
+  /*  max_area . This step would require communicating the min_angle from other */
+  /*  processor and performing a comparision among them to obtain the global */
+  /*  minimum angle.  */
+}
 
 /*
  *
@@ -330,7 +608,7 @@ static void b_eval_curvature_lhf_surf(const real_T grad[2], const real_T H[4],
 }
 
 /*
- * function [bs, degree] = eval_vander_bivar(us, bs, degree, ws, interp0, guardosc)
+ * function [bs, degree] = eval_vander_bivar( us, bs, degree, ws, interp0, guardosc)
  */
 static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   *bs, const emxArray_real_T *ws)
@@ -342,7 +620,7 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   int32_T jj;
   emxArray_real_T *b_V;
   int32_T c_V;
-  int32_T i4;
+  int32_T i6;
   int32_T loop_ub;
   int32_T b_loop_ub;
   emxArray_real_T *ws1;
@@ -350,33 +628,32 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   emxInit_real_T(&V, 2);
 
   /* EVAL_VANDER_BIVAR Evaluate generalized Vandermonde matrix. */
-  /*  [BS,DEGREE] = EVAL_VANDER_BIVAR(US,BS,DEGREE,WS, INTERP, GUARDOSC) */
+  /*  [BS,DEGREE] = EVAL_VANDER_BIVAR(US,BS,DEGREE,WS, INTERP, GUARDOSC)  */
   /*  Evaluates generalized Vandermonde matrix V, and solve V\BS. */
   /*  It supports up to degree 6. */
-  /*  */
+  /*   */
   /*  If interp0 is true, then the fitting is forced to pass through origin. */
   /*  */
   /*  See also EVAL_VANDER_UNIVAR */
-  /* 'eval_vander_bivar:10' coder.extrinsic('save') */
-  /* 'eval_vander_bivar:11' degree = int32(degree); */
+  /* 'eval_vander_bivar:10' degree = int32(degree); */
   degree = 1;
 
-  /* 'eval_vander_bivar:12' assert( isa( degree, 'int32')); */
+  /* 'eval_vander_bivar:11' assert( isa( degree, 'int32')); */
   /*  Determine degree of fitting */
-  /* 'eval_vander_bivar:15' npnts = int32(size(us,1)); */
+  /* 'eval_vander_bivar:14' npnts = int32(size(us,1)); */
   npnts = us->size[0];
 
-  /* 'eval_vander_bivar:16' if nargin<5 */
-  /* 'eval_vander_bivar:17' if nargin<6 */
+  /* 'eval_vander_bivar:15' if nargin<5 */
+  /* 'eval_vander_bivar:16' if nargin<6 */
   /*  Determine degree of polynomial */
-  /* 'eval_vander_bivar:20' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
-  /* 'eval_vander_bivar:21' while npnts<ncols && degree>1 */
+  /* 'eval_vander_bivar:19' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
+  /* 'eval_vander_bivar:20' while npnts<ncols && degree>1 */
   /* % Construct matrix */
-  /* 'eval_vander_bivar:27' V = gen_vander_bivar(us, degree); */
+  /* 'eval_vander_bivar:26' V = gen_vander_bivar(us, degree); */
   gen_vander_bivar(us, 1, V);
 
-  /* 'eval_vander_bivar:28' if interp0 */
-  /* 'eval_vander_bivar:28' V=V(:,2:end); */
+  /* 'eval_vander_bivar:27' if interp0 */
+  /* 'eval_vander_bivar:27' V=V(:,2:end); */
   ii = V->size[1];
   if (2 > ii) {
     jj = 0;
@@ -387,15 +664,15 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
 
   emxInit_real_T(&b_V, 2);
   c_V = V->size[0];
-  i4 = b_V->size[0] * b_V->size[1];
+  i6 = b_V->size[0] * b_V->size[1];
   b_V->size[0] = c_V;
   b_V->size[1] = ii - jj;
-  emxEnsureCapacity((emxArray__common *)b_V, i4, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_V, i6, (int32_T)sizeof(real_T));
   loop_ub = (ii - jj) - 1;
   for (ii = 0; ii <= loop_ub; ii++) {
     b_loop_ub = c_V - 1;
-    for (i4 = 0; i4 <= b_loop_ub; i4++) {
-      b_V->data[i4 + b_V->size[0] * ii] = V->data[i4 + V->size[0] * (jj + ii)];
+    for (i6 = 0; i6 <= b_loop_ub; i6++) {
+      b_V->data[i6 + b_V->size[0] * ii] = V->data[i6 + V->size[0] * (jj + ii)];
     }
   }
 
@@ -414,21 +691,21 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   emxFree_real_T(&b_V);
 
   /* % Scale rows to assign different weights to different points */
-  /* 'eval_vander_bivar:31' if nargin>3 && ~isempty(ws) */
+  /* 'eval_vander_bivar:30' if nargin>3 && ~isempty(ws) */
   if (!(ws->size[0] == 0)) {
-    /* 'eval_vander_bivar:32' if degree>2 */
-    /* 'eval_vander_bivar:56' else */
-    /* 'eval_vander_bivar:57' for ii=1:npnts */
+    /* 'eval_vander_bivar:31' if degree>2 */
+    /* 'eval_vander_bivar:55' else */
+    /* 'eval_vander_bivar:56' for ii=1:npnts */
     for (ii = 0; ii + 1 <= npnts; ii++) {
-      /* 'eval_vander_bivar:58' for jj=1:ncols */
+      /* 'eval_vander_bivar:57' for jj=1:ncols */
       for (jj = 0; jj + 1 < 3; jj++) {
-        /* 'eval_vander_bivar:58' V(ii,jj) = V(ii,jj) * ws(ii); */
+        /* 'eval_vander_bivar:57' V(ii,jj) = V(ii,jj) * ws(ii); */
         V->data[ii + V->size[0] * jj] *= ws->data[ii];
       }
 
-      /* 'eval_vander_bivar:59' for jj=1:int32(size(bs,2)) */
+      /* 'eval_vander_bivar:58' for jj=1:int32(size(bs,2)) */
       for (jj = 0; jj < 2; jj++) {
-        /* 'eval_vander_bivar:59' bs(ii,jj) = bs(ii,jj) * ws(ii); */
+        /* 'eval_vander_bivar:58' bs(ii,jj) = bs(ii,jj) * ws(ii); */
         bs->data[ii + bs->size[0] * jj] *= ws->data[ii];
       }
     }
@@ -438,33 +715,33 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   b_emxInit_real_T(&D, 1);
 
   /* % Scale columns to reduce condition number */
-  /* 'eval_vander_bivar:66' ts = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:65' ts = coder.nullcopy(zeros(ncols,1)); */
   ii = ws1->size[0];
   ws1->size[0] = 2;
   emxEnsureCapacity((emxArray__common *)ws1, ii, (int32_T)sizeof(real_T));
 
-  /* 'eval_vander_bivar:67' [V, ts] = rescale_matrix(V, ncols, ts); */
+  /* 'eval_vander_bivar:66' [V, ts] = rescale_matrix(V, ncols, ts); */
   rescale_matrix(V, 2, ws1);
 
   /* % Perform Householder QR factorization */
-  /* 'eval_vander_bivar:70' D = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:69' D = coder.nullcopy(zeros(ncols,1)); */
   ii = D->size[0];
   D->size[0] = 2;
   emxEnsureCapacity((emxArray__common *)D, ii, (int32_T)sizeof(real_T));
 
-  /* 'eval_vander_bivar:71' [V, D, rnk] = qr_safeguarded(V, ncols, D); */
+  /* 'eval_vander_bivar:70' [V, D, rnk] = qr_safeguarded(V, ncols, D); */
   ii = qr_safeguarded(V, 2, D);
 
   /* % Adjust degree of fitting */
-  /* 'eval_vander_bivar:74' ncols_sub = ncols; */
-  /* 'eval_vander_bivar:75' while rnk < ncols_sub */
+  /* 'eval_vander_bivar:73' ncols_sub = ncols; */
+  /* 'eval_vander_bivar:74' while rnk < ncols_sub */
   if (ii < 2) {
-    /* 'eval_vander_bivar:76' degree = degree-1; */
+    /* 'eval_vander_bivar:75' degree = degree-1; */
     degree = 0;
 
-    /* 'eval_vander_bivar:78' if degree==0 */
+    /* 'eval_vander_bivar:77' if degree==0 */
     /*  Matrix is singular. Consider surface as flat. */
-    /* 'eval_vander_bivar:80' bs(:) = 0; */
+    /* 'eval_vander_bivar:79' bs(:) = 0; */
     ii = bs->size[0] * bs->size[1];
     bs->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)bs, ii, (int32_T)sizeof(real_T));
@@ -476,19 +753,19 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
     }
   } else {
     /* % Compute Q'bs */
-    /* 'eval_vander_bivar:86' bs = compute_qtb( V, bs, ncols_sub); */
+    /* 'eval_vander_bivar:85' bs = compute_qtb( V, bs, ncols_sub); */
     compute_qtb(V, bs, 2);
 
     /* % Perform backward substitution and scale the solutions. */
-    /* 'eval_vander_bivar:89' for i=1:ncols_sub */
+    /* 'eval_vander_bivar:88' for i=1:ncols_sub */
     for (ii = 0; ii + 1 < 3; ii++) {
-      /* 'eval_vander_bivar:89' V(i,i) = D(i); */
+      /* 'eval_vander_bivar:88' V(i,i) = D(i); */
       V->data[ii + V->size[0] * ii] = D->data[ii];
     }
 
-    /* 'eval_vander_bivar:90' if guardosc */
-    /* 'eval_vander_bivar:92' else */
-    /* 'eval_vander_bivar:93' bs = backsolve(V, bs, ncols_sub, ts); */
+    /* 'eval_vander_bivar:89' if guardosc */
+    /* 'eval_vander_bivar:91' else */
+    /* 'eval_vander_bivar:92' bs = backsolve(V, bs, ncols_sub, ts); */
     backsolve(V, bs, 2, ws1);
   }
 
@@ -1140,7 +1417,7 @@ static int32_T b_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
 
 /*
  * function [nrm, deg, prcurvs, maxprdir] = polyfit_lhf_surf_point...
- *     (v, ngbvs, nverts, xs, nrms_coor, degree, interp, guardosc)
+ *     ( v, ngbvs, nverts, xs, nrms_coor, degree, interp, guardosc)
  */
 static void b_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
   int32_T nverts, const emxArray_real_T *xs, const emxArray_real_T *nrms_coor,
@@ -2012,7 +2289,115 @@ static void backsolve(const emxArray_real_T *R, emxArray_real_T *bs, int32_T
 }
 
 /*
- * function [bs, degree] = eval_vander_bivar(us, bs, degree, ws, interp0, guardosc)
+ * function nrms = average_vertex_normal_tri_cleanmesh(nv_clean, xs, tris, flabel)
+ */
+static void c_average_vertex_normal_tri_cle(int32_T nv_clean, const
+  emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T
+  *flabel, emxArray_real_T *nrms)
+{
+  int32_T ntris;
+  int32_T nv;
+  int32_T i1;
+  int32_T ii;
+  int32_T iy;
+  real_T a[3];
+  real_T b[3];
+  real_T nrm[3];
+  int32_T k;
+  real_T y;
+
+  /* AVERAGE_VERTEX_NORMAL_TRI_CLEANMESH Compute average vertex normal for */
+  /* clean submesh. */
+  /* # coder.typeof( int32(0), [inf,3], [1,0]), coder.typeof( double(0), [inf,1], [1,0])} */
+  /* 'average_vertex_normal_tri_cleanmesh:6' coder.inline('never') */
+  /* 'average_vertex_normal_tri_cleanmesh:7' ntris = int32(size(tris, 1)); */
+  ntris = tris->size[0];
+
+  /* 'average_vertex_normal_tri_cleanmesh:8' nv = int32(size(xs, 1)); */
+  nv = xs->size[0];
+
+  /* 'average_vertex_normal_tri_cleanmesh:9' if nargin<4 */
+  /* 'average_vertex_normal_tri_cleanmesh:10' nrms = zeros( nv, 3); */
+  i1 = nrms->size[0] * nrms->size[1];
+  nrms->size[0] = nv;
+  nrms->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)nrms, i1, (int32_T)sizeof(real_T));
+  nv = nv * 3 - 1;
+  for (i1 = 0; i1 <= nv; i1++) {
+    nrms->data[i1] = 0.0;
+  }
+
+  /* 'average_vertex_normal_tri_cleanmesh:11' for ii = 1 : ntris */
+  for (ii = 0; ii + 1 <= ntris; ii++) {
+    /* 'average_vertex_normal_tri_cleanmesh:12' if nargin>3 && flabel(ii) */
+    if (flabel->data[ii] != 0.0) {
+    } else {
+      /* 'average_vertex_normal_tri_cleanmesh:13' nrm = cross_col( xs(tris(ii,3), 1:3)-xs(tris(ii,2), 1:3), ... */
+      /* 'average_vertex_normal_tri_cleanmesh:14'         xs(tris(ii,1), 1:3)-xs(tris(ii,3), 1:3)); */
+      nv = tris->data[ii + (tris->size[0] << 1)];
+      iy = tris->data[ii + tris->size[0]];
+      for (i1 = 0; i1 < 3; i1++) {
+        a[i1] = xs->data[(nv + xs->size[0] * i1) - 1] - xs->data[(iy + xs->size
+          [0] * i1) - 1];
+      }
+
+      nv = tris->data[ii];
+      iy = tris->data[ii + (tris->size[0] << 1)];
+      for (i1 = 0; i1 < 3; i1++) {
+        b[i1] = xs->data[(nv + xs->size[0] * i1) - 1] - xs->data[(iy + xs->size
+          [0] * i1) - 1];
+      }
+
+      /* CROSS_COL Efficient routine for computing cross product of two  */
+      /* 3-dimensional column vectors. */
+      /*  CROSS_COL(A,B) Efficiently computes the cross product between */
+      /*  3-dimensional column vector A, and 3-dimensional column vector B. */
+      /* 'cross_col:7' c = [a(2)*b(3)-a(3)*b(2); a(3)*b(1)-a(1)*b(3); a(1)*b(2)-a(2)*b(1)]; */
+      nrm[0] = a[1] * b[2] - a[2] * b[1];
+      nrm[1] = a[2] * b[0] - a[0] * b[2];
+      nrm[2] = a[0] * b[1] - a[1] * b[0];
+
+      /* 'average_vertex_normal_tri_cleanmesh:16' for jj = int32(1):3 */
+      for (k = 0; k < 3; k++) {
+        /* 'average_vertex_normal_tri_cleanmesh:17' nrms(tris(ii,jj), :) = nrms(tris(ii,jj), :) + nrm'; */
+        nv = tris->data[ii + tris->size[0] * k];
+        iy = tris->data[ii + tris->size[0] * k];
+        for (i1 = 0; i1 < 3; i1++) {
+          a[i1] = nrms->data[(iy + nrms->size[0] * i1) - 1] + nrm[i1];
+        }
+
+        for (i1 = 0; i1 < 3; i1++) {
+          nrms->data[(nv + nrms->size[0] * i1) - 1] = a[i1];
+        }
+      }
+    }
+  }
+
+  /* 'average_vertex_normal_tri_cleanmesh:21' for ii = 1:nv_clean */
+  for (ii = 0; ii + 1 <= nv_clean; ii++) {
+    /* 'average_vertex_normal_tri_cleanmesh:22' nrms(ii,:) = nrms(ii,:)/sqrt(nrms(ii,:)*nrms(ii,:)'+1.e-100); */
+    for (i1 = 0; i1 < 3; i1++) {
+      nrm[i1] = nrms->data[ii + nrms->size[0] * i1];
+    }
+
+    y = 0.0;
+    nv = 0;
+    iy = 0;
+    for (k = 0; k < 3; k++) {
+      y += nrms->data[ii + nrms->size[0] * nv] * nrm[iy];
+      nv++;
+      iy++;
+    }
+
+    y = sqrt(y + 1.0E-100);
+    for (i1 = 0; i1 < 3; i1++) {
+      nrms->data[ii + nrms->size[0] * i1] /= y;
+    }
+  }
+}
+
+/*
+ * function [bs, degree] = eval_vander_bivar( us, bs, degree, ws, interp0, guardosc)
  */
 static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T *degree, const emxArray_real_T *ws)
@@ -2029,50 +2414,49 @@ static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T exitg1;
 
   /* EVAL_VANDER_BIVAR Evaluate generalized Vandermonde matrix. */
-  /*  [BS,DEGREE] = EVAL_VANDER_BIVAR(US,BS,DEGREE,WS, INTERP, GUARDOSC) */
+  /*  [BS,DEGREE] = EVAL_VANDER_BIVAR(US,BS,DEGREE,WS, INTERP, GUARDOSC)  */
   /*  Evaluates generalized Vandermonde matrix V, and solve V\BS. */
   /*  It supports up to degree 6. */
-  /*  */
+  /*   */
   /*  If interp0 is true, then the fitting is forced to pass through origin. */
   /*  */
   /*  See also EVAL_VANDER_UNIVAR */
-  /* 'eval_vander_bivar:10' coder.extrinsic('save') */
-  /* 'eval_vander_bivar:11' degree = int32(degree); */
-  /* 'eval_vander_bivar:12' assert( isa( degree, 'int32')); */
+  /* 'eval_vander_bivar:10' degree = int32(degree); */
+  /* 'eval_vander_bivar:11' assert( isa( degree, 'int32')); */
   /*  Determine degree of fitting */
-  /* 'eval_vander_bivar:15' npnts = int32(size(us,1)); */
+  /* 'eval_vander_bivar:14' npnts = int32(size(us,1)); */
   npnts = us->size[0];
 
-  /* 'eval_vander_bivar:16' if nargin<5 */
-  /* 'eval_vander_bivar:17' if nargin<6 */
+  /* 'eval_vander_bivar:15' if nargin<5 */
+  /* 'eval_vander_bivar:16' if nargin<6 */
   /*  Determine degree of polynomial */
-  /* 'eval_vander_bivar:20' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
+  /* 'eval_vander_bivar:19' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
   ncols = (*degree + 2) * (*degree + 1) / 2;
 
-  /* 'eval_vander_bivar:21' while npnts<ncols && degree>1 */
+  /* 'eval_vander_bivar:20' while npnts<ncols && degree>1 */
   while ((npnts < ncols) && (*degree > 1)) {
-    /* 'eval_vander_bivar:22' degree=degree-1; */
+    /* 'eval_vander_bivar:21' degree=degree-1; */
     (*degree)--;
 
-    /* 'eval_vander_bivar:23' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
+    /* 'eval_vander_bivar:22' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
     ncols = (*degree + 2) * (*degree + 1) / 2;
   }
 
   emxInit_real_T(&V, 2);
 
   /* % Construct matrix */
-  /* 'eval_vander_bivar:27' V = gen_vander_bivar(us, degree); */
+  /* 'eval_vander_bivar:26' V = gen_vander_bivar(us, degree); */
   gen_vander_bivar(us, *degree, V);
 
-  /* 'eval_vander_bivar:28' if interp0 */
+  /* 'eval_vander_bivar:27' if interp0 */
   /* % Scale rows to assign different weights to different points */
-  /* 'eval_vander_bivar:31' if nargin>3 && ~isempty(ws) */
+  /* 'eval_vander_bivar:30' if nargin>3 && ~isempty(ws) */
   b_emxInit_real_T(&ws1, 1);
   if (!(ws->size[0] == 0)) {
-    /* 'eval_vander_bivar:32' if degree>2 */
+    /* 'eval_vander_bivar:31' if degree>2 */
     if (*degree > 2) {
       /*  Scale weights to be inversely proportional to distance */
-      /* 'eval_vander_bivar:33' ws1 = us(:,1).*us(:,1)+us(:,2).*us(:,2); */
+      /* 'eval_vander_bivar:32' ws1 = us(:,1).*us(:,1)+us(:,2).*us(:,2); */
       jj = ws1->size[0];
       ws1->size[0] = us->size[0];
       emxEnsureCapacity((emxArray__common *)ws1, jj, (int32_T)sizeof(real_T));
@@ -2082,7 +2466,7 @@ static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
           * us->data[jj + us->size[0]];
       }
 
-      /* 'eval_vander_bivar:34' ws1 = ws1 + sum(ws1)/double(npnts)*1.e-2; */
+      /* 'eval_vander_bivar:33' ws1 = ws1 + sum(ws1)/double(npnts)*1.e-2; */
       A = sum(ws1);
       A = A / (real_T)npnts * 0.01;
       jj = ws1->size[0];
@@ -2092,63 +2476,63 @@ static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
         ws1->data[jj] += A;
       }
 
-      /* 'eval_vander_bivar:35' if degree<4 */
+      /* 'eval_vander_bivar:34' if degree<4 */
       if (*degree < 4) {
-        /* 'eval_vander_bivar:36' for ii=1:npnts */
+        /* 'eval_vander_bivar:35' for ii=1:npnts */
         for (ii = 0; ii + 1 <= npnts; ii++) {
-          /* 'eval_vander_bivar:37' if ws1(ii)~=0 */
+          /* 'eval_vander_bivar:36' if ws1(ii)~=0 */
           if (ws1->data[ii] != 0.0) {
-            /* 'eval_vander_bivar:38' ws1(ii) = ws(ii) / sqrt(ws1(ii)); */
+            /* 'eval_vander_bivar:37' ws1(ii) = ws(ii) / sqrt(ws1(ii)); */
             ws1->data[ii] = ws->data[ii] / sqrt(ws1->data[ii]);
           } else {
-            /* 'eval_vander_bivar:39' else */
-            /* 'eval_vander_bivar:40' ws1(ii) = ws(ii); */
+            /* 'eval_vander_bivar:38' else */
+            /* 'eval_vander_bivar:39' ws1(ii) = ws(ii); */
             ws1->data[ii] = ws->data[ii];
           }
         }
       } else {
-        /* 'eval_vander_bivar:43' else */
-        /* 'eval_vander_bivar:44' for ii=1:npnts */
+        /* 'eval_vander_bivar:42' else */
+        /* 'eval_vander_bivar:43' for ii=1:npnts */
         for (ii = 0; ii + 1 <= npnts; ii++) {
-          /* 'eval_vander_bivar:45' if ws1(ii)~=0 */
+          /* 'eval_vander_bivar:44' if ws1(ii)~=0 */
           if (ws1->data[ii] != 0.0) {
-            /* 'eval_vander_bivar:46' ws1(ii) = ws(ii) / ws1(ii); */
+            /* 'eval_vander_bivar:45' ws1(ii) = ws(ii) / ws1(ii); */
             ws1->data[ii] = ws->data[ii] / ws1->data[ii];
           } else {
-            /* 'eval_vander_bivar:47' else */
-            /* 'eval_vander_bivar:48' ws1(ii) = ws(ii); */
+            /* 'eval_vander_bivar:46' else */
+            /* 'eval_vander_bivar:47' ws1(ii) = ws(ii); */
             ws1->data[ii] = ws->data[ii];
           }
         }
       }
 
-      /* 'eval_vander_bivar:52' for ii=1:npnts */
+      /* 'eval_vander_bivar:51' for ii=1:npnts */
       for (ii = 0; ii + 1 <= npnts; ii++) {
-        /* 'eval_vander_bivar:53' for jj=1:ncols */
+        /* 'eval_vander_bivar:52' for jj=1:ncols */
         for (jj = 0; jj + 1 <= ncols; jj++) {
-          /* 'eval_vander_bivar:53' V(ii,jj) = V(ii,jj) * ws1(ii); */
+          /* 'eval_vander_bivar:52' V(ii,jj) = V(ii,jj) * ws1(ii); */
           V->data[ii + V->size[0] * jj] *= ws1->data[ii];
         }
 
-        /* 'eval_vander_bivar:54' for jj=1:size(bs,2) */
+        /* 'eval_vander_bivar:53' for jj=1:size(bs,2) */
         for (jj = 0; jj < 2; jj++) {
-          /* 'eval_vander_bivar:54' bs(ii,jj) = bs(ii,jj) * ws1(ii); */
+          /* 'eval_vander_bivar:53' bs(ii,jj) = bs(ii,jj) * ws1(ii); */
           bs->data[ii + bs->size[0] * jj] *= ws1->data[ii];
         }
       }
     } else {
-      /* 'eval_vander_bivar:56' else */
-      /* 'eval_vander_bivar:57' for ii=1:npnts */
+      /* 'eval_vander_bivar:55' else */
+      /* 'eval_vander_bivar:56' for ii=1:npnts */
       for (ii = 0; ii + 1 <= npnts; ii++) {
-        /* 'eval_vander_bivar:58' for jj=1:ncols */
+        /* 'eval_vander_bivar:57' for jj=1:ncols */
         for (jj = 0; jj + 1 <= ncols; jj++) {
-          /* 'eval_vander_bivar:58' V(ii,jj) = V(ii,jj) * ws(ii); */
+          /* 'eval_vander_bivar:57' V(ii,jj) = V(ii,jj) * ws(ii); */
           V->data[ii + V->size[0] * jj] *= ws->data[ii];
         }
 
-        /* 'eval_vander_bivar:59' for jj=1:int32(size(bs,2)) */
+        /* 'eval_vander_bivar:58' for jj=1:int32(size(bs,2)) */
         for (jj = 0; jj < 2; jj++) {
-          /* 'eval_vander_bivar:59' bs(ii,jj) = bs(ii,jj) * ws(ii); */
+          /* 'eval_vander_bivar:58' bs(ii,jj) = bs(ii,jj) * ws(ii); */
           bs->data[ii + bs->size[0] * jj] *= ws->data[ii];
         }
       }
@@ -2158,36 +2542,36 @@ static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   b_emxInit_real_T(&D, 1);
 
   /* % Scale columns to reduce condition number */
-  /* 'eval_vander_bivar:66' ts = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:65' ts = coder.nullcopy(zeros(ncols,1)); */
   jj = ws1->size[0];
   ws1->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)ws1, jj, (int32_T)sizeof(real_T));
 
-  /* 'eval_vander_bivar:67' [V, ts] = rescale_matrix(V, ncols, ts); */
+  /* 'eval_vander_bivar:66' [V, ts] = rescale_matrix(V, ncols, ts); */
   rescale_matrix(V, ncols, ws1);
 
   /* % Perform Householder QR factorization */
-  /* 'eval_vander_bivar:70' D = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:69' D = coder.nullcopy(zeros(ncols,1)); */
   jj = D->size[0];
   D->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)D, jj, (int32_T)sizeof(real_T));
 
-  /* 'eval_vander_bivar:71' [V, D, rnk] = qr_safeguarded(V, ncols, D); */
+  /* 'eval_vander_bivar:70' [V, D, rnk] = qr_safeguarded(V, ncols, D); */
   ii = qr_safeguarded(V, ncols, D);
 
   /* % Adjust degree of fitting */
-  /* 'eval_vander_bivar:74' ncols_sub = ncols; */
-  /* 'eval_vander_bivar:75' while rnk < ncols_sub */
+  /* 'eval_vander_bivar:73' ncols_sub = ncols; */
+  /* 'eval_vander_bivar:74' while rnk < ncols_sub */
   do {
     exitg1 = 0U;
     if (ii < ncols) {
-      /* 'eval_vander_bivar:76' degree = degree-1; */
+      /* 'eval_vander_bivar:75' degree = degree-1; */
       (*degree)--;
 
-      /* 'eval_vander_bivar:78' if degree==0 */
+      /* 'eval_vander_bivar:77' if degree==0 */
       if (*degree == 0) {
         /*  Matrix is singular. Consider surface as flat. */
-        /* 'eval_vander_bivar:80' bs(:) = 0; */
+        /* 'eval_vander_bivar:79' bs(:) = 0; */
         jj = bs->size[0] * bs->size[1];
         bs->size[1] = 2;
         emxEnsureCapacity((emxArray__common *)bs, jj, (int32_T)sizeof(real_T));
@@ -2200,24 +2584,24 @@ static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
 
         exitg1 = 1U;
       } else {
-        /* 'eval_vander_bivar:82' ncols_sub = int32(bitshift(uint32((degree+2)*(degree+1)),-1))-int32(interp0); */
+        /* 'eval_vander_bivar:81' ncols_sub = int32(bitshift(uint32((degree+2)*(degree+1)),-1))-int32(interp0); */
         ncols = (int32_T)((uint32_T)((*degree + 2) * (*degree + 1)) >> 1U);
       }
     } else {
       /* % Compute Q'bs */
-      /* 'eval_vander_bivar:86' bs = compute_qtb( V, bs, ncols_sub); */
+      /* 'eval_vander_bivar:85' bs = compute_qtb( V, bs, ncols_sub); */
       compute_qtb(V, bs, ncols);
 
       /* % Perform backward substitution and scale the solutions. */
-      /* 'eval_vander_bivar:89' for i=1:ncols_sub */
+      /* 'eval_vander_bivar:88' for i=1:ncols_sub */
       for (ii = 0; ii + 1 <= ncols; ii++) {
-        /* 'eval_vander_bivar:89' V(i,i) = D(i); */
+        /* 'eval_vander_bivar:88' V(i,i) = D(i); */
         V->data[ii + V->size[0] * ii] = D->data[ii];
       }
 
-      /* 'eval_vander_bivar:90' if guardosc */
-      /* 'eval_vander_bivar:92' else */
-      /* 'eval_vander_bivar:93' bs = backsolve(V, bs, ncols_sub, ts); */
+      /* 'eval_vander_bivar:89' if guardosc */
+      /* 'eval_vander_bivar:91' else */
+      /* 'eval_vander_bivar:92' bs = backsolve(V, bs, ncols_sub, ts); */
       backsolve(V, bs, ncols, ws1);
       exitg1 = 1U;
     }
@@ -2230,7 +2614,7 @@ static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
 
 /*
  * function [nrm, deg, prcurvs, maxprdir] = polyfit_lhf_surf_point...
- *     (v, ngbvs, nverts, xs, nrms_coor, degree, interp, guardosc)
+ *     ( v, ngbvs, nverts, xs, nrms_coor, degree, interp, guardosc)
  */
 static void c_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
   int32_T nverts, const emxArray_real_T *xs, const emxArray_real_T *nrms_coor,
@@ -2649,6 +3033,114 @@ static void c_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
 }
 
 /*
+ * function [nrms, curs, prdirs] = compute_diffops_surf_cleanmesh(nv_clean,...
+ *     xs, tris, nrms_proj, degree, ring, iterfit, nrms, curs, prdirs)
+ */
+static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
+  emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T
+  *nrms_proj, int32_T degree, real_T ring, emxArray_real_T *nrms, const
+  emxArray_real_T *curs, const emxArray_real_T *prdirs)
+{
+  int32_T i3;
+  uint32_T uv0[2];
+  emxArray_int32_T *opphes;
+  emxArray_int32_T *v2he;
+  emxArray_real_T *b_curs;
+  int32_T loop_ub;
+  emxArray_real_T *b_prdirs;
+  real_T u1;
+
+  /* COMPUTE_DIFFOP_SURF_PARALLEL Compute differential operators on the */
+  /* interior and boundary points of a submesh on a processor. */
+  /* # coder.typeof( int32(0), [inf,3], [1,0]),coder.typeof( double(0), [inf,3], [1,0]), */
+  /* # int32(0), double(0), true, coder.typeof( double(0), [inf,3], [1,0]), */
+  /* # coder.typeof( double(0), [inf,2], [1,0]), */
+  /* # coder.typeof( double(0), [inf,3], [1,0])} */
+  /* 'compute_diffops_surf_cleanmesh:11' coder.inline('never') */
+  /* 'compute_diffops_surf_cleanmesh:12' if nargin<6 */
+  /* 'compute_diffops_surf_cleanmesh:13' if nargin<7 */
+  /* 'compute_diffops_surf_cleanmesh:14' if nargin<8 && nargout>1 */
+  /* 'compute_diffops_surf_cleanmesh:15' if nargin<9 && nargout>1 */
+  /* 'compute_diffops_surf_cleanmesh:18' degree = max(1,min(6,degree)); */
+  if (6 > degree) {
+  } else {
+    degree = 6;
+  }
+
+  if (1 < degree) {
+  } else {
+    degree = 1;
+  }
+
+  /* 'compute_diffops_surf_cleanmesh:19' if ring<=0 */
+  if (ring <= 0.0) {
+    /* 'compute_diffops_surf_cleanmesh:19' ring = 0.5*(double(degree) + 1); */
+    ring = 0.5 * ((real_T)degree + 1.0);
+  }
+
+  /* 'compute_diffops_surf_cleanmesh:20' ring = max(1,min(3.5,ring)); */
+  /*  Determine opposite halfedges */
+  /* 'compute_diffops_surf_cleanmesh:22' opphes = coder.nullcopy(zeros(size(tris),'int32')); */
+  for (i3 = 0; i3 < 2; i3++) {
+    uv0[i3] = (uint32_T)tris->size[i3];
+  }
+
+  emxInit_int32_T(&opphes, 2);
+  b_emxInit_int32_T(&v2he, 1);
+  emxInit_real_T(&b_curs, 2);
+  i3 = opphes->size[0] * opphes->size[1];
+  opphes->size[0] = (int32_T)uv0[0];
+  opphes->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)opphes, i3, (int32_T)sizeof(int32_T));
+
+  /* 'compute_diffops_surf_cleanmesh:23' opphes = determine_opposite_halfedge_tri(int32(size(xs,1)), tris, opphes); */
+  determine_opposite_halfedge_tri(xs->size[0], tris, opphes);
+
+  /*  Determine incident halfedge. */
+  /* 'compute_diffops_surf_cleanmesh:26' v2he = coder.nullcopy(zeros( size(xs,1),1,'int32')); */
+  i3 = v2he->size[0];
+  v2he->size[0] = xs->size[0];
+  emxEnsureCapacity((emxArray__common *)v2he, i3, (int32_T)sizeof(int32_T));
+
+  /* 'compute_diffops_surf_cleanmesh:27' v2he = determine_incident_halfedges( tris, opphes, v2he); */
+  determine_incident_halfedges(tris, opphes, v2he);
+
+  /*  Invoke fitting algorithm. Do not use iterative fitting except for linear */
+  /*  fitting. Do not use interp point. */
+  /* 'compute_diffops_surf_cleanmesh:32' if nargin<8 && nargout<2 */
+  /* 'compute_diffops_surf_cleanmesh:35' else */
+  /* 'compute_diffops_surf_cleanmesh:36' [nrms,curs,prdirs] = polyfit_lhf_surf_cleanmesh(nv_clean, xs, tris, ... */
+  /* 'compute_diffops_surf_cleanmesh:37'         nrms_proj, opphes, v2he, degree, ring, iterfit, true, nrms, curs, prdirs); */
+  i3 = b_curs->size[0] * b_curs->size[1];
+  b_curs->size[0] = curs->size[0];
+  b_curs->size[1] = 2;
+  emxEnsureCapacity((emxArray__common *)b_curs, i3, (int32_T)sizeof(real_T));
+  loop_ub = curs->size[0] * curs->size[1] - 1;
+  for (i3 = 0; i3 <= loop_ub; i3++) {
+    b_curs->data[i3] = curs->data[i3];
+  }
+
+  emxInit_real_T(&b_prdirs, 2);
+  i3 = b_prdirs->size[0] * b_prdirs->size[1];
+  b_prdirs->size[0] = prdirs->size[0];
+  b_prdirs->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)b_prdirs, i3, (int32_T)sizeof(real_T));
+  loop_ub = prdirs->size[0] * prdirs->size[1] - 1;
+  for (i3 = 0; i3 <= loop_ub; i3++) {
+    b_prdirs->data[i3] = prdirs->data[i3];
+  }
+
+  u1 = 3.5 <= ring ? 3.5 : ring;
+  u1 = 1.0 >= u1 ? 1.0 : u1;
+  polyfit_lhf_surf_cleanmesh(nv_clean, xs, tris, nrms_proj, opphes, v2he, degree,
+    u1, nrms, b_curs, b_prdirs);
+  emxFree_real_T(&b_prdirs);
+  emxFree_real_T(&b_curs);
+  emxFree_int32_T(&v2he);
+  emxFree_int32_T(&opphes);
+}
+
+/*
  * function bs = compute_qtb( Q, bs, ncols)
  */
 static void compute_qtb(const emxArray_real_T *Q, emxArray_real_T *bs, int32_T
@@ -2907,7 +3399,7 @@ static void eval_curvature_lhf_surf(const real_T grad[2], const real_T H[4],
 }
 
 /*
- * function [bs, degree] = eval_vander_bivar(us, bs, degree, ws, interp0, guardosc)
+ * function [bs, degree] = eval_vander_bivar( us, bs, degree, ws, interp0, guardosc)
  */
 static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T *degree, const emxArray_real_T *ws)
@@ -2919,7 +3411,7 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T k;
   emxArray_real_T *b_V;
   int32_T c_V;
-  int32_T i3;
+  int32_T i5;
   int32_T loop_ub;
   int32_T b_loop_ub;
   emxArray_real_T *ws1;
@@ -2945,43 +3437,42 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T r_bs[2];
 
   /* EVAL_VANDER_BIVAR Evaluate generalized Vandermonde matrix. */
-  /*  [BS,DEGREE] = EVAL_VANDER_BIVAR(US,BS,DEGREE,WS, INTERP, GUARDOSC) */
+  /*  [BS,DEGREE] = EVAL_VANDER_BIVAR(US,BS,DEGREE,WS, INTERP, GUARDOSC)  */
   /*  Evaluates generalized Vandermonde matrix V, and solve V\BS. */
   /*  It supports up to degree 6. */
-  /*  */
+  /*   */
   /*  If interp0 is true, then the fitting is forced to pass through origin. */
   /*  */
   /*  See also EVAL_VANDER_UNIVAR */
-  /* 'eval_vander_bivar:10' coder.extrinsic('save') */
-  /* 'eval_vander_bivar:11' degree = int32(degree); */
-  /* 'eval_vander_bivar:12' assert( isa( degree, 'int32')); */
+  /* 'eval_vander_bivar:10' degree = int32(degree); */
+  /* 'eval_vander_bivar:11' assert( isa( degree, 'int32')); */
   /*  Determine degree of fitting */
-  /* 'eval_vander_bivar:15' npnts = int32(size(us,1)); */
+  /* 'eval_vander_bivar:14' npnts = int32(size(us,1)); */
   npnts = us->size[0];
 
-  /* 'eval_vander_bivar:16' if nargin<5 */
-  /* 'eval_vander_bivar:17' if nargin<6 */
+  /* 'eval_vander_bivar:15' if nargin<5 */
+  /* 'eval_vander_bivar:16' if nargin<6 */
   /*  Determine degree of polynomial */
-  /* 'eval_vander_bivar:20' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
+  /* 'eval_vander_bivar:19' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
   ncols = (*degree + 2) * (*degree + 1) / 2 - 1;
 
-  /* 'eval_vander_bivar:21' while npnts<ncols && degree>1 */
+  /* 'eval_vander_bivar:20' while npnts<ncols && degree>1 */
   while ((npnts < ncols) && (*degree > 1)) {
-    /* 'eval_vander_bivar:22' degree=degree-1; */
+    /* 'eval_vander_bivar:21' degree=degree-1; */
     (*degree)--;
 
-    /* 'eval_vander_bivar:23' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
+    /* 'eval_vander_bivar:22' ncols = idivide((degree+2)*(degree+1),int32(2))-int32(interp0); */
     ncols = (*degree + 2) * (*degree + 1) / 2 - 1;
   }
 
   emxInit_real_T(&V, 2);
 
   /* % Construct matrix */
-  /* 'eval_vander_bivar:27' V = gen_vander_bivar(us, degree); */
+  /* 'eval_vander_bivar:26' V = gen_vander_bivar(us, degree); */
   gen_vander_bivar(us, *degree, V);
 
-  /* 'eval_vander_bivar:28' if interp0 */
-  /* 'eval_vander_bivar:28' V=V(:,2:end); */
+  /* 'eval_vander_bivar:27' if interp0 */
+  /* 'eval_vander_bivar:27' V=V(:,2:end); */
   nrow = V->size[1];
   if (2 > nrow) {
     k = 0;
@@ -2992,15 +3483,15 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
 
   emxInit_real_T(&b_V, 2);
   c_V = V->size[0];
-  i3 = b_V->size[0] * b_V->size[1];
+  i5 = b_V->size[0] * b_V->size[1];
   b_V->size[0] = c_V;
   b_V->size[1] = nrow - k;
-  emxEnsureCapacity((emxArray__common *)b_V, i3, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_V, i5, (int32_T)sizeof(real_T));
   loop_ub = (nrow - k) - 1;
   for (nrow = 0; nrow <= loop_ub; nrow++) {
     b_loop_ub = c_V - 1;
-    for (i3 = 0; i3 <= b_loop_ub; i3++) {
-      b_V->data[i3 + b_V->size[0] * nrow] = V->data[i3 + V->size[0] * (k + nrow)];
+    for (i5 = 0; i5 <= b_loop_ub; i5++) {
+      b_V->data[i5 + b_V->size[0] * nrow] = V->data[i5 + V->size[0] * (k + nrow)];
     }
   }
 
@@ -3019,13 +3510,13 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   emxFree_real_T(&b_V);
 
   /* % Scale rows to assign different weights to different points */
-  /* 'eval_vander_bivar:31' if nargin>3 && ~isempty(ws) */
+  /* 'eval_vander_bivar:30' if nargin>3 && ~isempty(ws) */
   b_emxInit_real_T(&ws1, 1);
   if (!(ws->size[0] == 0)) {
-    /* 'eval_vander_bivar:32' if degree>2 */
+    /* 'eval_vander_bivar:31' if degree>2 */
     if (*degree > 2) {
       /*  Scale weights to be inversely proportional to distance */
-      /* 'eval_vander_bivar:33' ws1 = us(:,1).*us(:,1)+us(:,2).*us(:,2); */
+      /* 'eval_vander_bivar:32' ws1 = us(:,1).*us(:,1)+us(:,2).*us(:,2); */
       nrow = ws1->size[0];
       ws1->size[0] = us->size[0];
       emxEnsureCapacity((emxArray__common *)ws1, nrow, (int32_T)sizeof(real_T));
@@ -3035,7 +3526,7 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
           us->size[0]] * us->data[nrow + us->size[0]];
       }
 
-      /* 'eval_vander_bivar:34' ws1 = ws1 + sum(ws1)/double(npnts)*1.e-2; */
+      /* 'eval_vander_bivar:33' ws1 = ws1 + sum(ws1)/double(npnts)*1.e-2; */
       t2 = sum(ws1);
       t2 = t2 / (real_T)npnts * 0.01;
       nrow = ws1->size[0];
@@ -3045,46 +3536,46 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
         ws1->data[nrow] += t2;
       }
 
-      /* 'eval_vander_bivar:35' if degree<4 */
+      /* 'eval_vander_bivar:34' if degree<4 */
       if (*degree < 4) {
-        /* 'eval_vander_bivar:36' for ii=1:npnts */
+        /* 'eval_vander_bivar:35' for ii=1:npnts */
         for (c_V = 0; c_V + 1 <= npnts; c_V++) {
-          /* 'eval_vander_bivar:37' if ws1(ii)~=0 */
+          /* 'eval_vander_bivar:36' if ws1(ii)~=0 */
           if (ws1->data[c_V] != 0.0) {
-            /* 'eval_vander_bivar:38' ws1(ii) = ws(ii) / sqrt(ws1(ii)); */
+            /* 'eval_vander_bivar:37' ws1(ii) = ws(ii) / sqrt(ws1(ii)); */
             ws1->data[c_V] = ws->data[c_V] / sqrt(ws1->data[c_V]);
           } else {
-            /* 'eval_vander_bivar:39' else */
-            /* 'eval_vander_bivar:40' ws1(ii) = ws(ii); */
+            /* 'eval_vander_bivar:38' else */
+            /* 'eval_vander_bivar:39' ws1(ii) = ws(ii); */
             ws1->data[c_V] = ws->data[c_V];
           }
         }
       } else {
-        /* 'eval_vander_bivar:43' else */
-        /* 'eval_vander_bivar:44' for ii=1:npnts */
+        /* 'eval_vander_bivar:42' else */
+        /* 'eval_vander_bivar:43' for ii=1:npnts */
         for (c_V = 0; c_V + 1 <= npnts; c_V++) {
-          /* 'eval_vander_bivar:45' if ws1(ii)~=0 */
+          /* 'eval_vander_bivar:44' if ws1(ii)~=0 */
           if (ws1->data[c_V] != 0.0) {
-            /* 'eval_vander_bivar:46' ws1(ii) = ws(ii) / ws1(ii); */
+            /* 'eval_vander_bivar:45' ws1(ii) = ws(ii) / ws1(ii); */
             ws1->data[c_V] = ws->data[c_V] / ws1->data[c_V];
           } else {
-            /* 'eval_vander_bivar:47' else */
-            /* 'eval_vander_bivar:48' ws1(ii) = ws(ii); */
+            /* 'eval_vander_bivar:46' else */
+            /* 'eval_vander_bivar:47' ws1(ii) = ws(ii); */
             ws1->data[c_V] = ws->data[c_V];
           }
         }
       }
 
-      /* 'eval_vander_bivar:52' for ii=1:npnts */
+      /* 'eval_vander_bivar:51' for ii=1:npnts */
       for (c_V = 0; c_V + 1 <= npnts; c_V++) {
-        /* 'eval_vander_bivar:53' for jj=1:ncols */
+        /* 'eval_vander_bivar:52' for jj=1:ncols */
         for (nrow = 0; nrow + 1 <= ncols; nrow++) {
-          /* 'eval_vander_bivar:53' V(ii,jj) = V(ii,jj) * ws1(ii); */
+          /* 'eval_vander_bivar:52' V(ii,jj) = V(ii,jj) * ws1(ii); */
           V->data[c_V + V->size[0] * nrow] *= ws1->data[c_V];
         }
 
-        /* 'eval_vander_bivar:54' for jj=1:size(bs,2) */
-        /* 'eval_vander_bivar:54' bs(ii,jj) = bs(ii,jj) * ws1(ii); */
+        /* 'eval_vander_bivar:53' for jj=1:size(bs,2) */
+        /* 'eval_vander_bivar:53' bs(ii,jj) = bs(ii,jj) * ws1(ii); */
         b_bs[0] = bs->size[0];
         b_bs[1] = 1;
         c_bs[0] = bs->size[0];
@@ -3098,17 +3589,17 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
         d_bs.data[c_V] = e_bs.data[c_V] * ws1->data[c_V];
       }
     } else {
-      /* 'eval_vander_bivar:56' else */
-      /* 'eval_vander_bivar:57' for ii=1:npnts */
+      /* 'eval_vander_bivar:55' else */
+      /* 'eval_vander_bivar:56' for ii=1:npnts */
       for (c_V = 0; c_V + 1 <= npnts; c_V++) {
-        /* 'eval_vander_bivar:58' for jj=1:ncols */
+        /* 'eval_vander_bivar:57' for jj=1:ncols */
         for (nrow = 0; nrow + 1 <= ncols; nrow++) {
-          /* 'eval_vander_bivar:58' V(ii,jj) = V(ii,jj) * ws(ii); */
+          /* 'eval_vander_bivar:57' V(ii,jj) = V(ii,jj) * ws(ii); */
           V->data[c_V + V->size[0] * nrow] *= ws->data[c_V];
         }
 
-        /* 'eval_vander_bivar:59' for jj=1:int32(size(bs,2)) */
-        /* 'eval_vander_bivar:59' bs(ii,jj) = bs(ii,jj) * ws(ii); */
+        /* 'eval_vander_bivar:58' for jj=1:int32(size(bs,2)) */
+        /* 'eval_vander_bivar:58' bs(ii,jj) = bs(ii,jj) * ws(ii); */
         f_bs[0] = bs->size[0];
         f_bs[1] = 1;
         g_bs[0] = bs->size[0];
@@ -3127,36 +3618,36 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   b_emxInit_real_T(&D, 1);
 
   /* % Scale columns to reduce condition number */
-  /* 'eval_vander_bivar:66' ts = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:65' ts = coder.nullcopy(zeros(ncols,1)); */
   nrow = ws1->size[0];
   ws1->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)ws1, nrow, (int32_T)sizeof(real_T));
 
-  /* 'eval_vander_bivar:67' [V, ts] = rescale_matrix(V, ncols, ts); */
+  /* 'eval_vander_bivar:66' [V, ts] = rescale_matrix(V, ncols, ts); */
   rescale_matrix(V, ncols, ws1);
 
   /* % Perform Householder QR factorization */
-  /* 'eval_vander_bivar:70' D = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:69' D = coder.nullcopy(zeros(ncols,1)); */
   nrow = D->size[0];
   D->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)D, nrow, (int32_T)sizeof(real_T));
 
-  /* 'eval_vander_bivar:71' [V, D, rnk] = qr_safeguarded(V, ncols, D); */
+  /* 'eval_vander_bivar:70' [V, D, rnk] = qr_safeguarded(V, ncols, D); */
   nrow = qr_safeguarded(V, ncols, D);
 
   /* % Adjust degree of fitting */
-  /* 'eval_vander_bivar:74' ncols_sub = ncols; */
-  /* 'eval_vander_bivar:75' while rnk < ncols_sub */
+  /* 'eval_vander_bivar:73' ncols_sub = ncols; */
+  /* 'eval_vander_bivar:74' while rnk < ncols_sub */
   do {
     exitg1 = 0U;
     if (nrow < ncols) {
-      /* 'eval_vander_bivar:76' degree = degree-1; */
+      /* 'eval_vander_bivar:75' degree = degree-1; */
       (*degree)--;
 
-      /* 'eval_vander_bivar:78' if degree==0 */
+      /* 'eval_vander_bivar:77' if degree==0 */
       if (*degree == 0) {
         /*  Matrix is singular. Consider surface as flat. */
-        /* 'eval_vander_bivar:80' bs(:) = 0; */
+        /* 'eval_vander_bivar:79' bs(:) = 0; */
         nrow = bs->size[0];
         emxEnsureCapacity((emxArray__common *)bs, nrow, (int32_T)sizeof(real_T));
         loop_ub = bs->size[0] - 1;
@@ -3166,12 +3657,12 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
 
         exitg1 = 1U;
       } else {
-        /* 'eval_vander_bivar:82' ncols_sub = int32(bitshift(uint32((degree+2)*(degree+1)),-1))-int32(interp0); */
+        /* 'eval_vander_bivar:81' ncols_sub = int32(bitshift(uint32((degree+2)*(degree+1)),-1))-int32(interp0); */
         ncols = (int32_T)((uint32_T)((*degree + 2) * (*degree + 1)) >> 1U) - 1;
       }
     } else {
       /* % Compute Q'bs */
-      /* 'eval_vander_bivar:86' bs = compute_qtb( V, bs, ncols_sub); */
+      /* 'eval_vander_bivar:85' bs = compute_qtb( V, bs, ncols_sub); */
       /* 'compute_qtb:3' nrow = int32(size(Q,1)); */
       nrow = V->size[0];
 
@@ -3216,15 +3707,15 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
       }
 
       /* % Perform backward substitution and scale the solutions. */
-      /* 'eval_vander_bivar:89' for i=1:ncols_sub */
+      /* 'eval_vander_bivar:88' for i=1:ncols_sub */
       for (nrow = 0; nrow + 1 <= ncols; nrow++) {
-        /* 'eval_vander_bivar:89' V(i,i) = D(i); */
+        /* 'eval_vander_bivar:88' V(i,i) = D(i); */
         V->data[nrow + V->size[0] * nrow] = D->data[nrow];
       }
 
-      /* 'eval_vander_bivar:90' if guardosc */
-      /* 'eval_vander_bivar:92' else */
-      /* 'eval_vander_bivar:93' bs = backsolve(V, bs, ncols_sub, ts); */
+      /* 'eval_vander_bivar:89' if guardosc */
+      /* 'eval_vander_bivar:91' else */
+      /* 'eval_vander_bivar:92' bs = backsolve(V, bs, ncols_sub, ts); */
       /*  Perform backward substitution. */
       /*      bs = backsolve(R, bs) */
       /*      bs = backsolve(R, bs, cend) */
@@ -3310,13 +3801,13 @@ static void gen_vander_bivar(const emxArray_real_T *us, int32_T degree,
   int32_T npnts;
   emxArray_real_T *b_us;
   int32_T ncols;
-  int32_T i0;
+  int32_T i2;
   int32_T c;
   emxArray_real_T *v1;
   emxArray_real_T *c_us;
   emxArray_real_T *v2;
   int32_T p;
-  emxArray_real_T *r0;
+  emxArray_real_T *r3;
   emxArray_real_T *y;
   emxArray_real_T *a;
   emxArray_real_T *b_v2;
@@ -3325,7 +3816,7 @@ static void gen_vander_bivar(const emxArray_real_T *us, int32_T degree,
   int32_T sz[2];
   static const int8_T iv2[10] = { 1, 3, 6, 10, 15, 21, 28, 36, 45, 55 };
 
-  emxArray_int32_T *r1;
+  emxArray_int32_T *r4;
   int8_T iv3[2];
 
   /*  Construct generalized Vandermonde matrix for two independent variables, */
@@ -3386,20 +3877,20 @@ static void gen_vander_bivar(const emxArray_real_T *us, int32_T degree,
     /* 'gen_vander_bivar:56' if isempty(coder.target) && isequal(class(us),'sym') */
     /* 'gen_vander_bivar:58' else */
     /* 'gen_vander_bivar:59' V = coder.nullcopy(zeros(nrows, ncols, class(us))); */
-    i0 = V->size[0] * V->size[1];
+    i2 = V->size[0] * V->size[1];
     V->size[0] = npnts;
     V->size[1] = ncols;
-    emxEnsureCapacity((emxArray__common *)V, i0, (int32_T)sizeof(real_T));
+    emxEnsureCapacity((emxArray__common *)V, i2, (int32_T)sizeof(real_T));
 
     /*  Preallocate storage */
     /*  Use tensor product */
     /* 'gen_vander_bivar:63' v1 = gen_vander_univar(us(:,1), degree, [], dderiv); */
-    i0 = b_us->size[0];
+    i2 = b_us->size[0];
     b_us->size[0] = us->size[0];
-    emxEnsureCapacity((emxArray__common *)b_us, i0, (int32_T)sizeof(real_T));
+    emxEnsureCapacity((emxArray__common *)b_us, i2, (int32_T)sizeof(real_T));
     c = us->size[0] - 1;
-    for (i0 = 0; i0 <= c; i0++) {
-      b_us->data[i0] = us->data[i0];
+    for (i2 = 0; i2 <= c; i2++) {
+      b_us->data[i2] = us->data[i2];
     }
 
     emxInit_real_T(&v1, 2);
@@ -3407,13 +3898,13 @@ static void gen_vander_bivar(const emxArray_real_T *us, int32_T degree,
     gen_vander_univar(b_us, degree, v1);
 
     /* 'gen_vander_bivar:64' v2 = gen_vander_univar(us(:,2), degree, [], dderiv); */
-    i0 = c_us->size[0];
+    i2 = c_us->size[0];
     c_us->size[0] = us->size[0];
-    emxEnsureCapacity((emxArray__common *)c_us, i0, (int32_T)sizeof(real_T));
+    emxEnsureCapacity((emxArray__common *)c_us, i2, (int32_T)sizeof(real_T));
     emxFree_real_T(&b_us);
     c = us->size[0] - 1;
-    for (i0 = 0; i0 <= c; i0++) {
-      c_us->data[i0] = us->data[i0 + us->size[0]];
+    for (i2 = 0; i2 <= c; i2++) {
+      c_us->data[i2] = us->data[i2 + us->size[0]];
     }
 
     emxInit_real_T(&v2, 2);
@@ -3422,60 +3913,60 @@ static void gen_vander_bivar(const emxArray_real_T *us, int32_T degree,
     /* 'gen_vander_bivar:66' for p=1:npnts */
     p = 0;
     emxFree_real_T(&c_us);
-    emxInit_real_T(&r0, 2);
+    emxInit_real_T(&r3, 2);
     emxInit_real_T(&y, 2);
     b_emxInit_real_T(&a, 1);
     emxInit_real_T(&b_v2, 2);
     while (p + 1 <= npnts) {
       /* 'gen_vander_bivar:67' V(p,:) = reshape(v1(p,:)'*v2(p,:),1,ncols); */
-      i0 = a->size[0];
+      i2 = a->size[0];
       a->size[0] = v1->size[1];
-      emxEnsureCapacity((emxArray__common *)a, i0, (int32_T)sizeof(real_T));
+      emxEnsureCapacity((emxArray__common *)a, i2, (int32_T)sizeof(real_T));
       c = v1->size[1] - 1;
-      for (i0 = 0; i0 <= c; i0++) {
-        a->data[i0] = v1->data[p + v1->size[0] * i0];
+      for (i2 = 0; i2 <= c; i2++) {
+        a->data[i2] = v1->data[p + v1->size[0] * i2];
       }
 
-      i0 = b_v2->size[0] * b_v2->size[1];
+      i2 = b_v2->size[0] * b_v2->size[1];
       b_v2->size[0] = 1;
       b_v2->size[1] = v2->size[1];
-      emxEnsureCapacity((emxArray__common *)b_v2, i0, (int32_T)sizeof(real_T));
+      emxEnsureCapacity((emxArray__common *)b_v2, i2, (int32_T)sizeof(real_T));
       c = v2->size[1] - 1;
-      for (i0 = 0; i0 <= c; i0++) {
-        b_v2->data[b_v2->size[0] * i0] = v2->data[p + v2->size[0] * i0];
+      for (i2 = 0; i2 <= c; i2++) {
+        b_v2->data[b_v2->size[0] * i2] = v2->data[p + v2->size[0] * i2];
       }
 
-      i0 = y->size[0] * y->size[1];
+      i2 = y->size[0] * y->size[1];
       y->size[0] = a->size[0];
       y->size[1] = b_v2->size[1];
-      emxEnsureCapacity((emxArray__common *)y, i0, (int32_T)sizeof(real_T));
+      emxEnsureCapacity((emxArray__common *)y, i2, (int32_T)sizeof(real_T));
       c = b_v2->size[1] - 1;
-      for (i0 = 0; i0 <= c; i0++) {
+      for (i2 = 0; i2 <= c; i2++) {
         nx = a->size[0] - 1;
         for (kk2 = 0; kk2 <= nx; kk2++) {
-          y->data[kk2 + y->size[0] * i0] = a->data[kk2] * b_v2->data[b_v2->size
-            [0] * i0];
+          y->data[kk2 + y->size[0] * i2] = a->data[kk2] * b_v2->data[b_v2->size
+            [0] * i2];
         }
       }
 
       nx = y->size[0] * y->size[1];
-      for (i0 = 0; i0 < 2; i0++) {
-        sz[i0] = 0;
+      for (i2 = 0; i2 < 2; i2++) {
+        sz[i2] = 0;
       }
 
       sz[0] = 1;
       sz[1] = ncols;
-      i0 = r0->size[0] * r0->size[1];
-      r0->size[0] = 1;
-      r0->size[1] = sz[1];
-      emxEnsureCapacity((emxArray__common *)r0, i0, (int32_T)sizeof(real_T));
+      i2 = r3->size[0] * r3->size[1];
+      r3->size[0] = 1;
+      r3->size[1] = sz[1];
+      emxEnsureCapacity((emxArray__common *)r3, i2, (int32_T)sizeof(real_T));
       for (c = 0; c + 1 <= nx; c++) {
-        r0->data[c] = y->data[c];
+        r3->data[c] = y->data[c];
       }
 
-      c = r0->size[1] - 1;
-      for (i0 = 0; i0 <= c; i0++) {
-        V->data[p + V->size[0] * i0] = r0->data[r0->size[0] * i0];
+      c = r3->size[1] - 1;
+      for (i2 = 0; i2 <= c; i2++) {
+        V->data[p + V->size[0] * i2] = r3->data[r3->size[0] * i2];
       }
 
       p++;
@@ -3484,7 +3975,7 @@ static void gen_vander_bivar(const emxArray_real_T *us, int32_T degree,
     emxFree_real_T(&b_v2);
     emxFree_real_T(&a);
     emxFree_real_T(&y);
-    emxFree_real_T(&r0);
+    emxFree_real_T(&r3);
     emxFree_real_T(&v2);
     emxFree_real_T(&v1);
 
@@ -3496,49 +3987,49 @@ static void gen_vander_bivar(const emxArray_real_T *us, int32_T degree,
     /* 'gen_vander_bivar:83' if isempty(coder.target) && isequal(class(us),'sym') */
     /* 'gen_vander_bivar:85' else */
     /* 'gen_vander_bivar:86' V = zeros(npnts*nrpp, ncols, class(us)); */
-    i0 = V->size[0] * V->size[1];
+    i2 = V->size[0] * V->size[1];
     V->size[0] = npnts;
     V->size[1] = (int32_T)iv2[degree];
-    emxEnsureCapacity((emxArray__common *)V, i0, (int32_T)sizeof(real_T));
+    emxEnsureCapacity((emxArray__common *)V, i2, (int32_T)sizeof(real_T));
     c = npnts * iv2[degree] - 1;
-    for (i0 = 0; i0 <= c; i0++) {
-      V->data[i0] = 0.0;
+    for (i2 = 0; i2 <= c; i2++) {
+      V->data[i2] = 0.0;
     }
 
     /*  Preallocate storage */
     /*     %% Compute rows corresponding to function values */
     /* 'gen_vander_bivar:90' V(1:npnts,1) = 1; */
     if (1 > npnts) {
-      i0 = 0;
+      i2 = 0;
     } else {
-      i0 = npnts;
+      i2 = npnts;
     }
 
-    b_emxInit_int32_T(&r1, 1);
-    kk2 = r1->size[0];
-    r1->size[0] = i0;
-    emxEnsureCapacity((emxArray__common *)r1, kk2, (int32_T)sizeof(int32_T));
-    c = i0 - 1;
-    for (i0 = 0; i0 <= c; i0++) {
-      r1->data[i0] = 1 + i0;
+    b_emxInit_int32_T(&r4, 1);
+    kk2 = r4->size[0];
+    r4->size[0] = i2;
+    emxEnsureCapacity((emxArray__common *)r4, kk2, (int32_T)sizeof(int32_T));
+    c = i2 - 1;
+    for (i2 = 0; i2 <= c; i2++) {
+      r4->data[i2] = 1 + i2;
     }
 
-    c = r1->size[0];
-    emxFree_int32_T(&r1);
+    c = r4->size[0];
+    emxFree_int32_T(&r4);
     c--;
-    for (i0 = 0; i0 <= c; i0++) {
-      V->data[i0] = 1.0;
+    for (i2 = 0; i2 <= c; i2++) {
+      V->data[i2] = 1.0;
     }
 
     /* 'gen_vander_bivar:91' V(1:npnts,2:3) = us; */
-    for (i0 = 0; i0 < 2; i0++) {
-      iv3[i0] = (int8_T)(i0 + 1);
+    for (i2 = 0; i2 < 2; i2++) {
+      iv3[i2] = (int8_T)(i2 + 1);
     }
 
-    for (i0 = 0; i0 < 2; i0++) {
+    for (i2 = 0; i2 < 2; i2++) {
       c = us->size[0] - 1;
       for (kk2 = 0; kk2 <= c; kk2++) {
-        V->data[kk2 + V->size[0] * iv3[i0]] = us->data[kk2 + us->size[0] * i0];
+        V->data[kk2 + V->size[0] * iv3[i2]] = us->data[kk2 + us->size[0] * i2];
       }
     }
 
@@ -3594,7 +4085,7 @@ static void gen_vander_univar(const emxArray_real_T *us, int32_T degree,
   int32_T ncols;
   int32_T p;
   int32_T loop_ub;
-  emxArray_int32_T *r2;
+  emxArray_int32_T *r5;
 
   /*  Construct generalized Vandermonde matrix for one independent variable, */
   /*     using function values and optionally the derivatives. */
@@ -3661,17 +4152,17 @@ static void gen_vander_univar(const emxArray_real_T *us, int32_T degree,
     p = npnts;
   }
 
-  b_emxInit_int32_T(&r2, 1);
-  ncols = r2->size[0];
-  r2->size[0] = p;
-  emxEnsureCapacity((emxArray__common *)r2, ncols, (int32_T)sizeof(int32_T));
+  b_emxInit_int32_T(&r5, 1);
+  ncols = r5->size[0];
+  r5->size[0] = p;
+  emxEnsureCapacity((emxArray__common *)r5, ncols, (int32_T)sizeof(int32_T));
   loop_ub = p - 1;
   for (p = 0; p <= loop_ub; p++) {
-    r2->data[p] = 1 + p;
+    r5->data[p] = 1 + p;
   }
 
-  ncols = r2->size[0];
-  emxFree_int32_T(&r2);
+  ncols = r5->size[0];
+  emxFree_int32_T(&r5);
   loop_ub = ncols - 1;
   for (p = 0; p <= loop_ub; p++) {
     V->data[p] = 1.0;
@@ -4452,8 +4943,7 @@ static int32_T c_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
 static void polyfit_lhf_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T
   *xs, const emxArray_int32_T *tris, const emxArray_real_T *nrms_proj, const
   emxArray_int32_T *opphes, const emxArray_int32_T *v2he, int32_T degree, real_T
-  ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs,
-  emxArray_real_T *prdirs)
+  ring, emxArray_real_T *nrms, emxArray_real_T *curs, emxArray_real_T *prdirs)
 {
   static const int8_T iv14[6] = { 5, 9, 15, 23, 32, 42 };
 
@@ -4468,17 +4958,15 @@ static void polyfit_lhf_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T
   boolean_T b1;
   int32_T ii;
   real_T ringv;
-  int32_T exitg5;
+  int32_T exitg3;
   int32_T ngbfs[256];
   int32_T ngbvs[128];
   int32_T deg;
   real_T nrm[3];
   real_T prcurvs[2];
   real_T maxprdir[3];
-  int32_T exitg4;
   static const int8_T iv15[6] = { 5, 9, 15, 23, 32, 42 };
 
-  int32_T exitg3;
   int32_T exitg2;
   int32_T exitg1;
 
@@ -4593,7 +5081,7 @@ static void polyfit_lhf_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T
 
     /* 'polyfit_lhf_surf_cleanmesh:69' while (1) */
     do {
-      exitg5 = 0U;
+      exitg3 = 0U;
 
       /*  Collect neighbor vertices */
       /* 'polyfit_lhf_surf_cleanmesh:71' maxnf = 2*MAXNPNTS; */
@@ -4662,25 +5150,26 @@ static void polyfit_lhf_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T
 
         /*  Enlarge the neighborhood */
       } else {
-        exitg5 = 1U;
+        exitg3 = 1U;
       }
-    } while (exitg5 == 0U);
+    } while (exitg3 == 0U);
 
     /* 'polyfit_lhf_surf_cleanmesh:97' else */
   }
 
   /* 'polyfit_lhf_surf_cleanmesh:103' if nargout==1 || (~iterfit && (nargout==2 && ~size(curs,1) || ... */
   /* 'polyfit_lhf_surf_cleanmesh:104'         (nargout==3 && ~size(curs,1) && ~size(prdirs,1)))) */
-  if ((!iterfit) && (!(curs->size[0] != 0)) && (!(prdirs->size[0] != 0))) {
+  if ((!(curs->size[0] != 0)) && (!(prdirs->size[0] != 0))) {
   } else {
     /* 'polyfit_lhf_surf_cleanmesh:108' assert(~isempty(degs)); */
     /* % */
     /* 'polyfit_lhf_surf_cleanmesh:110' if nargout==2 || isempty(prdirs) */
     if (prdirs->size[0] == 0) {
       /* 'polyfit_lhf_surf_cleanmesh:111' if iterfit */
-      if (iterfit) {
-        /* 'polyfit_lhf_surf_cleanmesh:112' curs = polyfit_lhfgrad_surf_cleanmesh(nv_clean, xs, nrms, tris, opphes, ... */
-        /* 'polyfit_lhf_surf_cleanmesh:113'             v2he, degree, degree, ring, curs); */
+      if (b_min(degs) <= 1) {
+        /* 'polyfit_lhf_surf_cleanmesh:114' elseif min(degs,[],1)<=1 */
+        /* 'polyfit_lhf_surf_cleanmesh:115' curs = polyfit_lhfgrad_surf_cleanmesh(nv_clean, xs, nrms, tris, opphes, ... */
+        /* 'polyfit_lhf_surf_cleanmesh:116'             v2he, degs, degree, ring, curs); */
         /* POLYFIT_LHFGRAD_SURF_CLEANMESH Compute polynomial fitting of gradients with adaptive */
         /* reduced QR factorization. */
         /*  [CURS,PRDIRS] = POLYFIT_LHFGRAD_SURF(XS,NRMS,TRIS,OPPHES,V2HE,DEGS, ... */
@@ -4735,177 +5224,75 @@ static void polyfit_lhf_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T
         for (ii = 1; ii <= nv_clean; ii++) {
           /*  If degs is nonempty, then only compute for vertices whose degree is 1 */
           /* 'polyfit_lhfgrad_surf_cleanmesh:42' if size(degs,1)>1 && degs(ii)>1 */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:43' ringv = ring; */
-          ringv = ring;
+          if ((degs->size[0] > 1) && (degs->data[ii - 1] > 1)) {
+          } else {
+            /* 'polyfit_lhfgrad_surf_cleanmesh:43' ringv = ring; */
+            ringv = ring;
 
-          /* 'polyfit_lhfgrad_surf_cleanmesh:45' if size(degs,1)>1 && degs(ii)==0 */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:48' else */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:49' deg_in=degree; */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:49' minpntsv =  minpnts; */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:52' while (1) */
-          do {
-            exitg4 = 0U;
+            /* 'polyfit_lhfgrad_surf_cleanmesh:45' if size(degs,1)>1 && degs(ii)==0 */
+            if ((degs->size[0] > 1) && (degs->data[ii - 1] == 0)) {
+              /*  Use one-ring if degree is 0 */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:47' deg_in=int32(0); */
+              nv = 0;
 
-            /*  Collect neighbor vertices */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:54' [ngbvs, nverts, vtags, ftags] = obtain_nring_surf( ii, ringv, minpntsv, ... */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:55'             tris, opphes, v2he, ngbvs, vtags, ftags); */
-            nverts = b_obtain_nring_surf(ii, ringv, (int32_T)iv15[degree - 1],
-              tris, opphes, v2he, ngbvs, vtags, ftags);
+              /* 'polyfit_lhfgrad_surf_cleanmesh:47' ringv = 1; */
+              ringv = 1.0;
 
-            /* 'polyfit_lhfgrad_surf_cleanmesh:57' if noprdir */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:58' [deg, prcurvs] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
-            polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, degree, &deg,
-              prcurvs);
+              /* 'polyfit_lhfgrad_surf_cleanmesh:47' minpntsv = int32(0); */
+              minpntsv = 0;
+            } else {
+              /* 'polyfit_lhfgrad_surf_cleanmesh:48' else */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:49' deg_in=degree; */
+              nv = degree;
 
-            /* 'polyfit_lhfgrad_surf_cleanmesh:65' if size(curs,1) */
-            if (curs->size[0] != 0) {
-              /* 'polyfit_lhfgrad_surf_cleanmesh:65' curs(ii,1:2) = prcurvs'; */
-              for (nverts = 0; nverts < 2; nverts++) {
-                curs->data[(ii + curs->size[0] * nverts) - 1] = prcurvs[nverts];
+              /* 'polyfit_lhfgrad_surf_cleanmesh:49' minpntsv =  minpnts; */
+              minpntsv = (int32_T)iv15[degree - 1];
+            }
+
+            /* 'polyfit_lhfgrad_surf_cleanmesh:52' while (1) */
+            do {
+              exitg2 = 0U;
+
+              /*  Collect neighbor vertices */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:54' [ngbvs, nverts, vtags, ftags] = obtain_nring_surf( ii, ringv, minpntsv, ... */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:55'             tris, opphes, v2he, ngbvs, vtags, ftags); */
+              nverts = b_obtain_nring_surf(ii, ringv, minpntsv, tris, opphes,
+                v2he, ngbvs, vtags, ftags);
+
+              /* 'polyfit_lhfgrad_surf_cleanmesh:57' if noprdir */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:58' [deg, prcurvs] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
+              polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, nv, &deg,
+                prcurvs);
+
+              /* 'polyfit_lhfgrad_surf_cleanmesh:65' if size(curs,1) */
+              if (curs->size[0] != 0) {
+                /* 'polyfit_lhfgrad_surf_cleanmesh:65' curs(ii,1:2) = prcurvs'; */
+                for (nverts = 0; nverts < 2; nverts++) {
+                  curs->data[(ii + curs->size[0] * nverts) - 1] = prcurvs[nverts];
+                }
               }
-            }
 
-            /*  Enlarge the neighborhood if necessary */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:68' if deg < deg_in && ringv<ring+ring */
-            if ((deg < degree) && (ringv < ring + ring)) {
-              /* 'polyfit_lhfgrad_surf_cleanmesh:69' ringv=ringv+0.5; */
-              ringv += 0.5;
-            } else {
-              exitg4 = 1U;
-            }
-          } while (exitg4 == 0U);
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:70' else */
-        }
-      } else {
-        if (b_min(degs) <= 1) {
-          /* 'polyfit_lhf_surf_cleanmesh:114' elseif min(degs,[],1)<=1 */
-          /* 'polyfit_lhf_surf_cleanmesh:115' curs = polyfit_lhfgrad_surf_cleanmesh(nv_clean, xs, nrms, tris, opphes, ... */
-          /* 'polyfit_lhf_surf_cleanmesh:116'             v2he, degs, degree, ring, curs); */
-          /* POLYFIT_LHFGRAD_SURF_CLEANMESH Compute polynomial fitting of gradients with adaptive */
-          /* reduced QR factorization. */
-          /*  [CURS,PRDIRS] = POLYFIT_LHFGRAD_SURF(XS,NRMS,TRIS,OPPHES,V2HE,DEGS, ... */
-          /*  DEGREE,RING,CURS,PRDIRS) Computes polynomial fitting of gradients with  */
-          /*  adaptive reduced QR factorization using the following input and output */
-          /*  arguments. */
-          /*  Input:  XS:       nv*3 Coordinates of points */
-          /*          NRMS:     Normals to be fit */
-          /*          TRIS:     matrix of size mx3 storing element connectivity */
-          /*          OPPTR:    matrix of size mx3 storing opposite vertices */
-          /*          DEGREE:   Degree of polynomials */
-          /*          RECUR:    Whether or not to use iterative fitting */
-          /*          STRIP:    Whether or not to enforce fitting to pass a given point. */
-          /*   */
-          /*  Output: CURS:     Principal curvatures (nx2); */
-          /*          PRDIRS:   Principal directions crt maximum curvature (nx3) */
-          /*  */
-          /*  See also POLYFIT_LHFGRAD_SURF_POINT */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:21' MAXNPNTS=int32(128); */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:22' assert(isa(ring,'double')); */
-          /*  ring is double, as we allow half rings. */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:24' if degree<=6 */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:25' pntsneeded = int32([5 9 15 23 32 42]); */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:26' minpnts = pntsneeded(degree); */
-          /*  Compute fitting at all vertices */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:32' nv = int32(size(xs, 1)); */
-          nv = xs->size[0];
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:34' ngbvs = coder.nullcopy(zeros(MAXNPNTS,1,'int32')); */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:35' vtags = false(nv, 1); */
-          nverts = vtags->size[0];
-          vtags->size[0] = nv;
-          emxEnsureCapacity((emxArray__common *)vtags, nverts, (int32_T)sizeof
-                            (boolean_T));
-          minpntsv = nv - 1;
-          for (nverts = 0; nverts <= minpntsv; nverts++) {
-            vtags->data[nverts] = FALSE;
-          }
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:36' ftags = false(size(tris,1), 1); */
-          nverts = ftags->size[0];
-          ftags->size[0] = tris->size[0];
-          emxEnsureCapacity((emxArray__common *)ftags, nverts, (int32_T)sizeof
-                            (boolean_T));
-          minpntsv = tris->size[0] - 1;
-          for (nverts = 0; nverts <= minpntsv; nverts++) {
-            ftags->data[nverts] = FALSE;
-          }
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:38' noprdir = nargin<=10 || ~size(prdirs,1); */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:40' for ii=1:nv_clean */
-          for (ii = 1; ii <= nv_clean; ii++) {
-            /*  If degs is nonempty, then only compute for vertices whose degree is 1 */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:42' if size(degs,1)>1 && degs(ii)>1 */
-            if ((degs->size[0] > 1) && (degs->data[ii - 1] > 1)) {
-            } else {
-              /* 'polyfit_lhfgrad_surf_cleanmesh:43' ringv = ring; */
-              ringv = ring;
-
-              /* 'polyfit_lhfgrad_surf_cleanmesh:45' if size(degs,1)>1 && degs(ii)==0 */
-              if ((degs->size[0] > 1) && (degs->data[ii - 1] == 0)) {
-                /*  Use one-ring if degree is 0 */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:47' deg_in=int32(0); */
-                nv = 0;
-
-                /* 'polyfit_lhfgrad_surf_cleanmesh:47' ringv = 1; */
-                ringv = 1.0;
-
-                /* 'polyfit_lhfgrad_surf_cleanmesh:47' minpntsv = int32(0); */
-                minpntsv = 0;
+              /*  Enlarge the neighborhood if necessary */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:68' if deg < deg_in && ringv<ring+ring */
+              if ((deg < nv) && (ringv < ring + ring)) {
+                /* 'polyfit_lhfgrad_surf_cleanmesh:69' ringv=ringv+0.5; */
+                ringv += 0.5;
               } else {
-                /* 'polyfit_lhfgrad_surf_cleanmesh:48' else */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:49' deg_in=degree; */
-                nv = degree;
-
-                /* 'polyfit_lhfgrad_surf_cleanmesh:49' minpntsv =  minpnts; */
-                minpntsv = (int32_T)iv15[degree - 1];
+                exitg2 = 1U;
               }
+            } while (exitg2 == 0U);
 
-              /* 'polyfit_lhfgrad_surf_cleanmesh:52' while (1) */
-              do {
-                exitg3 = 0U;
-
-                /*  Collect neighbor vertices */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:54' [ngbvs, nverts, vtags, ftags] = obtain_nring_surf( ii, ringv, minpntsv, ... */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:55'             tris, opphes, v2he, ngbvs, vtags, ftags); */
-                nverts = b_obtain_nring_surf(ii, ringv, minpntsv, tris, opphes,
-                  v2he, ngbvs, vtags, ftags);
-
-                /* 'polyfit_lhfgrad_surf_cleanmesh:57' if noprdir */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:58' [deg, prcurvs] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
-                polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, nv, &deg,
-                  prcurvs);
-
-                /* 'polyfit_lhfgrad_surf_cleanmesh:65' if size(curs,1) */
-                if (curs->size[0] != 0) {
-                  /* 'polyfit_lhfgrad_surf_cleanmesh:65' curs(ii,1:2) = prcurvs'; */
-                  for (nverts = 0; nverts < 2; nverts++) {
-                    curs->data[(ii + curs->size[0] * nverts) - 1] =
-                      prcurvs[nverts];
-                  }
-                }
-
-                /*  Enlarge the neighborhood if necessary */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:68' if deg < deg_in && ringv<ring+ring */
-                if ((deg < nv) && (ringv < ring + ring)) {
-                  /* 'polyfit_lhfgrad_surf_cleanmesh:69' ringv=ringv+0.5; */
-                  ringv += 0.5;
-                } else {
-                  exitg3 = 1U;
-                }
-              } while (exitg3 == 0U);
-
-              /* 'polyfit_lhfgrad_surf_cleanmesh:70' else */
-            }
+            /* 'polyfit_lhfgrad_surf_cleanmesh:70' else */
           }
         }
       }
     } else {
       /* 'polyfit_lhf_surf_cleanmesh:118' else */
       /* 'polyfit_lhf_surf_cleanmesh:119' if iterfit */
-      if (iterfit) {
-        /* 'polyfit_lhf_surf_cleanmesh:120' [curs,prdirs] = polyfit_lhfgrad_surf_cleanmesh(nv_clean, xs, nrms, tris, opphes, ... */
-        /* 'polyfit_lhf_surf_cleanmesh:121'             v2he, degree, degree, ring, curs, prdirs); */
+      if (b_min(degs) <= 1) {
+        /* 'polyfit_lhf_surf_cleanmesh:122' elseif min(degs,[],1)<=1 */
+        /* 'polyfit_lhf_surf_cleanmesh:123' [curs,prdirs] = polyfit_lhfgrad_surf_cleanmesh(nv_clean, xs, nrms, tris, opphes, ... */
+        /* 'polyfit_lhf_surf_cleanmesh:124'             v2he, degs, degree, ring, curs, prdirs); */
         /* POLYFIT_LHFGRAD_SURF_CLEANMESH Compute polynomial fitting of gradients with adaptive */
         /* reduced QR factorization. */
         /*  [CURS,PRDIRS] = POLYFIT_LHFGRAD_SURF(XS,NRMS,TRIS,OPPHES,V2HE,DEGS, ... */
@@ -4966,206 +5353,81 @@ static void polyfit_lhf_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T
         for (ii = 1; ii <= nv_clean; ii++) {
           /*  If degs is nonempty, then only compute for vertices whose degree is 1 */
           /* 'polyfit_lhfgrad_surf_cleanmesh:42' if size(degs,1)>1 && degs(ii)>1 */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:43' ringv = ring; */
-          ringv = ring;
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:45' if size(degs,1)>1 && degs(ii)==0 */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:48' else */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:49' deg_in=degree; */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:49' minpntsv =  minpnts; */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:52' while (1) */
-          do {
-            exitg2 = 0U;
-
-            /*  Collect neighbor vertices */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:54' [ngbvs, nverts, vtags, ftags] = obtain_nring_surf( ii, ringv, minpntsv, ... */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:55'             tris, opphes, v2he, ngbvs, vtags, ftags); */
-            nverts = b_obtain_nring_surf(ii, ringv, (int32_T)iv15[degree - 1],
-              tris, opphes, v2he, ngbvs, vtags, ftags);
-
-            /* 'polyfit_lhfgrad_surf_cleanmesh:57' if noprdir */
-            if (b0) {
-              /* 'polyfit_lhfgrad_surf_cleanmesh:58' [deg, prcurvs] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
-              polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, degree,
-                &deg, prcurvs);
-            } else {
-              /* 'polyfit_lhfgrad_surf_cleanmesh:59' elseif nargout==2 */
-              /* 'polyfit_lhfgrad_surf_cleanmesh:60' [deg, prcurvs, maxprdir] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
-              b_polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, degree,
-                &deg, prcurvs, maxprdir);
-
-              /* 'polyfit_lhfgrad_surf_cleanmesh:62' if size(prdirs,1) */
-              if (prdirs->size[0] != 0) {
-                /* 'polyfit_lhfgrad_surf_cleanmesh:62' prdirs(ii,1:3) = maxprdir'; */
-                for (nverts = 0; nverts < 3; nverts++) {
-                  prdirs->data[(ii + prdirs->size[0] * nverts) - 1] =
-                    maxprdir[nverts];
-                }
-              }
-            }
-
-            /* 'polyfit_lhfgrad_surf_cleanmesh:65' if size(curs,1) */
-            if (curs->size[0] != 0) {
-              /* 'polyfit_lhfgrad_surf_cleanmesh:65' curs(ii,1:2) = prcurvs'; */
-              for (nverts = 0; nverts < 2; nverts++) {
-                curs->data[(ii + curs->size[0] * nverts) - 1] = prcurvs[nverts];
-              }
-            }
-
-            /*  Enlarge the neighborhood if necessary */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:68' if deg < deg_in && ringv<ring+ring */
-            if ((deg < degree) && (ringv < ring + ring)) {
-              /* 'polyfit_lhfgrad_surf_cleanmesh:69' ringv=ringv+0.5; */
-              ringv += 0.5;
-            } else {
-              exitg2 = 1U;
-            }
-          } while (exitg2 == 0U);
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:70' else */
-        }
-      } else {
-        if (b_min(degs) <= 1) {
-          /* 'polyfit_lhf_surf_cleanmesh:122' elseif min(degs,[],1)<=1 */
-          /* 'polyfit_lhf_surf_cleanmesh:123' [curs,prdirs] = polyfit_lhfgrad_surf_cleanmesh(nv_clean, xs, nrms, tris, opphes, ... */
-          /* 'polyfit_lhf_surf_cleanmesh:124'             v2he, degs, degree, ring, curs, prdirs); */
-          /* POLYFIT_LHFGRAD_SURF_CLEANMESH Compute polynomial fitting of gradients with adaptive */
-          /* reduced QR factorization. */
-          /*  [CURS,PRDIRS] = POLYFIT_LHFGRAD_SURF(XS,NRMS,TRIS,OPPHES,V2HE,DEGS, ... */
-          /*  DEGREE,RING,CURS,PRDIRS) Computes polynomial fitting of gradients with  */
-          /*  adaptive reduced QR factorization using the following input and output */
-          /*  arguments. */
-          /*  Input:  XS:       nv*3 Coordinates of points */
-          /*          NRMS:     Normals to be fit */
-          /*          TRIS:     matrix of size mx3 storing element connectivity */
-          /*          OPPTR:    matrix of size mx3 storing opposite vertices */
-          /*          DEGREE:   Degree of polynomials */
-          /*          RECUR:    Whether or not to use iterative fitting */
-          /*          STRIP:    Whether or not to enforce fitting to pass a given point. */
-          /*   */
-          /*  Output: CURS:     Principal curvatures (nx2); */
-          /*          PRDIRS:   Principal directions crt maximum curvature (nx3) */
-          /*  */
-          /*  See also POLYFIT_LHFGRAD_SURF_POINT */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:21' MAXNPNTS=int32(128); */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:22' assert(isa(ring,'double')); */
-          /*  ring is double, as we allow half rings. */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:24' if degree<=6 */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:25' pntsneeded = int32([5 9 15 23 32 42]); */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:26' minpnts = pntsneeded(degree); */
-          /*  Compute fitting at all vertices */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:32' nv = int32(size(xs, 1)); */
-          nv = xs->size[0];
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:34' ngbvs = coder.nullcopy(zeros(MAXNPNTS,1,'int32')); */
-          /* 'polyfit_lhfgrad_surf_cleanmesh:35' vtags = false(nv, 1); */
-          nverts = vtags->size[0];
-          vtags->size[0] = nv;
-          emxEnsureCapacity((emxArray__common *)vtags, nverts, (int32_T)sizeof
-                            (boolean_T));
-          minpntsv = nv - 1;
-          for (nverts = 0; nverts <= minpntsv; nverts++) {
-            vtags->data[nverts] = FALSE;
-          }
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:36' ftags = false(size(tris,1), 1); */
-          nverts = ftags->size[0];
-          ftags->size[0] = tris->size[0];
-          emxEnsureCapacity((emxArray__common *)ftags, nverts, (int32_T)sizeof
-                            (boolean_T));
-          minpntsv = tris->size[0] - 1;
-          for (nverts = 0; nverts <= minpntsv; nverts++) {
-            ftags->data[nverts] = FALSE;
-          }
-
-          /* 'polyfit_lhfgrad_surf_cleanmesh:38' noprdir = nargin<=10 || ~size(prdirs,1); */
-          if (!(prdirs->size[0] != 0)) {
-            b0 = TRUE;
+          if ((degs->size[0] > 1) && (degs->data[ii - 1] > 1)) {
           } else {
-            b0 = FALSE;
-          }
+            /* 'polyfit_lhfgrad_surf_cleanmesh:43' ringv = ring; */
+            ringv = ring;
 
-          /* 'polyfit_lhfgrad_surf_cleanmesh:40' for ii=1:nv_clean */
-          for (ii = 1; ii <= nv_clean; ii++) {
-            /*  If degs is nonempty, then only compute for vertices whose degree is 1 */
-            /* 'polyfit_lhfgrad_surf_cleanmesh:42' if size(degs,1)>1 && degs(ii)>1 */
-            if ((degs->size[0] > 1) && (degs->data[ii - 1] > 1)) {
+            /* 'polyfit_lhfgrad_surf_cleanmesh:45' if size(degs,1)>1 && degs(ii)==0 */
+            if ((degs->size[0] > 1) && (degs->data[ii - 1] == 0)) {
+              /*  Use one-ring if degree is 0 */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:47' deg_in=int32(0); */
+              nv = 0;
+
+              /* 'polyfit_lhfgrad_surf_cleanmesh:47' ringv = 1; */
+              ringv = 1.0;
+
+              /* 'polyfit_lhfgrad_surf_cleanmesh:47' minpntsv = int32(0); */
+              minpntsv = 0;
             } else {
-              /* 'polyfit_lhfgrad_surf_cleanmesh:43' ringv = ring; */
-              ringv = ring;
+              /* 'polyfit_lhfgrad_surf_cleanmesh:48' else */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:49' deg_in=degree; */
+              nv = degree;
 
-              /* 'polyfit_lhfgrad_surf_cleanmesh:45' if size(degs,1)>1 && degs(ii)==0 */
-              if ((degs->size[0] > 1) && (degs->data[ii - 1] == 0)) {
-                /*  Use one-ring if degree is 0 */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:47' deg_in=int32(0); */
-                nv = 0;
+              /* 'polyfit_lhfgrad_surf_cleanmesh:49' minpntsv =  minpnts; */
+              minpntsv = (int32_T)iv15[degree - 1];
+            }
 
-                /* 'polyfit_lhfgrad_surf_cleanmesh:47' ringv = 1; */
-                ringv = 1.0;
+            /* 'polyfit_lhfgrad_surf_cleanmesh:52' while (1) */
+            do {
+              exitg1 = 0U;
 
-                /* 'polyfit_lhfgrad_surf_cleanmesh:47' minpntsv = int32(0); */
-                minpntsv = 0;
+              /*  Collect neighbor vertices */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:54' [ngbvs, nverts, vtags, ftags] = obtain_nring_surf( ii, ringv, minpntsv, ... */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:55'             tris, opphes, v2he, ngbvs, vtags, ftags); */
+              nverts = b_obtain_nring_surf(ii, ringv, minpntsv, tris, opphes,
+                v2he, ngbvs, vtags, ftags);
+
+              /* 'polyfit_lhfgrad_surf_cleanmesh:57' if noprdir */
+              if (b0) {
+                /* 'polyfit_lhfgrad_surf_cleanmesh:58' [deg, prcurvs] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
+                polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, nv, &deg,
+                  prcurvs);
               } else {
-                /* 'polyfit_lhfgrad_surf_cleanmesh:48' else */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:49' deg_in=degree; */
-                nv = degree;
+                /* 'polyfit_lhfgrad_surf_cleanmesh:59' elseif nargout==2 */
+                /* 'polyfit_lhfgrad_surf_cleanmesh:60' [deg, prcurvs, maxprdir] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
+                b_polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, nv,
+                  &deg, prcurvs, maxprdir);
 
-                /* 'polyfit_lhfgrad_surf_cleanmesh:49' minpntsv =  minpnts; */
-                minpntsv = (int32_T)iv15[degree - 1];
+                /* 'polyfit_lhfgrad_surf_cleanmesh:62' if size(prdirs,1) */
+                if (prdirs->size[0] != 0) {
+                  /* 'polyfit_lhfgrad_surf_cleanmesh:62' prdirs(ii,1:3) = maxprdir'; */
+                  for (nverts = 0; nverts < 3; nverts++) {
+                    prdirs->data[(ii + prdirs->size[0] * nverts) - 1] =
+                      maxprdir[nverts];
+                  }
+                }
               }
 
-              /* 'polyfit_lhfgrad_surf_cleanmesh:52' while (1) */
-              do {
-                exitg1 = 0U;
-
-                /*  Collect neighbor vertices */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:54' [ngbvs, nverts, vtags, ftags] = obtain_nring_surf( ii, ringv, minpntsv, ... */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:55'             tris, opphes, v2he, ngbvs, vtags, ftags); */
-                nverts = b_obtain_nring_surf(ii, ringv, minpntsv, tris, opphes,
-                  v2he, ngbvs, vtags, ftags);
-
-                /* 'polyfit_lhfgrad_surf_cleanmesh:57' if noprdir */
-                if (b0) {
-                  /* 'polyfit_lhfgrad_surf_cleanmesh:58' [deg, prcurvs] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
-                  polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, nv,
-                    &deg, prcurvs);
-                } else {
-                  /* 'polyfit_lhfgrad_surf_cleanmesh:59' elseif nargout==2 */
-                  /* 'polyfit_lhfgrad_surf_cleanmesh:60' [deg, prcurvs, maxprdir] = polyfit_lhfgrad_surf_point( ii, ngbvs, nverts, xs, nrms, deg_in, false); */
-                  b_polyfit_lhfgrad_surf_point(ii, ngbvs, nverts, xs, nrms, nv,
-                    &deg, prcurvs, maxprdir);
-
-                  /* 'polyfit_lhfgrad_surf_cleanmesh:62' if size(prdirs,1) */
-                  if (prdirs->size[0] != 0) {
-                    /* 'polyfit_lhfgrad_surf_cleanmesh:62' prdirs(ii,1:3) = maxprdir'; */
-                    for (nverts = 0; nverts < 3; nverts++) {
-                      prdirs->data[(ii + prdirs->size[0] * nverts) - 1] =
-                        maxprdir[nverts];
-                    }
-                  }
+              /* 'polyfit_lhfgrad_surf_cleanmesh:65' if size(curs,1) */
+              if (curs->size[0] != 0) {
+                /* 'polyfit_lhfgrad_surf_cleanmesh:65' curs(ii,1:2) = prcurvs'; */
+                for (nverts = 0; nverts < 2; nverts++) {
+                  curs->data[(ii + curs->size[0] * nverts) - 1] = prcurvs[nverts];
                 }
+              }
 
-                /* 'polyfit_lhfgrad_surf_cleanmesh:65' if size(curs,1) */
-                if (curs->size[0] != 0) {
-                  /* 'polyfit_lhfgrad_surf_cleanmesh:65' curs(ii,1:2) = prcurvs'; */
-                  for (nverts = 0; nverts < 2; nverts++) {
-                    curs->data[(ii + curs->size[0] * nverts) - 1] =
-                      prcurvs[nverts];
-                  }
-                }
+              /*  Enlarge the neighborhood if necessary */
+              /* 'polyfit_lhfgrad_surf_cleanmesh:68' if deg < deg_in && ringv<ring+ring */
+              if ((deg < nv) && (ringv < ring + ring)) {
+                /* 'polyfit_lhfgrad_surf_cleanmesh:69' ringv=ringv+0.5; */
+                ringv += 0.5;
+              } else {
+                exitg1 = 1U;
+              }
+            } while (exitg1 == 0U);
 
-                /*  Enlarge the neighborhood if necessary */
-                /* 'polyfit_lhfgrad_surf_cleanmesh:68' if deg < deg_in && ringv<ring+ring */
-                if ((deg < nv) && (ringv < ring + ring)) {
-                  /* 'polyfit_lhfgrad_surf_cleanmesh:69' ringv=ringv+0.5; */
-                  ringv += 0.5;
-                } else {
-                  exitg1 = 1U;
-                }
-              } while (exitg1 == 0U);
-
-              /* 'polyfit_lhfgrad_surf_cleanmesh:70' else */
-            }
+            /* 'polyfit_lhfgrad_surf_cleanmesh:70' else */
           }
         }
       }
@@ -5179,7 +5441,7 @@ static void polyfit_lhf_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T
 
 /*
  * function [nrm, deg, prcurvs, maxprdir] = polyfit_lhf_surf_point...
- *     (v, ngbvs, nverts, xs, nrms_coor, degree, interp, guardosc)
+ *     ( v, ngbvs, nverts, xs, nrms_coor, degree, interp, guardosc)
  */
 static void polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128], int32_T
   nverts, const emxArray_real_T *xs, const emxArray_real_T *nrms_coor, int32_T
@@ -6148,83 +6410,86 @@ static real_T sum(const emxArray_real_T *x)
 }
 
 /*
- * function [nrms, curs, prdirs] = compute_diffops_surf_cleanmesh(nv_clean,...
- *     xs, tris, nrms_proj, degree, ring, iterfit, nrms, curs, prdirs)
+ * function nrms = compute_hisurf_normals(nv_clean,xs,tris, degree)
  */
-void compute_diffops_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T *xs,
-  const emxArray_int32_T *tris, const emxArray_real_T *nrms_proj, int32_T degree,
-  real_T ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs,
-  emxArray_real_T *prdirs)
+void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs, const
+  emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms)
 {
-  int32_T i1;
-  uint32_T uv0[2];
-  emxArray_int32_T *opphes;
-  emxArray_int32_T *v2he;
-  real_T u1;
+  emxArray_real_T *r0;
+  int32_T nv;
+  int32_T i0;
+  int32_T loop_ub;
+  emxArray_real_T *nrms_proj;
+  emxArray_real_T *r1;
+  emxArray_real_T *r2;
+  real_T d0;
+  b_emxInit_real_T(&r0, 1);
 
-  /* COMPUTE_DIFFOP_SURF_PARALLEL Compute differential operators on the */
-  /* interior and boundary points of a submesh on a processor. */
-  /* # coder.typeof( int32(0), [inf,3], [1,0]),coder.typeof( double(0), [inf,3], [1,0]), */
-  /* # int32(0), double(0), true, coder.typeof( double(0), [inf,3], [1,0]), */
-  /* # coder.typeof( double(0), [inf,2], [1,0]), */
-  /* # coder.typeof( double(0), [inf,3], [1,0])} */
-  /* 'compute_diffops_surf_cleanmesh:12' if nargin<6 */
-  /* 'compute_diffops_surf_cleanmesh:13' if nargin<7 */
-  /* 'compute_diffops_surf_cleanmesh:14' if nargin<8 && nargout>1 */
-  /* 'compute_diffops_surf_cleanmesh:15' if nargin<9 && nargout>1 */
-  /* 'compute_diffops_surf_cleanmesh:18' degree = max(1,min(6,degree)); */
-  if (6 > degree) {
-  } else {
-    degree = 6;
+  /* 'compute_hisurf_normals:3' coder.inline('never') */
+  /* 'compute_hisurf_normals:4' ring = double((degree+1)/2); */
+  /* 'compute_hisurf_normals:5' iterfit = false; */
+  /* 'compute_hisurf_normals:6' flabel = zeros(size(tris,1),1); */
+  /* 'compute_hisurf_normals:7' nv = size(xs,1); */
+  nv = xs->size[0];
+
+  /* 'compute_hisurf_normals:8' nrms = zeros(nv,3); */
+  /* 'compute_hisurf_normals:8' curs = zeros(nv,2); */
+  /* 'compute_hisurf_normals:8' prdirs = zeros(nv,3); */
+  /* Step1:  Compute the averaged normals at the vertex */
+  /* 'compute_hisurf_normals:11' nrms_proj = average_vertex_normal_tri_cleanmesh(nv_clean, xs, int32(tris), flabel); */
+  i0 = r0->size[0];
+  r0->size[0] = tris->size[0];
+  emxEnsureCapacity((emxArray__common *)r0, i0, (int32_T)sizeof(real_T));
+  loop_ub = tris->size[0] - 1;
+  for (i0 = 0; i0 <= loop_ub; i0++) {
+    r0->data[i0] = 0.0;
   }
 
-  if (1 < degree) {
-  } else {
-    degree = 1;
+  emxInit_real_T(&nrms_proj, 2);
+  c_average_vertex_normal_tri_cle(nv_clean, xs, tris, r0, nrms_proj);
+
+  /* Step2: Communicate variable "nrms_proj" at the ghost points (>nv_clean) */
+  /* Step3: Compute normals from polynomial fitting */
+  /* 'compute_hisurf_normals:16' [nrms] = compute_diffops_surf_cleanmesh(nv_clean, xs, int32(tris), ... */
+  /* 'compute_hisurf_normals:17'     nrms_proj, int32(degree), ring, iterfit, nrms, curs, prdirs); */
+  i0 = nrms->size[0] * nrms->size[1];
+  nrms->size[0] = nv;
+  nrms->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)nrms, i0, (int32_T)sizeof(real_T));
+  emxFree_real_T(&r0);
+  loop_ub = nv * 3 - 1;
+  for (i0 = 0; i0 <= loop_ub; i0++) {
+    nrms->data[i0] = 0.0;
   }
 
-  /* 'compute_diffops_surf_cleanmesh:19' if ring<=0 */
-  if (ring <= 0.0) {
-    /* 'compute_diffops_surf_cleanmesh:19' ring = 0.5*(double(degree) + 1); */
-    ring = 0.5 * ((real_T)degree + 1.0);
+  emxInit_real_T(&r1, 2);
+  i0 = r1->size[0] * r1->size[1];
+  r1->size[0] = nv;
+  r1->size[1] = 2;
+  emxEnsureCapacity((emxArray__common *)r1, i0, (int32_T)sizeof(real_T));
+  loop_ub = (nv << 1) - 1;
+  for (i0 = 0; i0 <= loop_ub; i0++) {
+    r1->data[i0] = 0.0;
   }
 
-  /* 'compute_diffops_surf_cleanmesh:20' ring = max(1,min(3.5,ring)); */
-  /*  Determine opposite halfedges */
-  /* 'compute_diffops_surf_cleanmesh:22' opphes = coder.nullcopy(zeros(size(tris),'int32')); */
-  for (i1 = 0; i1 < 2; i1++) {
-    uv0[i1] = (uint32_T)tris->size[i1];
+  emxInit_real_T(&r2, 2);
+  i0 = r2->size[0] * r2->size[1];
+  r2->size[0] = nv;
+  r2->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)r2, i0, (int32_T)sizeof(real_T));
+  loop_ub = nv * 3 - 1;
+  for (i0 = 0; i0 <= loop_ub; i0++) {
+    r2->data[i0] = 0.0;
   }
 
-  emxInit_int32_T(&opphes, 2);
-  b_emxInit_int32_T(&v2he, 1);
-  i1 = opphes->size[0] * opphes->size[1];
-  opphes->size[0] = (int32_T)uv0[0];
-  opphes->size[1] = 3;
-  emxEnsureCapacity((emxArray__common *)opphes, i1, (int32_T)sizeof(int32_T));
+  d0 = (real_T)(degree + 1) / 2.0;
+  d0 = d0 < 0.0 ? ceil(d0 - 0.5) : floor(d0 + 0.5);
+  b_compute_diffops_surf_cleanmesh(nv_clean, xs, tris, nrms_proj, degree, d0, nrms,
+    r1, r2);
 
-  /* 'compute_diffops_surf_cleanmesh:23' opphes = determine_opposite_halfedge_tri(int32(size(xs,1)), tris, opphes); */
-  determine_opposite_halfedge_tri(xs->size[0], tris, opphes);
-
-  /*  Determine incident halfedge. */
-  /* 'compute_diffops_surf_cleanmesh:26' v2he = coder.nullcopy(zeros( size(xs,1),1,'int32')); */
-  i1 = v2he->size[0];
-  v2he->size[0] = xs->size[0];
-  emxEnsureCapacity((emxArray__common *)v2he, i1, (int32_T)sizeof(int32_T));
-
-  /* 'compute_diffops_surf_cleanmesh:27' v2he = determine_incident_halfedges( tris, opphes, v2he); */
-  determine_incident_halfedges(tris, opphes, v2he);
-
-  /*  Invoke fitting algorithm. Do not use iterative fitting except for linear */
-  /*  fitting. Do not use interp point. */
-  /* 'compute_diffops_surf_cleanmesh:32' if nargin<8 && nargout<2 */
-  /* 'compute_diffops_surf_cleanmesh:35' else */
-  /* 'compute_diffops_surf_cleanmesh:36' [nrms,curs,prdirs] = polyfit_lhf_surf_cleanmesh(nv_clean, xs, tris, ... */
-  /* 'compute_diffops_surf_cleanmesh:37'         nrms_proj, opphes, v2he, degree, ring, iterfit, true, nrms, curs, prdirs); */
-  u1 = 3.5 <= ring ? 3.5 : ring;
-  u1 = 1.0 >= u1 ? 1.0 : u1;
-  polyfit_lhf_surf_cleanmesh(nv_clean, xs, tris, nrms_proj, opphes, v2he, degree,
-    u1, iterfit, nrms, curs, prdirs);
-  emxFree_int32_T(&v2he);
-  emxFree_int32_T(&opphes);
+  /* Step4: (a) Update variable "nrms" of "nv_clean" pnts */
+  /*  (b) Communicate variable "nrms" of ghost pnts (>nv_clean) */
+  emxFree_real_T(&r2);
+  emxFree_real_T(&r1);
+  emxFree_real_T(&nrms_proj);
 }

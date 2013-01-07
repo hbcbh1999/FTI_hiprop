@@ -27,6 +27,16 @@
 EXTERN_C void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensions);
 
 /*!
+ * \brief Initialization of a 8bit int array
+ * 
+ * Does not allocate memory for data
+ * \param pEmxArray address of a boolean array pointer
+ * \param numDimensions number of dimensions
+ */
+
+EXTERN_C void emxInit_int8_T(emxArray_int8_T **pEmxArray, int32_T numDimensions);
+
+/*!
  * \brief Initialization of a 32bit int array
  * 
  * Does not allocate memory for data
@@ -163,6 +173,14 @@ EXTERN_C emxArray_boolean_T *emxCreateWrapper_boolean_T(boolean_T *data, int32_T
  * \param pEmxArray address of the array being deallocated
  */
 EXTERN_C void emxFree_boolean_T(emxArray_boolean_T **pEmxArray);
+
+/*!
+ * \brief Deallocate the memory of a 8bit int array
+ *
+ * \param pEmxArray address of the array being deallocated
+ */
+
+EXTERN_C void emxFree_int8_T(emxArray_int8_T **pEmxArray);
 
 /*!
  * \brief Deallocate the memory of a 32bit int array

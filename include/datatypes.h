@@ -31,6 +31,22 @@
 
 /* Type Definitions */
 
+#ifndef struct_emxArray_int8_T
+#define struct_emxArray_int8_T
+
+/*!
+ * \brief 8bit int array
+ */
+typedef struct emxArray_int8_T
+{
+  int8_T *data;			/*!< column-major order 8bit int array */
+  int32_T *size;		/*!< array size in each dimension */
+  int32_T allocatedSize;	/*!< allocated size */
+  int32_T numDimensions;	/*!< number of dimensions */
+  boolean_T canFreeData;	/*!< whether data could be freed */
+} emxArray_int8_T;
+
+#endif
 
 #ifndef struct_emxArray_int32_T
 #define struct_emxArray_int32_T

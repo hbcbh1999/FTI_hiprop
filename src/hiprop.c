@@ -4242,8 +4242,6 @@ void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree)
     hpComputeEstimatedNormal(mesh);
     hpUpdateGhostPointData_real_T(mesh, mesh->est_nor);
 
-    compute_diffops_surf(mesh->ps, mesh->tris, in_degree, in_ring, false, mesh->nor, mesh->curv, in_prdirs, 0);
-
     compute_diffops_surf_cleanmesh(num_ps_clean, mesh->ps, mesh->tris, mesh->est_nor, in_degree, in_ring, false, mesh->nor, mesh->curv, in_prdirs);
 
     hpUpdateGhostPointData_real_T(mesh, mesh->nor);
