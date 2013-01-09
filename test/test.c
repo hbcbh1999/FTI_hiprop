@@ -13,6 +13,7 @@
 
 int main (int argc, char *argv[])
 {
+    /*
     int i;
     int num_proc, rank;
     int tag = 1;
@@ -68,6 +69,7 @@ int main (int argc, char *argv[])
 	hpDistMesh(root, NULL, mesh, NULL, tag, &ps_globalid, &tri_globalid);
 
     hpBuildPUpdateInfo(mesh);
+    */
 
 /*
     hiPropMesh *mesh;
@@ -95,6 +97,7 @@ int main (int argc, char *argv[])
 
     //if (rank == 0)
     //{
+    /*
 	printf("ps pinfo of rank 0:\n");
 	for (i = 1; i <= mesh->ps->size[0]; i++)
 	{
@@ -110,7 +113,7 @@ int main (int argc, char *argv[])
 	    printf("\n");
 	}
 
-/*	
+	
 	printf("tris pinfo of rank 0:\n");
 	for (i = 1; i <= mesh->tris->size[0]; i++)
 	{
@@ -125,7 +128,6 @@ int main (int argc, char *argv[])
 	    printf("\n");
 	}
     //}
-*/
 
 	int cur_proc, j;
     for(i = 1; i<=mesh->nb_proc->size[0]; i++)
@@ -151,5 +153,6 @@ int main (int argc, char *argv[])
     printf("Success processor %d\n", rank);
     MPI_Finalize();
 
+    */
     return 1;
 }
