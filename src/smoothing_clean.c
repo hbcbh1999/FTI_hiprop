@@ -1,7 +1,5 @@
 #include "util.h"
 
-
-
 static void accumulate_isometry_energy_tri(const emxArray_real_T *xs, const
   emxArray_int32_T *tris, emxArray_real_T *elem_energies, emxArray_real_T
   *grads_smooth, emxArray_real_T *Hs_smooth);
@@ -18,12 +16,12 @@ static void b_compute_qtb(const emxArray_real_T *Q, emxArray_real_T *bs, int32_T
   ncols);
 static void b_determine_incident_halfedges(const emxArray_int32_T *elems, const
   emxArray_int32_T *opphes, emxArray_int32_T *v2he);
-static void b_determine_opposite_halfedge_t(int32_T nv, const emxArray_int32_T
-  *tris, emxArray_int32_T *opphes);
 static void b_eigenanalysis_surf(const emxArray_real_T *As, const
   emxArray_real_T *bs, const emxArray_boolean_T *isridge, emxArray_real_T *us,
   emxArray_real_T *Vs);
 static boolean_T b_eml_strcmp(const char_T a[3]);
+static void b_emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T
+  numDimensions);
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
   numDimensions);
 static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
@@ -68,6 +66,8 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
   *grads_smooth, const emxArray_real_T *Hs_smooth, boolean_T check_trank,
   emxArray_real_T *us_smooth);
 static boolean_T c_eml_strcmp(const char_T a[3]);
+static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
+  numDimensions);
 static void c_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T *degree, const emxArray_real_T *ws);
@@ -83,38 +83,32 @@ static real_T check_prism(const real_T xs[9], const real_T us[9]);
 static boolean_T compute_cmf_weights(const real_T pos[3], const emxArray_real_T *
   pnts, const emxArray_real_T *nrms, int32_T deg, emxArray_real_T *ws);
 
-
 static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T
   *nrms_proj, int32_T degree, real_T ring, emxArray_real_T *nrms, const
   emxArray_real_T *curs, const emxArray_real_T *prdirs);
 
-
 static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
   const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms);
-
-
 static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
   emxArray_int32_T *tris, const emxArray_int32_T *flabel, emxArray_real_T *As,
   emxArray_real_T *bs, emxArray_real_T *bs_lbl);
 static void compute_qtb(const emxArray_real_T *Q, emxArray_real_T *bs, int32_T
   ncols);
-
-
 static void compute_statistics_tris_global(int32_T nt_clean, const
   emxArray_real_T *xs, const emxArray_int32_T *tris, real_T *min_angle, real_T
   *max_angle, real_T *min_area, real_T *max_area);
-
-
 static boolean_T compute_weights(const emxArray_real_T *us, const
   emxArray_real_T *nrms, int32_T deg, emxArray_real_T *ws);
 static real_T cos_angle(const real_T ts1[3], const real_T ts2[3]);
 static boolean_T d_eml_strcmp(const char_T a[3]);
+static void d_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 
 static void c_determine_incident_halfedges(const emxArray_int32_T *elems, const
   emxArray_int32_T *opphes, emxArray_int32_T *v2he);
-static void c_determine_opposite_halfedge(real_T nv, const emxArray_int32_T *elems,
-  emxArray_int32_T *opphes);
+static void determine_opposite_halfedge(int32_T nv, const emxArray_int32_T
+  *elems, emxArray_int32_T *opphes);
+
 
 static boolean_T e_eml_strcmp(const char_T a[3]);
 static void eig3_sorted(const real_T A[9], real_T V[9], real_T lambdas[3]);
@@ -156,12 +150,10 @@ static int32_T obtain_nring_quad(int32_T vid, real_T ring, int32_T minpnts,
   emxArray_int32_T *v2he, int32_T ngbvs[128], emxArray_boolean_T *vtags,
   emxArray_boolean_T *ftags);
 
-
 static int32_T c_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
   const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const
   emxArray_int32_T *v2he, int32_T ngbvs[128], emxArray_boolean_T *vtags,
   emxArray_boolean_T *ftags, const int32_T ngbfs[256]);
-
 
 static void polyfit3d_cmf_edge(const emxArray_real_T *ngbpnts1, const
   emxArray_real_T *nrms1, const emxArray_real_T *ngbpnts2, const emxArray_real_T
@@ -741,14 +733,14 @@ static boolean_T add_disps_to_pntpositions(int32_T nv_clean, int32_T nt_clean,
   boolean_T pnt_added;
   emxArray_real_T *b_xs;
   emxArray_real_T *c_xs;
-  int32_T i20;
+  int32_T i19;
   real_T max_area;
   real_T min_area;
   real_T max_angle;
   real_T min_angle;
-  int32_T i21;
+  int32_T i20;
   int32_T loop_ub;
-  int32_T i22;
+  int32_T i21;
 
   /* 'add_disps_to_pntpositions:3' coder.inline('never') */
   /* 'add_disps_to_pntpositions:4' pnt_added = false; */
@@ -761,9 +753,9 @@ static boolean_T add_disps_to_pntpositions(int32_T nv_clean, int32_T nt_clean,
     /*  Step 1: Compute the new positions by adding the displacements */
     /* 'add_disps_to_pntpositions:7' xs_new = xs(1:nv_clean,:) + us_smooth(1:nv_clean,:); */
     if (1 > nv_clean) {
-      i20 = 0;
+      i19 = 0;
     } else {
-      i20 = nv_clean;
+      i19 = nv_clean;
     }
 
     /*  Step 2: Compute the minimum angle of the new mesh     */
@@ -774,23 +766,23 @@ static boolean_T add_disps_to_pntpositions(int32_T nv_clean, int32_T nt_clean,
     /* 'add_disps_to_pntpositions:12' if min_angle>min_angle_pre */
     if (min_angle > min_angle_pre) {
       /* 'add_disps_to_pntpositions:13' xs(1:nv_clean,:) = xs_new; */
-      i21 = c_xs->size[0] * c_xs->size[1];
-      c_xs->size[0] = i20;
+      i20 = c_xs->size[0] * c_xs->size[1];
+      c_xs->size[0] = i19;
       c_xs->size[1] = 3;
-      emxEnsureCapacity((emxArray__common *)c_xs, i21, (int32_T)sizeof(real_T));
-      for (i21 = 0; i21 < 3; i21++) {
-        loop_ub = i20 - 1;
-        for (i22 = 0; i22 <= loop_ub; i22++) {
-          c_xs->data[i22 + c_xs->size[0] * i21] = xs->data[i22 + xs->size[0] *
-            i21] + us_smooth->data[i22 + us_smooth->size[0] * i21];
+      emxEnsureCapacity((emxArray__common *)c_xs, i20, (int32_T)sizeof(real_T));
+      for (i20 = 0; i20 < 3; i20++) {
+        loop_ub = i19 - 1;
+        for (i21 = 0; i21 <= loop_ub; i21++) {
+          c_xs->data[i21 + c_xs->size[0] * i20] = xs->data[i21 + xs->size[0] *
+            i20] + us_smooth->data[i21 + us_smooth->size[0] * i20];
         }
       }
 
-      for (i20 = 0; i20 < 3; i20++) {
+      for (i19 = 0; i19 < 3; i19++) {
         loop_ub = c_xs->size[0] - 1;
-        for (i21 = 0; i21 <= loop_ub; i21++) {
-          xs->data[i21 + xs->size[0] * i20] = c_xs->data[i21 + c_xs->size[0] *
-            i20];
+        for (i20 = 0; i20 <= loop_ub; i20++) {
+          xs->data[i20 + xs->size[0] * i19] = c_xs->data[i20 + c_xs->size[0] *
+            i19];
         }
       }
 
@@ -802,28 +794,28 @@ static boolean_T add_disps_to_pntpositions(int32_T nv_clean, int32_T nt_clean,
       /* 'add_disps_to_pntpositions:16' elseif ~scaled */
       /* 'add_disps_to_pntpositions:17' xs(1:nv_clean,:)= xs(1:nv_clean,:) + us_smooth(1:nv_clean,:); */
       if (1 > nv_clean) {
-        i20 = 0;
+        i19 = 0;
       } else {
-        i20 = nv_clean;
+        i19 = nv_clean;
       }
 
-      i21 = b_xs->size[0] * b_xs->size[1];
-      b_xs->size[0] = i20;
+      i20 = b_xs->size[0] * b_xs->size[1];
+      b_xs->size[0] = i19;
       b_xs->size[1] = 3;
-      emxEnsureCapacity((emxArray__common *)b_xs, i21, (int32_T)sizeof(real_T));
-      for (i21 = 0; i21 < 3; i21++) {
-        loop_ub = i20 - 1;
-        for (i22 = 0; i22 <= loop_ub; i22++) {
-          b_xs->data[i22 + b_xs->size[0] * i21] = xs->data[i22 + xs->size[0] *
-            i21] + us_smooth->data[i22 + us_smooth->size[0] * i21];
+      emxEnsureCapacity((emxArray__common *)b_xs, i20, (int32_T)sizeof(real_T));
+      for (i20 = 0; i20 < 3; i20++) {
+        loop_ub = i19 - 1;
+        for (i21 = 0; i21 <= loop_ub; i21++) {
+          b_xs->data[i21 + b_xs->size[0] * i20] = xs->data[i21 + xs->size[0] *
+            i20] + us_smooth->data[i21 + us_smooth->size[0] * i20];
         }
       }
 
-      for (i20 = 0; i20 < 3; i20++) {
+      for (i19 = 0; i19 < 3; i19++) {
         loop_ub = b_xs->size[0] - 1;
-        for (i21 = 0; i21 <= loop_ub; i21++) {
-          xs->data[i21 + xs->size[0] * i20] = b_xs->data[i21 + b_xs->size[0] *
-            i20];
+        for (i20 = 0; i20 <= loop_ub; i20++) {
+          xs->data[i20 + xs->size[0] * i19] = b_xs->data[i20 + b_xs->size[0] *
+            i19];
         }
       }
 
@@ -882,7 +874,7 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
   emxArray_real_T *c_alpha_tmp;
   emxArray_real_T *d_alpha_tmp;
   int32_T exitg1;
-  int32_T i17;
+  int32_T i16;
   int32_T unnamed_idx_1;
   int32_T loop_ub;
   int32_T exitg2;
@@ -911,66 +903,66 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
   do {
     exitg1 = 0U;
     if (1 > nv_clean) {
-      i17 = 0;
+      i16 = 0;
     } else {
-      i17 = nv_clean;
+      i16 = nv_clean;
     }
 
     unnamed_idx_1 = r19->size[0];
-    r19->size[0] = i17;
+    r19->size[0] = i16;
     emxEnsureCapacity((emxArray__common *)r19, unnamed_idx_1, (int32_T)sizeof
                       (int32_T));
-    loop_ub = i17 - 1;
-    for (i17 = 0; i17 <= loop_ub; i17++) {
-      r19->data[i17] = 1 + i17;
+    loop_ub = i16 - 1;
+    for (i16 = 0; i16 <= loop_ub; i16++) {
+      r19->data[i16] = 1 + i16;
     }
 
-    i17 = r18->size[0] * r18->size[1];
+    i16 = r18->size[0] * r18->size[1];
     r18->size[0] = 1;
-    emxEnsureCapacity((emxArray__common *)r18, i17, (int32_T)sizeof(int32_T));
+    emxEnsureCapacity((emxArray__common *)r18, i16, (int32_T)sizeof(int32_T));
     unnamed_idx_1 = r19->size[0];
-    i17 = r18->size[0] * r18->size[1];
+    i16 = r18->size[0] * r18->size[1];
     r18->size[1] = unnamed_idx_1;
-    emxEnsureCapacity((emxArray__common *)r18, i17, (int32_T)sizeof(int32_T));
+    emxEnsureCapacity((emxArray__common *)r18, i16, (int32_T)sizeof(int32_T));
     loop_ub = r19->size[0] - 1;
-    for (i17 = 0; i17 <= loop_ub; i17++) {
-      r18->data[i17] = r19->data[i17];
+    for (i16 = 0; i16 <= loop_ub; i16++) {
+      r18->data[i16] = r19->data[i16];
     }
 
     /*  Check whether any value within vector v is less than alpha. */
     /* 'anylessthan:4' for i=1:int32(length(v)) */
     unnamed_idx_1 = r18->size[1];
-    i17 = b_alpha_tmp->size[0];
+    i16 = b_alpha_tmp->size[0];
     b_alpha_tmp->size[0] = unnamed_idx_1;
-    emxEnsureCapacity((emxArray__common *)b_alpha_tmp, i17, (int32_T)sizeof
+    emxEnsureCapacity((emxArray__common *)b_alpha_tmp, i16, (int32_T)sizeof
                       (real_T));
     loop_ub = unnamed_idx_1 - 1;
-    for (i17 = 0; i17 <= loop_ub; i17++) {
-      b_alpha_tmp->data[i17] = alpha_tmp->data[r18->data[i17] - 1];
+    for (i16 = 0; i16 <= loop_ub; i16++) {
+      b_alpha_tmp->data[i16] = alpha_tmp->data[r18->data[i16] - 1];
     }
 
     if (b_alpha_tmp->size[0] == 0) {
       loop_ub = 0;
     } else {
       unnamed_idx_1 = r18->size[1];
-      i17 = c_alpha_tmp->size[0];
+      i16 = c_alpha_tmp->size[0];
       c_alpha_tmp->size[0] = unnamed_idx_1;
-      emxEnsureCapacity((emxArray__common *)c_alpha_tmp, i17, (int32_T)sizeof
+      emxEnsureCapacity((emxArray__common *)c_alpha_tmp, i16, (int32_T)sizeof
                         (real_T));
       loop_ub = unnamed_idx_1 - 1;
-      for (i17 = 0; i17 <= loop_ub; i17++) {
-        c_alpha_tmp->data[i17] = alpha_tmp->data[r18->data[i17] - 1];
+      for (i16 = 0; i16 <= loop_ub; i16++) {
+        c_alpha_tmp->data[i16] = alpha_tmp->data[r18->data[i16] - 1];
       }
 
       if (c_alpha_tmp->size[0] > 1) {
         unnamed_idx_1 = r18->size[1];
-        i17 = d_alpha_tmp->size[0];
+        i16 = d_alpha_tmp->size[0];
         d_alpha_tmp->size[0] = unnamed_idx_1;
-        emxEnsureCapacity((emxArray__common *)d_alpha_tmp, i17, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)d_alpha_tmp, i16, (int32_T)sizeof
                           (real_T));
         loop_ub = unnamed_idx_1 - 1;
-        for (i17 = 0; i17 <= loop_ub; i17++) {
-          d_alpha_tmp->data[i17] = alpha_tmp->data[r18->data[i17] - 1];
+        for (i16 = 0; i16 <= loop_ub; i16++) {
+          d_alpha_tmp->data[i16] = alpha_tmp->data[r18->data[i16] - 1];
         }
 
         loop_ub = d_alpha_tmp->size[0];
@@ -1008,14 +1000,14 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
       /* 'async_scale_disps_tri_cleanmesh:18' if (niter>10) */
       if (niter > 10) {
         /* 'async_scale_disps_tri_cleanmesh:19' us_smooth(:) = 0; */
-        i17 = us_smooth->size[0] * us_smooth->size[1];
+        i16 = us_smooth->size[0] * us_smooth->size[1];
         us_smooth->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)us_smooth, i17, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)us_smooth, i16, (int32_T)sizeof
                           (real_T));
-        for (i17 = 0; i17 < 3; i17++) {
+        for (i16 = 0; i16 < 3; i16++) {
           loop_ub = us_smooth->size[0] - 1;
           for (unnamed_idx_1 = 0; unnamed_idx_1 <= loop_ub; unnamed_idx_1++) {
-            us_smooth->data[unnamed_idx_1 + us_smooth->size[0] * i17] = 0.0;
+            us_smooth->data[unnamed_idx_1 + us_smooth->size[0] * i16] = 0.0;
           }
         }
 
@@ -1039,7 +1031,6 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
 
         /*  Step 2: Update the variables 1. scaled "us_smooth" , 2. alpha_tmp */
         /*  of "nv_clean" pnts and communicate values of ghost pnts (>nv_clean)  */
-        
         /*  Step 3: Again check if any rescaling has to be performed or not. */
         /* 'async_scale_disps_tri_cleanmesh:33' [alpha_tmp,us_smooth] = rescale_displacements(xs, us_smooth, tris, tol, alpha_tmp); */
         b_rescale_displacements(xs, us_smooth, tris, alpha_tmp);
@@ -1235,224 +1226,6 @@ static void b_determine_incident_halfedges(const emxArray_int32_T *elems, const
 
     kk++;
   }
-}
-
-/*
- * function opphes = determine_opposite_halfedge_tri(nv, tris, opphes)
- */
-static void b_determine_opposite_halfedge_t(int32_T nv, const emxArray_int32_T
-  *tris, emxArray_int32_T *opphes)
-{
-  emxArray_int32_T *is_index;
-  int32_T ntris;
-  int32_T i11;
-  int32_T ii;
-  boolean_T exitg1;
-  int32_T b_is_index[3];
-  emxArray_int32_T *v2nv;
-  emxArray_int32_T *v2he;
-  int32_T ne;
-  static const int8_T iv24[3] = { 1, 2, 0 };
-
-  int32_T tris_idx_0;
-  int32_T loop_ub;
-  static const int8_T iv25[3] = { 2, 3, 1 };
-
-  emxInit_int32_T(&is_index, 1);
-
-  /* DETERMINE_OPPOSITE_HALFEDGE_TRI Determine opposite half-edges for triangle  */
-  /* mesh. */
-  /*  DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS,OPPHES) Determines */
-  /*  opposite half-edges for triangle mesh. The following explains the input */
-  /*  and output arguments. */
-  /*  */
-  /*  OPPHES = DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS) */
-  /*  OPPHES = DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS,OPPHES) */
-  /*  Computes mapping from each half-edge to its opposite half-edge for  */
-  /*  triangle mesh. */
-  /*  */
-  /*  Convention: Each half-edge is indicated by <face_id,local_edge_id>. */
-  /*  We assign 2 bits to local_edge_id (starts from 0). */
-  /*  */
-  /*  See also DETERMINE_OPPOSITE_HALFEDGE */
-  /* 'determine_opposite_halfedge_tri:18' coder.inline('never'); */
-  /*  assert(isscalar(nv)&&isa(nv,'int32')); */
-  /*  assert((size(tris,2)==3) && (size(tris,1)>=1) && isa(tris,'int32')); */
-  /*  assert((size(opphes,2)==3) && (size(opphes,1)>=1) && isa(opphes,'int32')); */
-  /* 'determine_opposite_halfedge_tri:23' nepE = int32(3); */
-  /*  Number of edges per element */
-  /* 'determine_opposite_halfedge_tri:24' next = int32([2,3,1]); */
-  /* 'determine_opposite_halfedge_tri:25' inds = int32(1:3); */
-  /* 'determine_opposite_halfedge_tri:27' ntris = int32(size(tris,1)); */
-  ntris = tris->size[0];
-
-  /* % First, build is_index to store starting position for each vertex. */
-  /* 'determine_opposite_halfedge_tri:29' is_index = zeros(nv+1,1,'int32'); */
-  i11 = is_index->size[0];
-  is_index->size[0] = nv + 1;
-  emxEnsureCapacity((emxArray__common *)is_index, i11, (int32_T)sizeof(int32_T));
-  for (i11 = 0; i11 <= nv; i11++) {
-    is_index->data[i11] = 0;
-  }
-
-  /* 'determine_opposite_halfedge_tri:30' for ii=1:ntris */
-  ii = 0;
-  exitg1 = 0U;
-  while ((exitg1 == 0U) && (ii + 1 <= ntris)) {
-    /* 'determine_opposite_halfedge_tri:31' if tris(ii,1)==0 */
-    if (tris->data[ii] == 0) {
-      /* 'determine_opposite_halfedge_tri:31' ntris=ii-1; */
-      ntris = ii;
-      exitg1 = 1U;
-    } else {
-      /* 'determine_opposite_halfedge_tri:32' is_index(tris(ii,inds)+1) = is_index(tris(ii,inds)+1) + 1; */
-      for (i11 = 0; i11 < 3; i11++) {
-        b_is_index[i11] = is_index->data[tris->data[ii + tris->size[0] * i11]] +
-          1;
-      }
-
-      for (i11 = 0; i11 < 3; i11++) {
-        is_index->data[tris->data[ii + tris->size[0] * i11]] = b_is_index[i11];
-      }
-
-      ii++;
-    }
-  }
-
-  /* 'determine_opposite_halfedge_tri:34' is_index(1) = 1; */
-  is_index->data[0] = 1;
-
-  /* 'determine_opposite_halfedge_tri:35' for ii=1:nv */
-  for (ii = 1; ii <= nv; ii++) {
-    /* 'determine_opposite_halfedge_tri:36' is_index(ii+1) = is_index(ii) + is_index(ii+1); */
-    is_index->data[ii] += is_index->data[ii - 1];
-  }
-
-  emxInit_int32_T(&v2nv, 1);
-  emxInit_int32_T(&v2he, 1);
-
-  /* 'determine_opposite_halfedge_tri:39' ne = ntris*nepE; */
-  ne = ntris * 3;
-
-  /* 'determine_opposite_halfedge_tri:40' v2nv = coder.nullcopy(zeros( ne,1, 'int32')); */
-  i11 = v2nv->size[0];
-  v2nv->size[0] = ne;
-  emxEnsureCapacity((emxArray__common *)v2nv, i11, (int32_T)sizeof(int32_T));
-
-  /*  Vertex to next vertex in each halfedge. */
-  /* 'determine_opposite_halfedge_tri:41' v2he = coder.nullcopy(zeros( ne,1, 'int32')); */
-  i11 = v2he->size[0];
-  v2he->size[0] = ne;
-  emxEnsureCapacity((emxArray__common *)v2he, i11, (int32_T)sizeof(int32_T));
-
-  /*  Vertex to half-edge. */
-  /* 'determine_opposite_halfedge_tri:42' for ii=1:ntris */
-  for (ii = 0; ii + 1 <= ntris; ii++) {
-    /* 'determine_opposite_halfedge_tri:43' v2nv(is_index( tris(ii,inds))) = tris(ii,next); */
-    for (i11 = 0; i11 < 3; i11++) {
-      v2nv->data[is_index->data[tris->data[ii + tris->size[0] * i11] - 1] - 1] =
-        tris->data[ii + tris->size[0] * iv24[i11]];
-    }
-
-    /* 'determine_opposite_halfedge_tri:44' v2he(is_index( tris(ii,inds))) = 4*ii-1+inds; */
-    ne = (ii + 1) << 2;
-    for (i11 = 0; i11 < 3; i11++) {
-      v2he->data[is_index->data[tris->data[ii + tris->size[0] * i11] - 1] - 1] =
-        i11 + ne;
-    }
-
-    /* 'determine_opposite_halfedge_tri:45' is_index(tris(ii,inds)) = is_index(tris(ii,inds)) + 1; */
-    for (i11 = 0; i11 < 3; i11++) {
-      b_is_index[i11] = is_index->data[tris->data[ii + tris->size[0] * i11] - 1]
-        + 1;
-    }
-
-    for (i11 = 0; i11 < 3; i11++) {
-      is_index->data[tris->data[ii + tris->size[0] * i11] - 1] = b_is_index[i11];
-    }
-  }
-
-  /* 'determine_opposite_halfedge_tri:47' for ii=nv-1:-1:1 */
-  for (ii = nv - 1; ii > 0; ii--) {
-    /* 'determine_opposite_halfedge_tri:47' is_index(ii+1) = is_index(ii); */
-    is_index->data[ii] = is_index->data[ii - 1];
-  }
-
-  /* 'determine_opposite_halfedge_tri:48' is_index(1)=1; */
-  is_index->data[0] = 1;
-
-  /* % Set opphes */
-  /* 'determine_opposite_halfedge_tri:50' if nargin<3 || isempty(opphes) */
-  if (opphes->size[0] == 0) {
-    /* 'determine_opposite_halfedge_tri:51' opphes = zeros(size(tris,1), nepE, 'int32'); */
-    tris_idx_0 = tris->size[0];
-    i11 = opphes->size[0] * opphes->size[1];
-    opphes->size[0] = tris_idx_0;
-    opphes->size[1] = 3;
-    emxEnsureCapacity((emxArray__common *)opphes, i11, (int32_T)sizeof(int32_T));
-    for (i11 = 0; i11 < 3; i11++) {
-      loop_ub = tris_idx_0 - 1;
-      for (ne = 0; ne <= loop_ub; ne++) {
-        opphes->data[ne + opphes->size[0] * i11] = 0;
-      }
-    }
-  } else {
-    /* 'determine_opposite_halfedge_tri:52' else */
-    /* 'determine_opposite_halfedge_tri:53' assert( size(opphes,1)>=ntris && size(opphes,2)>=nepE); */
-    /* 'determine_opposite_halfedge_tri:54' opphes(:) = 0; */
-    i11 = opphes->size[0] * opphes->size[1];
-    opphes->size[1] = 3;
-    emxEnsureCapacity((emxArray__common *)opphes, i11, (int32_T)sizeof(int32_T));
-    for (i11 = 0; i11 < 3; i11++) {
-      loop_ub = opphes->size[0] - 1;
-      for (ne = 0; ne <= loop_ub; ne++) {
-        opphes->data[ne + opphes->size[0] * i11] = 0;
-      }
-    }
-  }
-
-  /* 'determine_opposite_halfedge_tri:57' for ii=1:ntris */
-  for (ii = 0; ii + 1 <= ntris; ii++) {
-    /* 'determine_opposite_halfedge_tri:58' for jj=int32(1):3 */
-    for (ne = 0; ne < 3; ne++) {
-      /* 'determine_opposite_halfedge_tri:59' if opphes(ii,jj) */
-      if (opphes->data[ii + opphes->size[0] * ne] != 0) {
-      } else {
-        /* 'determine_opposite_halfedge_tri:60' v = tris(ii,jj); */
-        /* 'determine_opposite_halfedge_tri:60' vn = tris(ii,next(jj)); */
-        /*  LOCATE: Locate index col in v2nv(first:last) */
-        /* 'determine_opposite_halfedge_tri:63' found = int32(0); */
-        /* 'determine_opposite_halfedge_tri:64' for index = is_index(vn):is_index(vn+1)-1 */
-        loop_ub = is_index->data[tris->data[ii + tris->size[0] * (iv25[ne] - 1)]]
-          - 1;
-        for (tris_idx_0 = is_index->data[tris->data[ii + tris->size[0] *
-             (iv25[ne] - 1)] - 1] - 1; tris_idx_0 + 1 <= loop_ub; tris_idx_0++)
-        {
-          /* 'determine_opposite_halfedge_tri:65' if v2nv(index)==v */
-          if (v2nv->data[tris_idx_0] == tris->data[ii + tris->size[0] * ne]) {
-            /* 'determine_opposite_halfedge_tri:66' opp = v2he(index); */
-            /* 'determine_opposite_halfedge_tri:67' opphes(ii,jj) = opp; */
-            opphes->data[ii + opphes->size[0] * ne] = v2he->data[tris_idx_0];
-
-            /* opphes(heid2fid(opp),heid2leid(opp)) = ii*4+jj-1; */
-            /* 'determine_opposite_halfedge_tri:69' opphes(bitshift(uint32(opp),-2),mod(opp,4)+1) = ii*4+jj-1; */
-            opphes->data[((int32_T)((uint32_T)v2he->data[tris_idx_0] >> 2U) +
-                          opphes->size[0] * (v2he->data[tris_idx_0] -
-              ((v2he->data[tris_idx_0] >> 2) << 2))) - 1] = ((ii + 1) << 2) + ne;
-
-            /* 'determine_opposite_halfedge_tri:71' found = found + 1; */
-          }
-        }
-
-        /*  Check for consistency */
-        /* 'determine_opposite_halfedge_tri:76' if found>1 */
-      }
-    }
-  }
-
-  emxFree_int32_T(&v2he);
-  emxFree_int32_T(&v2nv);
-  emxFree_int32_T(&is_index);
 }
 
 /*
@@ -1694,6 +1467,25 @@ static boolean_T b_eml_strcmp(const char_T a[3])
   }
 
   return b_bool;
+}
+
+static void b_emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T
+  numDimensions)
+{
+  emxArray_boolean_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_boolean_T *)malloc(sizeof(emxArray_boolean_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (boolean_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
 }
 
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
@@ -1961,7 +1753,7 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   int32_T jj;
   emxArray_real_T *b_V;
   int32_T c_V;
-  int32_T i13;
+  int32_T i12;
   int32_T loop_ub;
   int32_T b_loop_ub;
   emxArray_real_T *ws1;
@@ -2005,15 +1797,15 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
 
   emxInit_real_T(&b_V, 2);
   c_V = V->size[0];
-  i13 = b_V->size[0] * b_V->size[1];
+  i12 = b_V->size[0] * b_V->size[1];
   b_V->size[0] = c_V;
   b_V->size[1] = ii - jj;
-  emxEnsureCapacity((emxArray__common *)b_V, i13, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_V, i12, (int32_T)sizeof(real_T));
   loop_ub = (ii - jj) - 1;
   for (ii = 0; ii <= loop_ub; ii++) {
     b_loop_ub = c_V - 1;
-    for (i13 = 0; i13 <= b_loop_ub; i13++) {
-      b_V->data[i13 + b_V->size[0] * ii] = V->data[i13 + V->size[0] * (jj + ii)];
+    for (i12 = 0; i12 <= b_loop_ub; i12++) {
+      b_V->data[i12 + b_V->size[0] * ii] = V->data[i12 + V->size[0] * (jj + ii)];
     }
   }
 
@@ -3757,7 +3549,7 @@ static void b_rescale_displacements(const emxArray_real_T *xs, const
 {
   int32_T nv;
   int32_T ntri;
-  int32_T i19;
+  int32_T i18;
   int32_T ii;
   real_T b_us[9];
   boolean_T x[9];
@@ -3779,12 +3571,12 @@ static void b_rescale_displacements(const emxArray_real_T *xs, const
   ntri = tris->size[0];
 
   /* 'async_scale_disps_tri_cleanmesh:43' alpha_vs = ones(nv,1); */
-  i19 = alpha_vs->size[0];
+  i18 = alpha_vs->size[0];
   alpha_vs->size[0] = nv;
-  emxEnsureCapacity((emxArray__common *)alpha_vs, i19, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)alpha_vs, i18, (int32_T)sizeof(real_T));
   nv--;
-  for (i19 = 0; i19 <= nv; i19++) {
-    alpha_vs->data[i19] = 1.0;
+  for (i18 = 0; i18 <= nv; i18++) {
+    alpha_vs->data[i18] = 1.0;
   }
 
   /* 'async_scale_disps_tri_cleanmesh:45' for ii=1:ntri */
@@ -3793,15 +3585,15 @@ static void b_rescale_displacements(const emxArray_real_T *xs, const
     /* 'async_scale_disps_tri_cleanmesh:47' if nargin>6 && all(alpha_in(vs)==1) */
     /* 'async_scale_disps_tri_cleanmesh:52' us_tri = us(vs,1:3); */
     /* 'async_scale_disps_tri_cleanmesh:53' if all(us_tri(:)==0) */
-    for (i19 = 0; i19 < 3; i19++) {
+    for (i18 = 0; i18 < 3; i18++) {
       for (nv = 0; nv < 3; nv++) {
-        b_us[nv + 3 * i19] = us->data[(tris->data[ii + tris->size[0] * nv] +
-          us->size[0] * i19) - 1];
+        b_us[nv + 3 * i18] = us->data[(tris->data[ii + tris->size[0] * nv] +
+          us->size[0] * i18) - 1];
       }
     }
 
-    for (i19 = 0; i19 < 9; i19++) {
-      x[i19] = (b_us[i19] == 0.0);
+    for (i18 = 0; i18 < 9; i18++) {
+      x[i18] = (b_us[i18] == 0.0);
     }
 
     y = TRUE;
@@ -3819,17 +3611,17 @@ static void b_rescale_displacements(const emxArray_real_T *xs, const
     if (y) {
     } else {
       /* 'async_scale_disps_tri_cleanmesh:55' alpha_tri = check_prism( xs(vs,1:3), us_tri); */
-      for (i19 = 0; i19 < 3; i19++) {
+      for (i18 = 0; i18 < 3; i18++) {
         for (nv = 0; nv < 3; nv++) {
-          b_xs[nv + 3 * i19] = xs->data[(tris->data[ii + tris->size[0] * nv] +
-            xs->size[0] * i19) - 1];
+          b_xs[nv + 3 * i18] = xs->data[(tris->data[ii + tris->size[0] * nv] +
+            xs->size[0] * i18) - 1];
         }
       }
 
-      for (i19 = 0; i19 < 3; i19++) {
+      for (i18 = 0; i18 < 3; i18++) {
         for (nv = 0; nv < 3; nv++) {
-          b_us[nv + 3 * i19] = us->data[(tris->data[ii + tris->size[0] * nv] +
-            us->size[0] * i19) - 1];
+          b_us[nv + 3 * i18] = us->data[(tris->data[ii + tris->size[0] * nv] +
+            us->size[0] * i18) - 1];
         }
       }
 
@@ -3850,8 +3642,8 @@ static void b_rescale_displacements(const emxArray_real_T *xs, const
           minval[nv] = u0;
         }
 
-        for (i19 = 0; i19 < 3; i19++) {
-          alpha_vs->data[tris->data[ii + tris->size[0] * i19] - 1] = minval[i19];
+        for (i18 = 0; i18 < 3; i18++) {
+          alpha_vs->data[tris->data[ii + tris->size[0] * i18] - 1] = minval[i18];
         }
       }
     }
@@ -4265,10 +4057,10 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
   int32_T offset;
   int32_T nelems;
   emxArray_int32_T *allv_offsets;
-  int32_T i14;
+  int32_T i13;
   int32_T i;
   emxArray_int32_T *r16;
-  int32_T i15;
+  int32_T i14;
   emxArray_int32_T *r17;
   emxArray_int32_T *ngbvs1;
   emxArray_int32_T *ngbvs2;
@@ -4389,9 +4181,9 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
   emxInit_int32_T(&allv_offsets, 1);
 
   /* 'determine_offsets_mixed_elems:30' offsets = coder.nullcopy(zeros(nelems,1,'int32')); */
-  i14 = allv_offsets->size[0];
+  i13 = allv_offsets->size[0];
   allv_offsets->size[0] = nelems;
-  emxEnsureCapacity((emxArray__common *)allv_offsets, i14, (int32_T)sizeof
+  emxEnsureCapacity((emxArray__common *)allv_offsets, i13, (int32_T)sizeof
                     (int32_T));
 
   /*  Set offset for the elements. */
@@ -4415,38 +4207,38 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
 
   /*  Reset the rest to zero. */
   /* 'determine_offsets_mixed_elems:42' offsets(i:end) = 0; */
-  i14 = allv_offsets->size[0];
-  if (i > i14) {
+  i13 = allv_offsets->size[0];
+  if (i > i13) {
     i = 1;
-    i14 = 0;
+    i13 = 0;
   }
 
   emxInit_int32_T(&r16, 1);
-  i15 = r16->size[0];
-  r16->size[0] = (i14 - i) + 1;
-  emxEnsureCapacity((emxArray__common *)r16, i15, (int32_T)sizeof(int32_T));
-  nelems = i14 - i;
-  for (i14 = 0; i14 <= nelems; i14++) {
-    r16->data[i14] = i + i14;
+  i14 = r16->size[0];
+  r16->size[0] = (i13 - i) + 1;
+  emxEnsureCapacity((emxArray__common *)r16, i14, (int32_T)sizeof(int32_T));
+  nelems = i13 - i;
+  for (i13 = 0; i13 <= nelems; i13++) {
+    r16->data[i13] = i + i13;
   }
 
   b_emxInit_int32_T(&r17, 2);
-  i14 = r17->size[0] * r17->size[1];
+  i13 = r17->size[0] * r17->size[1];
   r17->size[0] = 1;
-  emxEnsureCapacity((emxArray__common *)r17, i14, (int32_T)sizeof(int32_T));
+  emxEnsureCapacity((emxArray__common *)r17, i13, (int32_T)sizeof(int32_T));
   offset = r16->size[0];
-  i14 = r17->size[0] * r17->size[1];
+  i13 = r17->size[0] * r17->size[1];
   r17->size[1] = offset;
-  emxEnsureCapacity((emxArray__common *)r17, i14, (int32_T)sizeof(int32_T));
+  emxEnsureCapacity((emxArray__common *)r17, i13, (int32_T)sizeof(int32_T));
   nelems = r16->size[0] - 1;
-  for (i14 = 0; i14 <= nelems; i14++) {
-    r17->data[i14] = r16->data[i14];
+  for (i13 = 0; i13 <= nelems; i13++) {
+    r17->data[i13] = r16->data[i13];
   }
 
   emxFree_int32_T(&r16);
   nelems = r17->size[0] * r17->size[1] - 1;
-  for (i14 = 0; i14 <= nelems; i14++) {
-    allv_offsets->data[r17->data[i14] - 1] = 0;
+  for (i13 = 0; i13 <= nelems; i13++) {
+    allv_offsets->data[r17->data[i13] - 1] = 0;
   }
 
   emxFree_int32_T(&r17);
@@ -4484,9 +4276,9 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
   emxInit_real_T(&p_ps, 2);
   while (i + 1 <= nv_clean) {
     /* 'adjust_disps_onto_hisurf_cleanmesh:40' pnt = (ps(i,1:3)+us_smooth(i,1:3))'; */
-    for (i14 = 0; i14 < 3; i14++) {
-      pnt1[i14] = ps->data[i + ps->size[0] * i14] + us_smooth->data[i +
-        us_smooth->size[0] * i14];
+    for (i13 = 0; i13 < 3; i13++) {
+      pnt1[i13] = ps->data[i + ps->size[0] * i13] + us_smooth->data[i +
+        us_smooth->size[0] * i13];
     }
 
     /* 'adjust_disps_onto_hisurf_cleanmesh:41' heid = v2he(i); */
@@ -4500,67 +4292,67 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
     if ((loc == 0) || (xi > 1.0E-6)) {
       /* 'adjust_disps_onto_hisurf_cleanmesh:50' offset1 = allv_offsets(tris(fid,1)); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:51' ngbvs1 = [tris(fid,1); allv_ngbvs( offset1+1:offset1+allv_ngbvs( offset1))]; */
-      i14 = allv_offsets->data[tris->data[fid - 1] - 1] + 1;
-      i15 = allv_offsets->data[tris->data[fid - 1] - 1] + allv_ngbvs->
+      i13 = allv_offsets->data[tris->data[fid - 1] - 1] + 1;
+      i14 = allv_offsets->data[tris->data[fid - 1] - 1] + allv_ngbvs->
         data[allv_offsets->data[tris->data[fid - 1] - 1] - 1];
-      if (i14 > i15) {
-        i14 = 1;
-        i15 = 0;
+      if (i13 > i14) {
+        i13 = 1;
+        i14 = 0;
       }
 
       offset = ngbvs1->size[0];
-      ngbvs1->size[0] = (i15 - i14) + 2;
+      ngbvs1->size[0] = (i14 - i13) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs1, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs1->data[0] = tris->data[fid - 1];
-      nelems = i15 - i14;
-      for (i15 = 0; i15 <= nelems; i15++) {
-        ngbvs1->data[i15 + 1] = allv_ngbvs->data[(i14 + i15) - 1];
+      nelems = i14 - i13;
+      for (i14 = 0; i14 <= nelems; i14++) {
+        ngbvs1->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:52' ngbpnts1 = ps(ngbvs1,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:52' nrms1 = nrms(ngbvs1,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:54' offset2 = allv_offsets(tris(fid,2)); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:55' ngbvs2 = [tris(fid,2); allv_ngbvs( offset2+1:offset2+allv_ngbvs( offset2))]; */
-      i14 = allv_offsets->data[tris->data[(fid + tris->size[0]) - 1] - 1] + 1;
-      i15 = allv_offsets->data[tris->data[(fid + tris->size[0]) - 1] - 1] +
+      i13 = allv_offsets->data[tris->data[(fid + tris->size[0]) - 1] - 1] + 1;
+      i14 = allv_offsets->data[tris->data[(fid + tris->size[0]) - 1] - 1] +
         allv_ngbvs->data[allv_offsets->data[tris->data[(fid + tris->size[0]) - 1]
         - 1] - 1];
-      if (i14 > i15) {
-        i14 = 1;
-        i15 = 0;
+      if (i13 > i14) {
+        i13 = 1;
+        i14 = 0;
       }
 
       offset = ngbvs2->size[0];
-      ngbvs2->size[0] = (i15 - i14) + 2;
+      ngbvs2->size[0] = (i14 - i13) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs2, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs2->data[0] = tris->data[(fid + tris->size[0]) - 1];
-      nelems = i15 - i14;
-      for (i15 = 0; i15 <= nelems; i15++) {
-        ngbvs2->data[i15 + 1] = allv_ngbvs->data[(i14 + i15) - 1];
+      nelems = i14 - i13;
+      for (i14 = 0; i14 <= nelems; i14++) {
+        ngbvs2->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:56' ngbpnts2 = ps(ngbvs2,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:56' nrms2 = nrms(ngbvs2,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:58' offset3 = allv_offsets(tris(fid,1)); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:59' ngbvs3 = [tris(fid,3); allv_ngbvs( offset3+1:offset3+allv_ngbvs( offset3))]; */
-      i14 = allv_offsets->data[tris->data[fid - 1] - 1] + 1;
-      i15 = allv_offsets->data[tris->data[fid - 1] - 1] + allv_ngbvs->
+      i13 = allv_offsets->data[tris->data[fid - 1] - 1] + 1;
+      i14 = allv_offsets->data[tris->data[fid - 1] - 1] + allv_ngbvs->
         data[allv_offsets->data[tris->data[fid - 1] - 1] - 1];
-      if (i14 > i15) {
-        i14 = 1;
-        i15 = 0;
+      if (i13 > i14) {
+        i13 = 1;
+        i14 = 0;
       }
 
       offset = ngbvs3->size[0];
-      ngbvs3->size[0] = (i15 - i14) + 2;
+      ngbvs3->size[0] = (i14 - i13) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs3, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs3->data[0] = tris->data[(fid + (tris->size[0] << 1)) - 1];
-      nelems = i15 - i14;
-      for (i15 = 0; i15 <= nelems; i15++) {
-        ngbvs3->data[i15 + 1] = allv_ngbvs->data[(i14 + i15) - 1];
+      nelems = i14 - i13;
+      for (i14 = 0; i14 <= nelems; i14++) {
+        ngbvs3->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:60' ngbpnts3 = ps(ngbvs3,:); */
@@ -4607,128 +4399,128 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /*  end */
         /* 'polyfit3d_walf_tri:33' pos = (1-xi-eta).*ngbpnts1(1,1:3) +xi*ngbpnts2(1,1:3)+eta*ngbpnts3(1,1:3); */
         d4 = (1.0 - lcoor[0]) - lcoor[1];
-        i14 = n_ps->size[0] * n_ps->size[1];
+        i13 = n_ps->size[0] * n_ps->size[1];
         n_ps->size[0] = ngbvs1->size[0];
         n_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)n_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)n_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            n_ps->data[i15 + n_ps->size[0] * i14] = ps->data[(ngbvs1->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            n_ps->data[i14 + n_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = o_ps->size[0] * o_ps->size[1];
+        i13 = o_ps->size[0] * o_ps->size[1];
         o_ps->size[0] = ngbvs2->size[0];
         o_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)o_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)o_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            o_ps->data[i15 + o_ps->size[0] * i14] = ps->data[(ngbvs2->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            o_ps->data[i14 + o_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = p_ps->size[0] * p_ps->size[1];
+        i13 = p_ps->size[0] * p_ps->size[1];
         p_ps->size[0] = ngbvs3->size[0];
         p_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)p_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)p_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            p_ps->data[i15 + p_ps->size[0] * i14] = ps->data[(ngbvs3->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            p_ps->data[i14 + p_ps->size[0] * i13] = ps->data[(ngbvs3->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        for (i14 = 0; i14 < 3; i14++) {
-          pos[i14] = (d4 * n_ps->data[n_ps->size[0] * i14] + lcoor[0] *
-                      o_ps->data[o_ps->size[0] * i14]) + lcoor[1] * p_ps->
-            data[p_ps->size[0] * i14];
+        for (i13 = 0; i13 < 3; i13++) {
+          pos[i13] = (d4 * n_ps->data[n_ps->size[0] * i13] + lcoor[0] *
+                      o_ps->data[o_ps->size[0] * i13]) + lcoor[1] * p_ps->
+            data[p_ps->size[0] * i13];
         }
 
         /*  Interpolate using vertex-based polynomial fittings at three vertices */
         /* 'polyfit3d_walf_tri:36' pnt1 = polyfit3d_walf_vertex(ngbpnts1, nrms1, pos, deg, interp); */
-        i14 = h_ps->size[0] * h_ps->size[1];
+        i13 = h_ps->size[0] * h_ps->size[1];
         h_ps->size[0] = ngbvs1->size[0];
         h_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)h_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)h_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            h_ps->data[i15 + h_ps->size[0] * i14] = ps->data[(ngbvs1->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            h_ps->data[i14 + h_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = h_nrms->size[0] * h_nrms->size[1];
+        i13 = h_nrms->size[0] * h_nrms->size[1];
         h_nrms->size[0] = ngbvs1->size[0];
         h_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)h_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)h_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            h_nrms->data[i15 + h_nrms->size[0] * i14] = nrms->data[(ngbvs1->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            h_nrms->data[i14 + h_nrms->size[0] * i13] = nrms->data[(ngbvs1->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
         polyfit3d_walf_vertex(h_ps, h_nrms, pos, offset, pnt1);
 
         /* 'polyfit3d_walf_tri:37' pnt2 = polyfit3d_walf_vertex(ngbpnts2, nrms2, pos, deg, interp); */
-        i14 = g_ps->size[0] * g_ps->size[1];
+        i13 = g_ps->size[0] * g_ps->size[1];
         g_ps->size[0] = ngbvs2->size[0];
         g_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)g_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)g_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            g_ps->data[i15 + g_ps->size[0] * i14] = ps->data[(ngbvs2->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            g_ps->data[i14 + g_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = g_nrms->size[0] * g_nrms->size[1];
+        i13 = g_nrms->size[0] * g_nrms->size[1];
         g_nrms->size[0] = ngbvs2->size[0];
         g_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)g_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)g_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            g_nrms->data[i15 + g_nrms->size[0] * i14] = nrms->data[(ngbvs2->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            g_nrms->data[i14 + g_nrms->size[0] * i13] = nrms->data[(ngbvs2->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
         polyfit3d_walf_vertex(g_ps, g_nrms, pos, offset, pnt2);
 
         /* 'polyfit3d_walf_tri:38' pnt3 = polyfit3d_walf_vertex(ngbpnts3, nrms3, pos, deg, interp); */
-        i14 = f_ps->size[0] * f_ps->size[1];
+        i13 = f_ps->size[0] * f_ps->size[1];
         f_ps->size[0] = ngbvs3->size[0];
         f_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)f_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)f_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            f_ps->data[i15 + f_ps->size[0] * i14] = ps->data[(ngbvs3->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            f_ps->data[i14 + f_ps->size[0] * i13] = ps->data[(ngbvs3->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = f_nrms->size[0] * f_nrms->size[1];
+        i13 = f_nrms->size[0] * f_nrms->size[1];
         f_nrms->size[0] = ngbvs3->size[0];
         f_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)f_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)f_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            f_nrms->data[i15 + f_nrms->size[0] * i14] = nrms->data[(ngbvs3->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            f_nrms->data[i14 + f_nrms->size[0] * i13] = nrms->data[(ngbvs3->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
@@ -4737,9 +4529,9 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /*  Compute weighted average of the three points */
         /* 'polyfit3d_walf_tri:41' pnt = (1-xi-eta).*pnt1 + xi.*pnt2 + eta.*pnt3; */
         d4 = (1.0 - lcoor[0]) - lcoor[1];
-        for (i14 = 0; i14 < 3; i14++) {
-          pnt1[i14] = (d4 * pnt1[i14] + lcoor[0] * pnt2[i14]) + lcoor[1] *
-            pnt3[i14];
+        for (i13 = 0; i13 < 3; i13++) {
+          pnt1[i13] = (d4 * pnt1[i13] + lcoor[0] * pnt2[i13]) + lcoor[1] *
+            pnt3[i13];
         }
 
         /*  pnt = coder.nullcopy(zeros(np,3)); */
@@ -4752,78 +4544,78 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /* 'adjust_disps_onto_hisurf_cleanmesh:66' case CMF */
         /* 'adjust_disps_onto_hisurf_cleanmesh:67' pnt = polyfit3d_cmf_tri(ngbpnts1, nrms1, ngbpnts2, nrms2, ... */
         /* 'adjust_disps_onto_hisurf_cleanmesh:68'                     ngbpnts3, nrms3, lcoor(1), lcoor(2), args.degree); */
-        i14 = i_ps->size[0] * i_ps->size[1];
+        i13 = i_ps->size[0] * i_ps->size[1];
         i_ps->size[0] = ngbvs1->size[0];
         i_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)i_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)i_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            i_ps->data[i15 + i_ps->size[0] * i14] = ps->data[(ngbvs1->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            i_ps->data[i14 + i_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = i_nrms->size[0] * i_nrms->size[1];
+        i13 = i_nrms->size[0] * i_nrms->size[1];
         i_nrms->size[0] = ngbvs1->size[0];
         i_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)i_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)i_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            i_nrms->data[i15 + i_nrms->size[0] * i14] = nrms->data[(ngbvs1->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            i_nrms->data[i14 + i_nrms->size[0] * i13] = nrms->data[(ngbvs1->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
-        i14 = j_ps->size[0] * j_ps->size[1];
+        i13 = j_ps->size[0] * j_ps->size[1];
         j_ps->size[0] = ngbvs2->size[0];
         j_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)j_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)j_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            j_ps->data[i15 + j_ps->size[0] * i14] = ps->data[(ngbvs2->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            j_ps->data[i14 + j_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = j_nrms->size[0] * j_nrms->size[1];
+        i13 = j_nrms->size[0] * j_nrms->size[1];
         j_nrms->size[0] = ngbvs2->size[0];
         j_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)j_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)j_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            j_nrms->data[i15 + j_nrms->size[0] * i14] = nrms->data[(ngbvs2->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            j_nrms->data[i14 + j_nrms->size[0] * i13] = nrms->data[(ngbvs2->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
-        i14 = k_ps->size[0] * k_ps->size[1];
+        i13 = k_ps->size[0] * k_ps->size[1];
         k_ps->size[0] = ngbvs3->size[0];
         k_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)k_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)k_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            k_ps->data[i15 + k_ps->size[0] * i14] = ps->data[(ngbvs3->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            k_ps->data[i14 + k_ps->size[0] * i13] = ps->data[(ngbvs3->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = k_nrms->size[0] * k_nrms->size[1];
+        i13 = k_nrms->size[0] * k_nrms->size[1];
         k_nrms->size[0] = ngbvs3->size[0];
         k_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)k_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)k_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            k_nrms->data[i15 + k_nrms->size[0] * i14] = nrms->data[(ngbvs3->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            k_nrms->data[i14 + k_nrms->size[0] * i13] = nrms->data[(ngbvs3->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
@@ -4835,8 +4627,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
       /* 'adjust_disps_onto_hisurf_cleanmesh:70' elseif loc>=4 */
       /* 'adjust_disps_onto_hisurf_cleanmesh:71' pnt = ps(tris(fid,loc-3),1:3)'; */
       offset = tris->data[(fid + tris->size[0] * (loc - 4)) - 1];
-      for (i14 = 0; i14 < 3; i14++) {
-        pnt1[i14] = ps->data[(offset + ps->size[0] * i14) - 1];
+      for (i13 = 0; i13 < 3; i13++) {
+        pnt1[i13] = ps->data[(offset + ps->size[0] * i13) - 1];
       }
 
       /* pnt = ps(i,1:3)'; */
@@ -4845,8 +4637,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
       /* 'adjust_disps_onto_hisurf_cleanmesh:74' if loc==1 */
       if (loc == 1) {
         /* 'adjust_disps_onto_hisurf_cleanmesh:75' verts=[1; 2]; */
-        for (i14 = 0; i14 < 2; i14++) {
-          verts[i14] = (int8_T)(1 + i14);
+        for (i13 = 0; i13 < 2; i13++) {
+          verts[i13] = (int8_T)(1 + i13);
         }
 
         /* 'adjust_disps_onto_hisurf_cleanmesh:75' xi = lcoor(1); */
@@ -4854,8 +4646,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
       } else if (loc == 2) {
         /* 'adjust_disps_onto_hisurf_cleanmesh:76' elseif loc==2 */
         /* 'adjust_disps_onto_hisurf_cleanmesh:77' verts=[2; 3]; */
-        for (i14 = 0; i14 < 2; i14++) {
-          verts[i14] = (int8_T)(2 + i14);
+        for (i13 = 0; i13 < 2; i13++) {
+          verts[i13] = (int8_T)(2 + i13);
         }
 
         /* 'adjust_disps_onto_hisurf_cleanmesh:77' xi = lcoor(2); */
@@ -4864,8 +4656,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /* 'adjust_disps_onto_hisurf_cleanmesh:78' else */
         /* 'adjust_disps_onto_hisurf_cleanmesh:79' assert( loc==3); */
         /* 'adjust_disps_onto_hisurf_cleanmesh:80' verts=[1; 3]; */
-        for (i14 = 0; i14 < 2; i14++) {
-          verts[i14] = (int8_T)(1 + (i14 << 1));
+        for (i13 = 0; i13 < 2; i13++) {
+          verts[i13] = (int8_T)(1 + (i13 << 1));
         }
 
         /* 'adjust_disps_onto_hisurf_cleanmesh:80' xi = lcoor(2); */
@@ -4874,48 +4666,48 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:83' offset1 = allv_offsets(tris(fid,verts(1))); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:84' ngbvs1 = [tris(fid,verts(1)); allv_ngbvs( offset1+1:offset1+allv_ngbvs( offset1))]; */
-      i14 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[0] - 1))
+      i13 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[0] - 1))
         - 1] - 1] + 1;
-      i15 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[0] - 1))
+      i14 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[0] - 1))
         - 1] - 1] + allv_ngbvs->data[allv_offsets->data[tris->data[(fid +
         tris->size[0] * (verts[0] - 1)) - 1] - 1] - 1];
-      if (i14 > i15) {
-        i14 = 1;
-        i15 = 0;
+      if (i13 > i14) {
+        i13 = 1;
+        i14 = 0;
       }
 
       offset = ngbvs1->size[0];
-      ngbvs1->size[0] = (i15 - i14) + 2;
+      ngbvs1->size[0] = (i14 - i13) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs1, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs1->data[0] = tris->data[(fid + tris->size[0] * (verts[0] - 1)) - 1];
-      nelems = i15 - i14;
-      for (i15 = 0; i15 <= nelems; i15++) {
-        ngbvs1->data[i15 + 1] = allv_ngbvs->data[(i14 + i15) - 1];
+      nelems = i14 - i13;
+      for (i14 = 0; i14 <= nelems; i14++) {
+        ngbvs1->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:85' ngbpnts1 = ps(ngbvs1,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:85' nrms1 = nrms(ngbvs1,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:87' offset2 = allv_offsets(tris(fid,verts(2))); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:88' ngbvs2 = [tris(fid,verts(2)); allv_ngbvs( offset2+1:offset2+allv_ngbvs( offset2))]; */
-      i14 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[1] - 1))
+      i13 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[1] - 1))
         - 1] - 1] + 1;
-      i15 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[1] - 1))
+      i14 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[1] - 1))
         - 1] - 1] + allv_ngbvs->data[allv_offsets->data[tris->data[(fid +
         tris->size[0] * (verts[1] - 1)) - 1] - 1] - 1];
-      if (i14 > i15) {
-        i14 = 1;
-        i15 = 0;
+      if (i13 > i14) {
+        i13 = 1;
+        i14 = 0;
       }
 
       offset = ngbvs2->size[0];
-      ngbvs2->size[0] = (i15 - i14) + 2;
+      ngbvs2->size[0] = (i14 - i13) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs2, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs2->data[0] = tris->data[(fid + tris->size[0] * (verts[1] - 1)) - 1];
-      nelems = i15 - i14;
-      for (i15 = 0; i15 <= nelems; i15++) {
-        ngbvs2->data[i15 + 1] = allv_ngbvs->data[(i14 + i15) - 1];
+      nelems = i14 - i13;
+      for (i14 = 0; i14 <= nelems; i14++) {
+        ngbvs2->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:89' ngbpnts2 = ps(ngbvs2,:); */
@@ -4957,87 +4749,87 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /*  Compute face normal vector and the local coordinate */
         /* 'polyfit3d_walf_edge:27' pos = (1-xi).*ngbpnts1(1,1:3) + xi*ngbpnts2(1,1:3); */
         d4 = 1.0 - xi;
-        i14 = l_ps->size[0] * l_ps->size[1];
+        i13 = l_ps->size[0] * l_ps->size[1];
         l_ps->size[0] = ngbvs1->size[0];
         l_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)l_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)l_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            l_ps->data[i15 + l_ps->size[0] * i14] = ps->data[(ngbvs1->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            l_ps->data[i14 + l_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = m_ps->size[0] * m_ps->size[1];
+        i13 = m_ps->size[0] * m_ps->size[1];
         m_ps->size[0] = ngbvs2->size[0];
         m_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)m_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)m_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            m_ps->data[i15 + m_ps->size[0] * i14] = ps->data[(ngbvs2->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            m_ps->data[i14 + m_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        for (i14 = 0; i14 < 3; i14++) {
-          pos[i14] = d4 * l_ps->data[l_ps->size[0] * i14] + xi * m_ps->data
-            [m_ps->size[0] * i14];
+        for (i13 = 0; i13 < 3; i13++) {
+          pos[i13] = d4 * l_ps->data[l_ps->size[0] * i13] + xi * m_ps->data
+            [m_ps->size[0] * i13];
         }
 
         /*  Interpolate using vertex-based polynomial fittings at two vertices */
         /* 'polyfit3d_walf_edge:30' pnt1 = polyfit3d_walf_vertex(ngbpnts1, nrms1, pos, deg, interp); */
-        i14 = c_ps->size[0] * c_ps->size[1];
+        i13 = c_ps->size[0] * c_ps->size[1];
         c_ps->size[0] = ngbvs1->size[0];
         c_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)c_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)c_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            c_ps->data[i15 + c_ps->size[0] * i14] = ps->data[(ngbvs1->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            c_ps->data[i14 + c_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = c_nrms->size[0] * c_nrms->size[1];
+        i13 = c_nrms->size[0] * c_nrms->size[1];
         c_nrms->size[0] = ngbvs1->size[0];
         c_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)c_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)c_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            c_nrms->data[i15 + c_nrms->size[0] * i14] = nrms->data[(ngbvs1->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            c_nrms->data[i14 + c_nrms->size[0] * i13] = nrms->data[(ngbvs1->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
         polyfit3d_walf_vertex(c_ps, c_nrms, pos, offset, pnt1);
 
         /* 'polyfit3d_walf_edge:31' pnt2 = polyfit3d_walf_vertex(ngbpnts2, nrms2, pos, deg, interp); */
-        i14 = b_ps->size[0] * b_ps->size[1];
+        i13 = b_ps->size[0] * b_ps->size[1];
         b_ps->size[0] = ngbvs2->size[0];
         b_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)b_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)b_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            b_ps->data[i15 + b_ps->size[0] * i14] = ps->data[(ngbvs2->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            b_ps->data[i14 + b_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = b_nrms->size[0] * b_nrms->size[1];
+        i13 = b_nrms->size[0] * b_nrms->size[1];
         b_nrms->size[0] = ngbvs2->size[0];
         b_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)b_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)b_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            b_nrms->data[i15 + b_nrms->size[0] * i14] = nrms->data[(ngbvs2->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            b_nrms->data[i14 + b_nrms->size[0] * i13] = nrms->data[(ngbvs2->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
@@ -5046,8 +4838,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /*  Compute weighted average of the two points */
         /* 'polyfit3d_walf_edge:34' pnt = (1-xi).*pnt1 +xi*pnt2; */
         d4 = 1.0 - xi;
-        for (i14 = 0; i14 < 3; i14++) {
-          pnt1[i14] = d4 * pnt1[i14] + xi * pnt2[i14];
+        for (i13 = 0; i13 < 3; i13++) {
+          pnt1[i13] = d4 * pnt1[i13] + xi * pnt2[i13];
         }
         break;
 
@@ -5055,53 +4847,53 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /* 'adjust_disps_onto_hisurf_cleanmesh:95' case CMF */
         /* 'adjust_disps_onto_hisurf_cleanmesh:96' pnt = polyfit3d_cmf_edge(ngbpnts1, nrms1, ngbpnts2, nrms2, ... */
         /* 'adjust_disps_onto_hisurf_cleanmesh:97'                     xi, args.degree); */
-        i14 = d_ps->size[0] * d_ps->size[1];
+        i13 = d_ps->size[0] * d_ps->size[1];
         d_ps->size[0] = ngbvs1->size[0];
         d_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)d_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)d_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            d_ps->data[i15 + d_ps->size[0] * i14] = ps->data[(ngbvs1->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            d_ps->data[i14 + d_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = d_nrms->size[0] * d_nrms->size[1];
+        i13 = d_nrms->size[0] * d_nrms->size[1];
         d_nrms->size[0] = ngbvs1->size[0];
         d_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)d_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)d_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            d_nrms->data[i15 + d_nrms->size[0] * i14] = nrms->data[(ngbvs1->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            d_nrms->data[i14 + d_nrms->size[0] * i13] = nrms->data[(ngbvs1->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
-        i14 = e_ps->size[0] * e_ps->size[1];
+        i13 = e_ps->size[0] * e_ps->size[1];
         e_ps->size[0] = ngbvs2->size[0];
         e_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)e_ps, i14, (int32_T)sizeof(real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        emxEnsureCapacity((emxArray__common *)e_ps, i13, (int32_T)sizeof(real_T));
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            e_ps->data[i15 + e_ps->size[0] * i14] = ps->data[(ngbvs2->data[i15]
-              + ps->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            e_ps->data[i14 + e_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
+              + ps->size[0] * i13) - 1];
           }
         }
 
-        i14 = e_nrms->size[0] * e_nrms->size[1];
+        i13 = e_nrms->size[0] * e_nrms->size[1];
         e_nrms->size[0] = ngbvs2->size[0];
         e_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)e_nrms, i14, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)e_nrms, i13, (int32_T)sizeof
                           (real_T));
-        for (i14 = 0; i14 < 3; i14++) {
+        for (i13 = 0; i13 < 3; i13++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i15 = 0; i15 <= nelems; i15++) {
-            e_nrms->data[i15 + e_nrms->size[0] * i14] = nrms->data[(ngbvs2->
-              data[i15] + nrms->size[0] * i14) - 1];
+          for (i14 = 0; i14 <= nelems; i14++) {
+            e_nrms->data[i14 + e_nrms->size[0] * i13] = nrms->data[(ngbvs2->
+              data[i14] + nrms->size[0] * i13) - 1];
           }
         }
 
@@ -5111,9 +4903,9 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
     }
 
     /* 'adjust_disps_onto_hisurf_cleanmesh:101' us_smooth( i,1:3) = pnt' - ps(i,1:3); */
-    for (i14 = 0; i14 < 3; i14++) {
-      us_smooth->data[i + us_smooth->size[0] * i14] = pnt1[i14] - ps->data[i +
-        ps->size[0] * i14];
+    for (i13 = 0; i13 < 3; i13++) {
+      us_smooth->data[i + us_smooth->size[0] * i13] = pnt1[i13] - ps->data[i +
+        ps->size[0] * i13];
     }
 
     i++;
@@ -5971,6 +5763,25 @@ static boolean_T c_eml_strcmp(const char_T a[3])
   }
 
   return b_bool;
+}
+
+static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
+  numDimensions)
+{
+  emxArray_int32_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_int32_T *)malloc(sizeof(emxArray_int32_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (int32_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
 }
 
 static void c_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
@@ -7435,9 +7246,21 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   int32_T i10;
   uint32_T uv0[2];
   emxArray_int32_T *opphes;
+  emxArray_int32_T *is_index;
+  int32_T nv;
+  int32_T ntris;
+  int32_T ii;
+  boolean_T exitg1;
+  int32_T b_is_index[3];
+  emxArray_int32_T *v2nv;
   emxArray_int32_T *v2he;
-  emxArray_real_T *b_curs;
+  int32_T ne;
+  static const int8_T iv24[3] = { 1, 2, 0 };
+
   int32_T loop_ub;
+  static const int8_T iv25[3] = { 2, 3, 1 };
+
+  emxArray_real_T *b_curs;
   emxArray_real_T *b_prdirs;
   real_T u1;
 
@@ -7477,15 +7300,205 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   }
 
   b_emxInit_int32_T(&opphes, 2);
-  emxInit_int32_T(&v2he, 1);
-  emxInit_real_T(&b_curs, 2);
+  emxInit_int32_T(&is_index, 1);
   i10 = opphes->size[0] * opphes->size[1];
   opphes->size[0] = (int32_T)uv0[0];
   opphes->size[1] = 3;
   emxEnsureCapacity((emxArray__common *)opphes, i10, (int32_T)sizeof(int32_T));
 
   /* 'compute_diffops_surf_cleanmesh:23' opphes = determine_opposite_halfedge_tri(int32(size(xs,1)), tris, opphes); */
-  b_determine_opposite_halfedge_t(xs->size[0], tris, opphes);
+  nv = xs->size[0];
+
+  /* DETERMINE_OPPOSITE_HALFEDGE_TRI Determine opposite half-edges for triangle  */
+  /* mesh. */
+  /*  DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS,OPPHES) Determines */
+  /*  opposite half-edges for triangle mesh. The following explains the input */
+  /*  and output arguments. */
+  /*  */
+  /*  OPPHES = DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS) */
+  /*  OPPHES = DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS,OPPHES) */
+  /*  Computes mapping from each half-edge to its opposite half-edge for  */
+  /*  triangle mesh. */
+  /*  */
+  /*  Convention: Each half-edge is indicated by <face_id,local_edge_id>. */
+  /*  We assign 2 bits to local_edge_id (starts from 0). */
+  /*  */
+  /*  See also DETERMINE_OPPOSITE_HALFEDGE */
+  /* coder.inline('never'); */
+  /*  assert(isscalar(nv)&&isa(nv,'int32')); */
+  /*  assert((size(tris,2)==3) && (size(tris,1)>=1) && isa(tris,'int32')); */
+  /*  assert((size(opphes,2)==3) && (size(opphes,1)>=1) && isa(opphes,'int32')); */
+  /* 'determine_opposite_halfedge_tri:23' nepE = int32(3); */
+  /*  Number of edges per element */
+  /* 'determine_opposite_halfedge_tri:24' next = int32([2,3,1]); */
+  /* 'determine_opposite_halfedge_tri:25' inds = int32(1:3); */
+  /* 'determine_opposite_halfedge_tri:27' ntris = int32(size(tris,1)); */
+  ntris = tris->size[0];
+
+  /* % First, build is_index to store starting position for each vertex. */
+  /* 'determine_opposite_halfedge_tri:29' is_index = zeros(nv+1,1,'int32'); */
+  i10 = is_index->size[0];
+  is_index->size[0] = nv + 1;
+  emxEnsureCapacity((emxArray__common *)is_index, i10, (int32_T)sizeof(int32_T));
+  for (i10 = 0; i10 <= nv; i10++) {
+    is_index->data[i10] = 0;
+  }
+
+  /* 'determine_opposite_halfedge_tri:30' for ii=1:ntris */
+  ii = 0;
+  exitg1 = 0U;
+  while ((exitg1 == 0U) && (ii + 1 <= ntris)) {
+    /* 'determine_opposite_halfedge_tri:31' if tris(ii,1)==0 */
+    if (tris->data[ii] == 0) {
+      /* 'determine_opposite_halfedge_tri:31' ntris=ii-1; */
+      ntris = ii;
+      exitg1 = 1U;
+    } else {
+      /* 'determine_opposite_halfedge_tri:32' is_index(tris(ii,inds)+1) = is_index(tris(ii,inds)+1) + 1; */
+      for (i10 = 0; i10 < 3; i10++) {
+        b_is_index[i10] = is_index->data[tris->data[ii + tris->size[0] * i10]] +
+          1;
+      }
+
+      for (i10 = 0; i10 < 3; i10++) {
+        is_index->data[tris->data[ii + tris->size[0] * i10]] = b_is_index[i10];
+      }
+
+      ii++;
+    }
+  }
+
+  /* 'determine_opposite_halfedge_tri:34' is_index(1) = 1; */
+  is_index->data[0] = 1;
+
+  /* 'determine_opposite_halfedge_tri:35' for ii=1:nv */
+  for (ii = 1; ii <= nv; ii++) {
+    /* 'determine_opposite_halfedge_tri:36' is_index(ii+1) = is_index(ii) + is_index(ii+1); */
+    is_index->data[ii] += is_index->data[ii - 1];
+  }
+
+  emxInit_int32_T(&v2nv, 1);
+  emxInit_int32_T(&v2he, 1);
+
+  /* 'determine_opposite_halfedge_tri:39' ne = ntris*nepE; */
+  ne = ntris * 3;
+
+  /* 'determine_opposite_halfedge_tri:40' v2nv = coder.nullcopy(zeros( ne,1, 'int32')); */
+  i10 = v2nv->size[0];
+  v2nv->size[0] = ne;
+  emxEnsureCapacity((emxArray__common *)v2nv, i10, (int32_T)sizeof(int32_T));
+
+  /*  Vertex to next vertex in each halfedge. */
+  /* 'determine_opposite_halfedge_tri:41' v2he = coder.nullcopy(zeros( ne,1, 'int32')); */
+  i10 = v2he->size[0];
+  v2he->size[0] = ne;
+  emxEnsureCapacity((emxArray__common *)v2he, i10, (int32_T)sizeof(int32_T));
+
+  /*  Vertex to half-edge. */
+  /* 'determine_opposite_halfedge_tri:42' for ii=1:ntris */
+  for (ii = 0; ii + 1 <= ntris; ii++) {
+    /* 'determine_opposite_halfedge_tri:43' v2nv(is_index( tris(ii,inds))) = tris(ii,next); */
+    for (i10 = 0; i10 < 3; i10++) {
+      v2nv->data[is_index->data[tris->data[ii + tris->size[0] * i10] - 1] - 1] =
+        tris->data[ii + tris->size[0] * iv24[i10]];
+    }
+
+    /* 'determine_opposite_halfedge_tri:44' v2he(is_index( tris(ii,inds))) = 4*ii-1+inds; */
+    ne = (ii + 1) << 2;
+    for (i10 = 0; i10 < 3; i10++) {
+      v2he->data[is_index->data[tris->data[ii + tris->size[0] * i10] - 1] - 1] =
+        i10 + ne;
+    }
+
+    /* 'determine_opposite_halfedge_tri:45' is_index(tris(ii,inds)) = is_index(tris(ii,inds)) + 1; */
+    for (i10 = 0; i10 < 3; i10++) {
+      b_is_index[i10] = is_index->data[tris->data[ii + tris->size[0] * i10] - 1]
+        + 1;
+    }
+
+    for (i10 = 0; i10 < 3; i10++) {
+      is_index->data[tris->data[ii + tris->size[0] * i10] - 1] = b_is_index[i10];
+    }
+  }
+
+  /* 'determine_opposite_halfedge_tri:47' for ii=nv-1:-1:1 */
+  for (ii = nv - 1; ii > 0; ii--) {
+    /* 'determine_opposite_halfedge_tri:47' is_index(ii+1) = is_index(ii); */
+    is_index->data[ii] = is_index->data[ii - 1];
+  }
+
+  /* 'determine_opposite_halfedge_tri:48' is_index(1)=1; */
+  is_index->data[0] = 1;
+
+  /* % Set opphes */
+  /* 'determine_opposite_halfedge_tri:50' if nargin<3 || isempty(opphes) */
+  if (opphes->size[0] == 0) {
+    /* 'determine_opposite_halfedge_tri:51' opphes = zeros(size(tris,1), nepE, 'int32'); */
+    ne = tris->size[0];
+    i10 = opphes->size[0] * opphes->size[1];
+    opphes->size[0] = ne;
+    opphes->size[1] = 3;
+    emxEnsureCapacity((emxArray__common *)opphes, i10, (int32_T)sizeof(int32_T));
+    loop_ub = tris->size[0] * 3 - 1;
+    for (i10 = 0; i10 <= loop_ub; i10++) {
+      opphes->data[i10] = 0;
+    }
+  } else {
+    /* 'determine_opposite_halfedge_tri:52' else */
+    /* 'determine_opposite_halfedge_tri:53' assert( size(opphes,1)>=ntris && size(opphes,2)>=nepE); */
+    /* 'determine_opposite_halfedge_tri:54' opphes(:) = 0; */
+    i10 = opphes->size[0] * opphes->size[1];
+    opphes->size[1] = 3;
+    emxEnsureCapacity((emxArray__common *)opphes, i10, (int32_T)sizeof(int32_T));
+    for (i10 = 0; i10 < 3; i10++) {
+      loop_ub = opphes->size[0] - 1;
+      for (ne = 0; ne <= loop_ub; ne++) {
+        opphes->data[ne + opphes->size[0] * i10] = 0;
+      }
+    }
+  }
+
+  /* 'determine_opposite_halfedge_tri:57' for ii=1:ntris */
+  for (ii = 0; ii + 1 <= ntris; ii++) {
+    /* 'determine_opposite_halfedge_tri:58' for jj=int32(1):3 */
+    for (ne = 0; ne < 3; ne++) {
+      /* 'determine_opposite_halfedge_tri:59' if opphes(ii,jj) */
+      if (opphes->data[ii + opphes->size[0] * ne] != 0) {
+      } else {
+        /* 'determine_opposite_halfedge_tri:60' v = tris(ii,jj); */
+        /* 'determine_opposite_halfedge_tri:60' vn = tris(ii,next(jj)); */
+        /*  LOCATE: Locate index col in v2nv(first:last) */
+        /* 'determine_opposite_halfedge_tri:63' found = int32(0); */
+        /* 'determine_opposite_halfedge_tri:64' for index = is_index(vn):is_index(vn+1)-1 */
+        loop_ub = is_index->data[tris->data[ii + tris->size[0] * (iv25[ne] - 1)]]
+          - 1;
+        for (nv = is_index->data[tris->data[ii + tris->size[0] * (iv25[ne] - 1)]
+             - 1] - 1; nv + 1 <= loop_ub; nv++) {
+          /* 'determine_opposite_halfedge_tri:65' if v2nv(index)==v */
+          if (v2nv->data[nv] == tris->data[ii + tris->size[0] * ne]) {
+            /* 'determine_opposite_halfedge_tri:66' opp = v2he(index); */
+            /* 'determine_opposite_halfedge_tri:67' opphes(ii,jj) = opp; */
+            opphes->data[ii + opphes->size[0] * ne] = v2he->data[nv];
+
+            /* opphes(heid2fid(opp),heid2leid(opp)) = ii*4+jj-1; */
+            /* 'determine_opposite_halfedge_tri:69' opphes(bitshift(uint32(opp),-2),mod(opp,4)+1) = ii*4+jj-1; */
+            opphes->data[((int32_T)((uint32_T)v2he->data[nv] >> 2U) +
+                          opphes->size[0] * (v2he->data[nv] - ((v2he->data[nv] >>
+              2) << 2))) - 1] = ((ii + 1) << 2) + ne;
+
+            /* 'determine_opposite_halfedge_tri:71' found = found + 1; */
+          }
+        }
+
+        /*  Check for consistency */
+        /* 'determine_opposite_halfedge_tri:76' if found>1 */
+      }
+    }
+  }
+
+  emxFree_int32_T(&v2nv);
+  emxFree_int32_T(&is_index);
+  emxInit_real_T(&b_curs, 2);
 
   /*  Determine incident halfedge. */
   /* 'compute_diffops_surf_cleanmesh:26' v2he = coder.nullcopy(zeros( size(xs,1),1,'int32')); */
@@ -7525,9 +7538,9 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   u1 = 1.0 >= u1 ? 1.0 : u1;
   polyfit_lhf_surf_cleanmesh(nv_clean, xs, tris, nrms_proj, opphes, v2he, degree,
     u1, nrms, b_curs, b_prdirs);
+  emxFree_int32_T(&v2he);
   emxFree_real_T(&b_prdirs);
   emxFree_real_T(&b_curs);
-  emxFree_int32_T(&v2he);
   emxFree_int32_T(&opphes);
 }
 
@@ -7571,8 +7584,6 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
   c_average_vertex_normal_tri_cle(nv_clean, xs, tris, r0, nrms_proj);
 
   /* Step2: Communicate variable "nrms_proj" at the ghost points (>nv_clean) */
-  
-  
   /* Step3: Compute normals from polynomial fitting */
   /* 'compute_hisurf_normals:16' [nrms] = compute_diffops_surf_cleanmesh(nv_clean, xs, int32(tris), ... */
   /* 'compute_hisurf_normals:17'     nrms_proj, int32(degree), ring, iterfit, nrms, curs, prdirs); */
@@ -7613,8 +7624,6 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
 
   /* Step4: (a) Update variable "nrms" of "nv_clean" pnts */
   /*  (b) Communicate variable "nrms" of ghost pnts (>nv_clean) */
-  
-  
   emxFree_real_T(&r2);
   emxFree_real_T(&r1);
   emxFree_real_T(&nrms_proj);
@@ -8018,7 +8027,6 @@ static void compute_statistics_tris_global(int32_T nt_clean, const
   /*  max_area . This step would require communicating the min_angle from other */
   /*  processor and performing a comparision among them to obtain the global */
   /*  minimum angle.  */
-  
 }
 
 /*
@@ -8215,6 +8223,24 @@ static boolean_T d_eml_strcmp(const char_T a[3])
   return b_bool;
 }
 
+static void d_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
+{
+  emxArray_real_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_real_T *)malloc(sizeof(emxArray_real_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (real_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
+}
+
 /*
  * function v2he = determine_incident_halfedges(elems, opphes, v2he)
  */
@@ -8315,9 +8341,32 @@ static void c_determine_incident_halfedges(const emxArray_int32_T *elems, const
 /*
  * function opphes = determine_opposite_halfedge(nv, elems, opphes)
  */
-static void c_determine_opposite_halfedge(real_T nv, const emxArray_int32_T *elems,
-  emxArray_int32_T *opphes)
+static void determine_opposite_halfedge(int32_T nv, const emxArray_int32_T
+  *elems, emxArray_int32_T *opphes)
 {
+  emxArray_int32_T *is_index;
+  int32_T ntris;
+  int32_T found;
+  int32_T ii;
+  boolean_T exitg4;
+  int32_T b_is_index[3];
+  emxArray_int32_T *v2nv;
+  emxArray_int32_T *v2he;
+  int32_T ne;
+  static const int8_T iv12[3] = { 1, 2, 0 };
+
+  int32_T loop_ub;
+  boolean_T exitg3;
+  int32_T exitg2;
+  boolean_T guard1 = FALSE;
+  static const int8_T iv13[3] = { 2, 3, 1 };
+
+  int32_T b_index;
+  int32_T exitg1;
+  boolean_T guard2 = FALSE;
+  uint32_T a;
+  emxInit_int32_T(&is_index, 1);
+
   /* DETERMINE_OPPOSITE_HALFEDGE determines the opposite half-edge of  */
   /*  each halfedge for an oriented, manifold surface mesh with or */
   /*  without boundary. It works for both triangle and quadrilateral  */
@@ -8338,7 +8387,253 @@ static void c_determine_opposite_halfedge(real_T nv, const emxArray_int32_T *ele
   /* 'determine_opposite_halfedge:20' case {3,6} % tri */
   /*  tri */
   /* 'determine_opposite_halfedge:21' opphes = determine_opposite_halfedge_tri(nv, elems); */
-  determine_opposite_halfedge_tri(nv, elems, opphes);
+  /* DETERMINE_OPPOSITE_HALFEDGE_TRI Determine opposite half-edges for triangle  */
+  /* mesh. */
+  /*  DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS,OPPHES) Determines */
+  /*  opposite half-edges for triangle mesh. The following explains the input */
+  /*  and output arguments. */
+  /*  */
+  /*  OPPHES = DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS) */
+  /*  OPPHES = DETERMINE_OPPOSITE_HALFEDGE_TRI(NV,TRIS,OPPHES) */
+  /*  Computes mapping from each half-edge to its opposite half-edge for  */
+  /*  triangle mesh. */
+  /*  */
+  /*  Convention: Each half-edge is indicated by <face_id,local_edge_id>. */
+  /*  We assign 2 bits to local_edge_id (starts from 0). */
+  /*  */
+  /*  See also DETERMINE_OPPOSITE_HALFEDGE */
+  /* coder.inline('never'); */
+  /*  assert(isscalar(nv)&&isa(nv,'int32')); */
+  /*  assert((size(tris,2)==3) && (size(tris,1)>=1) && isa(tris,'int32')); */
+  /*  assert((size(opphes,2)==3) && (size(opphes,1)>=1) && isa(opphes,'int32')); */
+  /* 'determine_opposite_halfedge_tri:23' nepE = int32(3); */
+  /*  Number of edges per element */
+  /* 'determine_opposite_halfedge_tri:24' next = int32([2,3,1]); */
+  /* 'determine_opposite_halfedge_tri:25' inds = int32(1:3); */
+  /* 'determine_opposite_halfedge_tri:27' ntris = int32(size(tris,1)); */
+  ntris = elems->size[0];
+
+  /* % First, build is_index to store starting position for each vertex. */
+  /* 'determine_opposite_halfedge_tri:29' is_index = zeros(nv+1,1,'int32'); */
+  found = is_index->size[0];
+  is_index->size[0] = nv + 1;
+  emxEnsureCapacity((emxArray__common *)is_index, found, (int32_T)sizeof(int32_T));
+  for (found = 0; found <= nv; found++) {
+    is_index->data[found] = 0;
+  }
+
+  /* 'determine_opposite_halfedge_tri:30' for ii=1:ntris */
+  ii = 0;
+  exitg4 = 0U;
+  while ((exitg4 == 0U) && (ii + 1 <= ntris)) {
+    /* 'determine_opposite_halfedge_tri:31' if tris(ii,1)==0 */
+    if (elems->data[ii] == 0) {
+      /* 'determine_opposite_halfedge_tri:31' ntris=ii-1; */
+      ntris = ii;
+      exitg4 = 1U;
+    } else {
+      /* 'determine_opposite_halfedge_tri:32' is_index(tris(ii,inds)+1) = is_index(tris(ii,inds)+1) + 1; */
+      for (found = 0; found < 3; found++) {
+        b_is_index[found] = is_index->data[elems->data[ii + elems->size[0] *
+          found]] + 1;
+      }
+
+      for (found = 0; found < 3; found++) {
+        is_index->data[elems->data[ii + elems->size[0] * found]] =
+          b_is_index[found];
+      }
+
+      ii++;
+    }
+  }
+
+  /* 'determine_opposite_halfedge_tri:34' is_index(1) = 1; */
+  is_index->data[0] = 1;
+
+  /* 'determine_opposite_halfedge_tri:35' for ii=1:nv */
+  for (ii = 1; ii <= nv; ii++) {
+    /* 'determine_opposite_halfedge_tri:36' is_index(ii+1) = is_index(ii) + is_index(ii+1); */
+    is_index->data[ii] += is_index->data[ii - 1];
+  }
+
+  emxInit_int32_T(&v2nv, 1);
+  emxInit_int32_T(&v2he, 1);
+
+  /* 'determine_opposite_halfedge_tri:39' ne = ntris*nepE; */
+  ne = ntris * 3;
+
+  /* 'determine_opposite_halfedge_tri:40' v2nv = coder.nullcopy(zeros( ne,1, 'int32')); */
+  found = v2nv->size[0];
+  v2nv->size[0] = ne;
+  emxEnsureCapacity((emxArray__common *)v2nv, found, (int32_T)sizeof(int32_T));
+
+  /*  Vertex to next vertex in each halfedge. */
+  /* 'determine_opposite_halfedge_tri:41' v2he = coder.nullcopy(zeros( ne,1, 'int32')); */
+  found = v2he->size[0];
+  v2he->size[0] = ne;
+  emxEnsureCapacity((emxArray__common *)v2he, found, (int32_T)sizeof(int32_T));
+
+  /*  Vertex to half-edge. */
+  /* 'determine_opposite_halfedge_tri:42' for ii=1:ntris */
+  for (ii = 0; ii + 1 <= ntris; ii++) {
+    /* 'determine_opposite_halfedge_tri:43' v2nv(is_index( tris(ii,inds))) = tris(ii,next); */
+    for (found = 0; found < 3; found++) {
+      v2nv->data[is_index->data[elems->data[ii + elems->size[0] * found] - 1] -
+        1] = elems->data[ii + elems->size[0] * iv12[found]];
+    }
+
+    /* 'determine_opposite_halfedge_tri:44' v2he(is_index( tris(ii,inds))) = 4*ii-1+inds; */
+    ne = (ii + 1) << 2;
+    for (found = 0; found < 3; found++) {
+      v2he->data[is_index->data[elems->data[ii + elems->size[0] * found] - 1] -
+        1] = found + ne;
+    }
+
+    /* 'determine_opposite_halfedge_tri:45' is_index(tris(ii,inds)) = is_index(tris(ii,inds)) + 1; */
+    for (found = 0; found < 3; found++) {
+      b_is_index[found] = is_index->data[elems->data[ii + elems->size[0] * found]
+        - 1] + 1;
+    }
+
+    for (found = 0; found < 3; found++) {
+      is_index->data[elems->data[ii + elems->size[0] * found] - 1] =
+        b_is_index[found];
+    }
+  }
+
+  /* 'determine_opposite_halfedge_tri:47' for ii=nv-1:-1:1 */
+  for (ii = nv - 1; ii > 0; ii--) {
+    /* 'determine_opposite_halfedge_tri:47' is_index(ii+1) = is_index(ii); */
+    is_index->data[ii] = is_index->data[ii - 1];
+  }
+
+  /* 'determine_opposite_halfedge_tri:48' is_index(1)=1; */
+  is_index->data[0] = 1;
+
+  /* % Set opphes */
+  /* 'determine_opposite_halfedge_tri:50' if nargin<3 || isempty(opphes) */
+  /* 'determine_opposite_halfedge_tri:51' opphes = zeros(size(tris,1), nepE, 'int32'); */
+  ne = elems->size[0];
+  found = opphes->size[0] * opphes->size[1];
+  opphes->size[0] = ne;
+  opphes->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)opphes, found, (int32_T)sizeof(int32_T));
+  loop_ub = elems->size[0] * 3 - 1;
+  for (found = 0; found <= loop_ub; found++) {
+    opphes->data[found] = 0;
+  }
+
+  /* 'determine_opposite_halfedge_tri:57' for ii=1:ntris */
+  ii = 0;
+  exitg3 = 0U;
+  while ((exitg3 == 0U) && (ii + 1 <= ntris)) {
+    /* 'determine_opposite_halfedge_tri:58' for jj=int32(1):3 */
+    ne = 0;
+    do {
+      exitg2 = 0U;
+      if (ne + 1 < 4) {
+        /* 'determine_opposite_halfedge_tri:59' if opphes(ii,jj) */
+        guard1 = FALSE;
+        if (opphes->data[ii + opphes->size[0] * ne] != 0) {
+          guard1 = TRUE;
+        } else {
+          /* 'determine_opposite_halfedge_tri:60' v = tris(ii,jj); */
+          /* 'determine_opposite_halfedge_tri:60' vn = tris(ii,next(jj)); */
+          /*  LOCATE: Locate index col in v2nv(first:last) */
+          /* 'determine_opposite_halfedge_tri:63' found = int32(0); */
+          found = 0;
+
+          /* 'determine_opposite_halfedge_tri:64' for index = is_index(vn):is_index(vn+1)-1 */
+          loop_ub = is_index->data[elems->data[ii + elems->size[0] * (iv13[ne] -
+            1)]] - 1;
+          for (b_index = is_index->data[elems->data[ii + elems->size[0] *
+               (iv13[ne] - 1)] - 1] - 1; b_index + 1 <= loop_ub; b_index++) {
+            /* 'determine_opposite_halfedge_tri:65' if v2nv(index)==v */
+            if (v2nv->data[b_index] == elems->data[ii + elems->size[0] * ne]) {
+              /* 'determine_opposite_halfedge_tri:66' opp = v2he(index); */
+              /* 'determine_opposite_halfedge_tri:67' opphes(ii,jj) = opp; */
+              opphes->data[ii + opphes->size[0] * ne] = v2he->data[b_index];
+
+              /* opphes(heid2fid(opp),heid2leid(opp)) = ii*4+jj-1; */
+              /* 'determine_opposite_halfedge_tri:69' opphes(bitshift(uint32(opp),-2),mod(opp,4)+1) = ii*4+jj-1; */
+              opphes->data[((int32_T)((uint32_T)v2he->data[b_index] >> 2U) +
+                            opphes->size[0] * (v2he->data[b_index] -
+                ((v2he->data[b_index] >> 2) << 2))) - 1] = ((ii + 1) << 2) + ne;
+
+              /* 'determine_opposite_halfedge_tri:71' found = found + 1; */
+              found++;
+            }
+          }
+
+          /*  Check for consistency */
+          /* 'determine_opposite_halfedge_tri:76' if found>1 */
+          if ((found > 1) || (found != 0)) {
+            /* 'determine_opposite_halfedge_tri:77' error( 'Input mesh is not an oriented manifold.'); */
+            guard1 = TRUE;
+          } else {
+            /* 'determine_opposite_halfedge_tri:78' elseif ~found */
+            /* 'determine_opposite_halfedge_tri:79' for index = is_index(v):is_index(v+1)-1 */
+            loop_ub = is_index->data[elems->data[ii + elems->size[0] * ne]] - 1;
+            b_index = is_index->data[elems->data[ii + elems->size[0] * ne] - 1];
+            do {
+              exitg1 = 0U;
+              if (b_index <= loop_ub) {
+                /* 'determine_opposite_halfedge_tri:80' if v2nv(index)==vn && int32(bitshift( uint32(v2he(index)),-2))~=ii */
+                guard2 = FALSE;
+                if (v2nv->data[b_index - 1] == elems->data[ii + elems->size[0] *
+                    (iv13[ne] - 1)]) {
+                  a = (uint32_T)v2he->data[b_index - 1];
+                  if ((int32_T)(a >> 2U) != ii + 1) {
+                    /* 'determine_opposite_halfedge_tri:81' if nargin==3 */
+                    /* 'determine_opposite_halfedge_tri:83' else */
+                    /* 'determine_opposite_halfedge_tri:84' opphes = zeros(0,3, 'int32'); */
+                    found = opphes->size[0] * opphes->size[1];
+                    opphes->size[0] = 0;
+                    opphes->size[1] = 3;
+                    emxEnsureCapacity((emxArray__common *)opphes, found,
+                                      (int32_T)sizeof(int32_T));
+                    exitg1 = 2U;
+                  } else {
+                    guard2 = TRUE;
+                  }
+                } else {
+                  guard2 = TRUE;
+                }
+
+                if (guard2 == TRUE) {
+                  b_index++;
+                }
+              } else {
+                exitg1 = 1U;
+              }
+            } while (exitg1 == 0U);
+
+            if (exitg1 == 1U) {
+              guard1 = TRUE;
+            } else {
+              exitg2 = 2U;
+            }
+          }
+        }
+
+        if (guard1 == TRUE) {
+          ne++;
+        }
+      } else {
+        ii++;
+        exitg2 = 1U;
+      }
+    } while (exitg2 == 0U);
+
+    if (exitg2 == 1U) {
+    } else {
+      exitg3 = 1U;
+    }
+  }
+
+  emxFree_int32_T(&v2he);
+  emxFree_int32_T(&v2nv);
+  emxFree_int32_T(&is_index);
 }
 
 /*
@@ -9268,7 +9563,7 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T jj;
   emxArray_real_T *b_V;
   int32_T c_V;
-  int32_T i12;
+  int32_T i11;
   int32_T loop_ub;
   int32_T b_loop_ub;
   emxArray_real_T *ws1;
@@ -9329,15 +9624,15 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
 
   emxInit_real_T(&b_V, 2);
   c_V = V->size[0];
-  i12 = b_V->size[0] * b_V->size[1];
+  i11 = b_V->size[0] * b_V->size[1];
   b_V->size[0] = c_V;
   b_V->size[1] = ii - jj;
-  emxEnsureCapacity((emxArray__common *)b_V, i12, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_V, i11, (int32_T)sizeof(real_T));
   loop_ub = (ii - jj) - 1;
   for (ii = 0; ii <= loop_ub; ii++) {
     b_loop_ub = c_V - 1;
-    for (i12 = 0; i12 <= b_loop_ub; i12++) {
-      b_V->data[i12 + b_V->size[0] * ii] = V->data[i12 + V->size[0] * (jj + ii)];
+    for (i11 = 0; i11 <= b_loop_ub; i11++) {
+      b_V->data[i11 + b_V->size[0] * ii] = V->data[i11 + V->size[0] * (jj + ii)];
     }
   }
 
@@ -14850,7 +15145,7 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
   int32_T b_i;
   int32_T ix;
   int32_T iy;
-  int32_T i16;
+  int32_T i15;
   real_T pn[9];
   real_T J[9];
   real_T b_nrms[9];
@@ -14947,10 +15242,10 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
       b_i = *fid;
       ix = *fid;
       for (iy = 0; iy < 3; iy++) {
-        for (i16 = 0; i16 < 3; i16++) {
-          pn[i16 + 3 * iy] = ps->data[(tris->data[(b_i + tris->size[0] * i16) -
+        for (i15 = 0; i15 < 3; i15++) {
+          pn[i15 + 3 * iy] = ps->data[(tris->data[(b_i + tris->size[0] * i15) -
             1] + ps->size[0] * iy) - 1] + d * nrms->data[(tris->data[(ix +
-            tris->size[0] * i16) - 1] + nrms->size[0] * iy) - 1];
+            tris->size[0] * i15) - 1] + nrms->size[0] * iy) - 1];
         }
       }
 
@@ -14965,25 +15260,25 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
       /* 'fe2_project_point:82' J(:,3) = N(1)*nrms_elem(1,:)+N(2)*nrms_elem(2,:)+N(3)*nrms_elem(3,:); */
       b_i = *fid;
       for (iy = 0; iy < 3; iy++) {
-        for (i16 = 0; i16 < 3; i16++) {
-          b_nrms[i16 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
-            i16) - 1] + nrms->size[0] * iy) - 1];
+        for (i15 = 0; i15 < 3; i15++) {
+          b_nrms[i15 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
+            i15) - 1] + nrms->size[0] * iy) - 1];
         }
       }
 
       b_i = *fid;
       for (iy = 0; iy < 3; iy++) {
-        for (i16 = 0; i16 < 3; i16++) {
-          c_nrms[i16 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
-            i16) - 1] + nrms->size[0] * iy) - 1];
+        for (i15 = 0; i15 < 3; i15++) {
+          c_nrms[i15 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
+            i15) - 1] + nrms->size[0] * iy) - 1];
         }
       }
 
       b_i = *fid;
       for (iy = 0; iy < 3; iy++) {
-        for (i16 = 0; i16 < 3; i16++) {
-          d_nrms[i16 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
-            i16) - 1] + nrms->size[0] * iy) - 1];
+        for (i15 = 0; i15 < 3; i15++) {
+          d_nrms[i15 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
+            i15) - 1] + nrms->size[0] * iy) - 1];
         }
       }
 
@@ -14995,16 +15290,16 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
       /* 'fe2_project_point:36' r_neg = (pnts_elem' * N + d*J(:,3) - pnt); */
       b_i = *fid;
       for (iy = 0; iy < 3; iy++) {
-        for (i16 = 0; i16 < 3; i16++) {
-          b_nrms[i16 + 3 * iy] = ps->data[(tris->data[(b_i + tris->size[0] * iy)
-            - 1] + ps->size[0] * i16) - 1];
+        for (i15 = 0; i15 < 3; i15++) {
+          b_nrms[i15 + 3 * iy] = ps->data[(tris->data[(b_i + tris->size[0] * iy)
+            - 1] + ps->size[0] * i15) - 1];
         }
       }
 
       for (iy = 0; iy < 3; iy++) {
         T = 0.0;
-        for (i16 = 0; i16 < 3; i16++) {
-          T += b_nrms[iy + 3 * i16] * s[i16];
+        for (i15 = 0; i15 < 3; i15++) {
+          T += b_nrms[iy + 3 * i15] * s[i15];
         }
 
         r_neg[iy] = (T + d * J[6 + iy]) - pnt[iy];
@@ -15596,7 +15891,7 @@ static void rescale_displacements(const emxArray_real_T *xs, const
 {
   int32_T nv;
   int32_T ntri;
-  int32_T i18;
+  int32_T i17;
   int32_T ii;
   real_T b_us[9];
   boolean_T x[9];
@@ -15618,12 +15913,12 @@ static void rescale_displacements(const emxArray_real_T *xs, const
   ntri = tris->size[0];
 
   /* 'async_scale_disps_tri_cleanmesh:43' alpha_vs = ones(nv,1); */
-  i18 = alpha_vs->size[0];
+  i17 = alpha_vs->size[0];
   alpha_vs->size[0] = nv;
-  emxEnsureCapacity((emxArray__common *)alpha_vs, i18, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)alpha_vs, i17, (int32_T)sizeof(real_T));
   nv--;
-  for (i18 = 0; i18 <= nv; i18++) {
-    alpha_vs->data[i18] = 1.0;
+  for (i17 = 0; i17 <= nv; i17++) {
+    alpha_vs->data[i17] = 1.0;
   }
 
   /* 'async_scale_disps_tri_cleanmesh:45' for ii=1:ntri */
@@ -15632,15 +15927,15 @@ static void rescale_displacements(const emxArray_real_T *xs, const
     /* 'async_scale_disps_tri_cleanmesh:47' if nargin>6 && all(alpha_in(vs)==1) */
     /* 'async_scale_disps_tri_cleanmesh:52' us_tri = us(vs,1:3); */
     /* 'async_scale_disps_tri_cleanmesh:53' if all(us_tri(:)==0) */
-    for (i18 = 0; i18 < 3; i18++) {
+    for (i17 = 0; i17 < 3; i17++) {
       for (nv = 0; nv < 3; nv++) {
-        b_us[nv + 3 * i18] = us->data[(tris->data[ii + tris->size[0] * nv] +
-          us->size[0] * i18) - 1];
+        b_us[nv + 3 * i17] = us->data[(tris->data[ii + tris->size[0] * nv] +
+          us->size[0] * i17) - 1];
       }
     }
 
-    for (i18 = 0; i18 < 9; i18++) {
-      x[i18] = (b_us[i18] == 0.0);
+    for (i17 = 0; i17 < 9; i17++) {
+      x[i17] = (b_us[i17] == 0.0);
     }
 
     y = TRUE;
@@ -15658,17 +15953,17 @@ static void rescale_displacements(const emxArray_real_T *xs, const
     if (y) {
     } else {
       /* 'async_scale_disps_tri_cleanmesh:55' alpha_tri = check_prism( xs(vs,1:3), us_tri); */
-      for (i18 = 0; i18 < 3; i18++) {
+      for (i17 = 0; i17 < 3; i17++) {
         for (nv = 0; nv < 3; nv++) {
-          b_xs[nv + 3 * i18] = xs->data[(tris->data[ii + tris->size[0] * nv] +
-            xs->size[0] * i18) - 1];
+          b_xs[nv + 3 * i17] = xs->data[(tris->data[ii + tris->size[0] * nv] +
+            xs->size[0] * i17) - 1];
         }
       }
 
-      for (i18 = 0; i18 < 3; i18++) {
+      for (i17 = 0; i17 < 3; i17++) {
         for (nv = 0; nv < 3; nv++) {
-          b_us[nv + 3 * i18] = us->data[(tris->data[ii + tris->size[0] * nv] +
-            us->size[0] * i18) - 1];
+          b_us[nv + 3 * i17] = us->data[(tris->data[ii + tris->size[0] * nv] +
+            us->size[0] * i17) - 1];
         }
       }
 
@@ -15689,8 +15984,8 @@ static void rescale_displacements(const emxArray_real_T *xs, const
           minval[nv] = u0;
         }
 
-        for (i18 = 0; i18 < 3; i18++) {
-          alpha_vs->data[tris->data[ii + tris->size[0] * i18] - 1] = minval[i18];
+        for (i17 = 0; i17 < 3; i17++) {
+          alpha_vs->data[tris->data[ii + tris->size[0] * i17] - 1] = minval[i17];
         }
       }
     }
@@ -15785,7 +16080,6 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
 
     /*  Step 3:(a) Update variable "us_smooth" of "nv_clean" pnts */
     /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
-    
   } else {
     /* 'smoothing_single_iteration:18' else */
     /*  Step 4: Isometric Smoothing */
@@ -15793,9 +16087,9 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
     ismooth_trimesh_cleanmesh(nv_clean, xs, tris, isridge, flabel, check_trank,
       us_smooth);
 
+    /* us_smooth = onering_scale_disps_tri_cleanmesh(nv_clean, xs, tris, nrms, us_smooth, opphes); */
     /*  Step 5:(a) Update variable "us_smooth" of "nv_clean" pnts */
     /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
-    
     /*  Step 6: Asynchronously rescale tangential displacements. */
     /* 'smoothing_single_iteration:27' [us_smooth,escaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
     async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris);
@@ -15818,7 +16112,6 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
 
       /*  Step 8:(a) Update variable "us_smooth" of "nv_clean" pnts */
       /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
-    
       /*  Step 9: Asynchronously rescale tangential displacements. */
       /* 'smoothing_single_iteration:40' [us_smooth,scaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
       b_scaled = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris);
@@ -15861,6 +16154,279 @@ static real_T sum(const emxArray_real_T *x)
   }
 
   return y;
+}
+
+emxArray_boolean_T *emxCreateND_boolean_T(int32_T numDimensions, int32_T *size)
+{
+  emxArray_boolean_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  b_emxInit_boolean_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (boolean_T *)calloc((uint32_T)numEl, sizeof(boolean_T));
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
+emxArray_int32_T *emxCreateND_int32_T(int32_T numDimensions, int32_T *size)
+{
+  emxArray_int32_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  c_emxInit_int32_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (int32_T *)calloc((uint32_T)numEl, sizeof(int32_T));
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
+emxArray_real_T *emxCreateND_real_T(int32_T numDimensions, int32_T *size)
+{
+  emxArray_real_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  d_emxInit_real_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (real_T *)calloc((uint32_T)numEl, sizeof(real_T));
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
+emxArray_boolean_T *emxCreateWrapperND_boolean_T(boolean_T *data, int32_T
+  numDimensions, int32_T *size)
+{
+  emxArray_boolean_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  b_emxInit_boolean_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = data;
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  emx->canFreeData = FALSE;
+  return emx;
+}
+
+emxArray_int32_T *emxCreateWrapperND_int32_T(int32_T *data, int32_T
+  numDimensions, int32_T *size)
+{
+  emxArray_int32_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  c_emxInit_int32_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = data;
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  emx->canFreeData = FALSE;
+  return emx;
+}
+
+emxArray_real_T *emxCreateWrapperND_real_T(real_T *data, int32_T numDimensions,
+  int32_T *size)
+{
+  emxArray_real_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  d_emxInit_real_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = data;
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  emx->canFreeData = FALSE;
+  return emx;
+}
+
+emxArray_boolean_T *emxCreateWrapper_boolean_T(boolean_T *data, int32_T rows,
+  int32_T cols)
+{
+  emxArray_boolean_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  b_emxInit_boolean_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = data;
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  emx->canFreeData = FALSE;
+  return emx;
+}
+
+emxArray_int32_T *emxCreateWrapper_int32_T(int32_T *data, int32_T rows, int32_T
+  cols)
+{
+  emxArray_int32_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  c_emxInit_int32_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = data;
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  emx->canFreeData = FALSE;
+  return emx;
+}
+
+emxArray_real_T *emxCreateWrapper_real_T(real_T *data, int32_T rows, int32_T
+  cols)
+{
+  emxArray_real_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  d_emxInit_real_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = data;
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  emx->canFreeData = FALSE;
+  return emx;
+}
+
+emxArray_boolean_T *emxCreate_boolean_T(int32_T rows, int32_T cols)
+{
+  emxArray_boolean_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  b_emxInit_boolean_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (boolean_T *)calloc((uint32_T)numEl, sizeof(boolean_T));
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
+emxArray_int32_T *emxCreate_int32_T(int32_T rows, int32_T cols)
+{
+  emxArray_int32_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  c_emxInit_int32_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (int32_T *)calloc((uint32_T)numEl, sizeof(int32_T));
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
+emxArray_real_T *emxCreate_real_T(int32_T rows, int32_T cols)
+{
+  emxArray_real_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  d_emxInit_real_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (real_T *)calloc((uint32_T)numEl, sizeof(real_T));
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
+void emxDestroyArray_boolean_T(emxArray_boolean_T *emxArray)
+{
+  emxFree_boolean_T(&emxArray);
+}
+
+void emxDestroyArray_int32_T(emxArray_int32_T *emxArray)
+{
+  emxFree_int32_T(&emxArray);
+}
+
+void emxDestroyArray_real_T(emxArray_real_T *emxArray)
+{
+  emxFree_real_T(&emxArray);
 }
 
 /*
@@ -15913,8 +16479,8 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
   /* 'smooth_mesh_hisurf_cleanmesh:23' nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
   compute_hisurf_normals(nv_clean, xs, tris, degree, nrms);
 
-  /* 'smooth_mesh_hisurf_cleanmesh:24' opphes = determine_opposite_halfedge( size(xs,1), tris); */
-  c_determine_opposite_halfedge((real_T)xs->size[0], tris, opphes);
+  /* 'smooth_mesh_hisurf_cleanmesh:24' opphes = determine_opposite_halfedge( int32(size(xs,1)), tris); */
+  determine_opposite_halfedge(xs->size[0], tris, opphes);
 
   /* 'smooth_mesh_hisurf_cleanmesh:25' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
   compute_statistics_tris_global(nt_clean, xs, tris, &min_angle, &max_angle,
@@ -15953,8 +16519,6 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
       if (scaled) {
         /*  Step 1: (a) Update position "xs" of "nv_clean" pnts */
         /*  (b) Communicate position "xs" of ghost pnts (>nv_clean) */
-          
-          
         /*  Step 2: Compute the normals for the new mesh */
         /* 'smooth_mesh_hisurf_cleanmesh:53' nrms = compute_hisurf_normals(nv_clean,xs,tris, hisurf_args.degree); */
         compute_hisurf_normals(nv_clean, xs, tris, degree, nrms);
