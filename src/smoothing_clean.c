@@ -8,7 +8,8 @@ static boolean_T add_disps_to_pntpositions(int32_T nv_clean, int32_T nt_clean,
   *us_smooth, real_T min_angle_pre, boolean_T scaled);
 static boolean_T any(const boolean_T x[3]);
 static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
-  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris);
+  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris,
+  hiPropMesh *pmesh);
 static void b_abs(const real_T x[3], real_T y[3]);
 static void b_backsolve(const emxArray_real_T *R, emxArray_real_T *bs, int32_T
   cend, const emxArray_real_T *ws);
@@ -20,8 +21,6 @@ static void b_eigenanalysis_surf(const emxArray_real_T *As, const
   emxArray_real_T *bs, const emxArray_boolean_T *isridge, emxArray_real_T *us,
   emxArray_real_T *Vs);
 static boolean_T b_eml_strcmp(const char_T a[3]);
-static void b_emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T
-  numDimensions);
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
   numDimensions);
 static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
@@ -66,8 +65,6 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
   *grads_smooth, const emxArray_real_T *Hs_smooth, boolean_T check_trank,
   emxArray_real_T *us_smooth);
 static boolean_T c_eml_strcmp(const char_T a[3]);
-static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
-  numDimensions);
 static void c_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T *degree, const emxArray_real_T *ws);
@@ -89,7 +86,7 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   emxArray_real_T *curs, const emxArray_real_T *prdirs);
 
 static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
-  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms);
+  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms, hiPropMesh *mesh);
 static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
   emxArray_int32_T *tris, const emxArray_int32_T *flabel, emxArray_real_T *As,
   emxArray_real_T *bs, emxArray_real_T *bs_lbl);
@@ -102,7 +99,6 @@ static boolean_T compute_weights(const emxArray_real_T *us, const
   emxArray_real_T *nrms, int32_T deg, emxArray_real_T *ws);
 static real_T cos_angle(const real_T ts1[3], const real_T ts2[3]);
 static boolean_T d_eml_strcmp(const char_T a[3]);
-static void d_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 
 static void c_determine_incident_halfedges(const emxArray_int32_T *elems, const
   emxArray_int32_T *opphes, emxArray_int32_T *v2he);
@@ -192,7 +188,7 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
   emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, boolean_T
   *scaled, real_T min_angle, boolean_T check_trank, const char_T
   hisurf_args_method[3], int32_T hisurf_args_degree, int32_T verbose,
-  emxArray_real_T *us_smooth);
+  emxArray_real_T *us_smooth, hiPropMesh *pmesh);
 static real_T sum(const emxArray_real_T *x);
 
 /* Function Definitions */
@@ -863,7 +859,8 @@ static boolean_T any(const boolean_T x[3])
  * function [us_smooth, scaled] = async_scale_disps_tri_cleanmesh(nv_clean,xs, us_smooth, tris, tol)
  */
 static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
-  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris)
+  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris,
+  hiPropMesh *pmesh)
 {
   boolean_T scaled;
   emxArray_real_T *alpha_tmp;
@@ -1031,6 +1028,10 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
 
         /*  Step 2: Update the variables 1. scaled "us_smooth" , 2. alpha_tmp */
         /*  of "nv_clean" pnts and communicate values of ghost pnts (>nv_clean)  */
+
+	hpUpdateGhostPointData_real_T(pmesh, us_smooth);
+	hpUpdateGhostPointData_real_T(pmesh, alpha_tmp);
+
         /*  Step 3: Again check if any rescaling has to be performed or not. */
         /* 'async_scale_disps_tri_cleanmesh:33' [alpha_tmp,us_smooth] = rescale_displacements(xs, us_smooth, tris, tol, alpha_tmp); */
         b_rescale_displacements(xs, us_smooth, tris, alpha_tmp);
@@ -1467,25 +1468,6 @@ static boolean_T b_eml_strcmp(const char_T a[3])
   }
 
   return b_bool;
-}
-
-static void b_emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T
-  numDimensions)
-{
-  emxArray_boolean_T *emxArray;
-  int32_T loop_ub;
-  int32_T i;
-  *pEmxArray = (emxArray_boolean_T *)malloc(sizeof(emxArray_boolean_T));
-  emxArray = *pEmxArray;
-  emxArray->data = (boolean_T *)NULL;
-  emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
-  emxArray->allocatedSize = 0;
-  emxArray->canFreeData = TRUE;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    emxArray->size[i] = 0;
-  }
 }
 
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
@@ -5765,25 +5747,6 @@ static boolean_T c_eml_strcmp(const char_T a[3])
   return b_bool;
 }
 
-static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
-  numDimensions)
-{
-  emxArray_int32_T *emxArray;
-  int32_T loop_ub;
-  int32_T i;
-  *pEmxArray = (emxArray_int32_T *)malloc(sizeof(emxArray_int32_T));
-  emxArray = *pEmxArray;
-  emxArray->data = (int32_T *)NULL;
-  emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
-  emxArray->allocatedSize = 0;
-  emxArray->canFreeData = TRUE;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    emxArray->size[i] = 0;
-  }
-}
-
 static void c_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
 {
   emxArray_real_T *emxArray;
@@ -7548,7 +7511,7 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
  * function nrms = compute_hisurf_normals(nv_clean,xs,tris, degree)
  */
 static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
-  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms)
+  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms, hiPropMesh *pmesh)
 {
   emxArray_real_T *r0;
   int32_T nv;
@@ -7584,6 +7547,8 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
   c_average_vertex_normal_tri_cle(nv_clean, xs, tris, r0, nrms_proj);
 
   /* Step2: Communicate variable "nrms_proj" at the ghost points (>nv_clean) */
+  hpUpdateGhostPointData_real_T(pmesh, nrms_proj);
+
   /* Step3: Compute normals from polynomial fitting */
   /* 'compute_hisurf_normals:16' [nrms] = compute_diffops_surf_cleanmesh(nv_clean, xs, int32(tris), ... */
   /* 'compute_hisurf_normals:17'     nrms_proj, int32(degree), ring, iterfit, nrms, curs, prdirs); */
@@ -7624,6 +7589,8 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
 
   /* Step4: (a) Update variable "nrms" of "nv_clean" pnts */
   /*  (b) Communicate variable "nrms" of ghost pnts (>nv_clean) */
+  hpUpdateGhostPointData_real_T(pmesh, nrms);
+
   emxFree_real_T(&r2);
   emxFree_real_T(&r1);
   emxFree_real_T(&nrms_proj);
@@ -8027,6 +7994,21 @@ static void compute_statistics_tris_global(int32_T nt_clean, const
   /*  max_area . This step would require communicating the min_angle from other */
   /*  processor and performing a comparision among them to obtain the global */
   /*  minimum angle.  */
+
+  real_T out_min_angle, out_max_angle, out_min_area, out_max_area;
+
+  MPI_Allreduce(min_angle, &(out_min_angle), 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  MPI_Allreduce(min_area, &(out_min_area), 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+
+  MPI_Allreduce(max_angle, &(out_max_angle), 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(max_area, &(out_max_area), 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+  *min_angle = out_min_angle;
+  *max_angle = out_max_angle;
+
+  *min_area = out_min_area;
+  *max_area = out_max_area;
+
 }
 
 /*
@@ -8221,24 +8203,6 @@ static boolean_T d_eml_strcmp(const char_T a[3])
   }
 
   return b_bool;
-}
-
-static void d_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
-{
-  emxArray_real_T *emxArray;
-  int32_T loop_ub;
-  int32_T i;
-  *pEmxArray = (emxArray_real_T *)malloc(sizeof(emxArray_real_T));
-  emxArray = *pEmxArray;
-  emxArray->data = (real_T *)NULL;
-  emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
-  emxArray->allocatedSize = 0;
-  emxArray->canFreeData = TRUE;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    emxArray->size[i] = 0;
-  }
 }
 
 /*
@@ -16055,7 +16019,7 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
   emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, boolean_T
   *scaled, real_T min_angle, boolean_T check_trank, const char_T
   hisurf_args_method[3], int32_T hisurf_args_degree, int32_T verbose,
-  emxArray_real_T *us_smooth)
+  emxArray_real_T *us_smooth, hiPropMesh *pmesh)
 {
   int32_T count;
   boolean_T exitg1;
@@ -16080,6 +16044,7 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
 
     /*  Step 3:(a) Update variable "us_smooth" of "nv_clean" pnts */
     /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
+    hpUpdateGhostPointData_real_T(pmesh, us_smooth);
   } else {
     /* 'smoothing_single_iteration:18' else */
     /*  Step 4: Isometric Smoothing */
@@ -16090,9 +16055,10 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
     /* us_smooth = onering_scale_disps_tri_cleanmesh(nv_clean, xs, tris, nrms, us_smooth, opphes); */
     /*  Step 5:(a) Update variable "us_smooth" of "nv_clean" pnts */
     /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
+    hpUpdateGhostPointData_real_T(pmesh, us_smooth);
     /*  Step 6: Asynchronously rescale tangential displacements. */
     /* 'smoothing_single_iteration:27' [us_smooth,escaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
-    async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris);
+    async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, pmesh);
 
     /*  Adjust the displacements onto the high order surface */
     /* 'smoothing_single_iteration:30' scaled = true; */
@@ -16112,9 +16078,10 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
 
       /*  Step 8:(a) Update variable "us_smooth" of "nv_clean" pnts */
       /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
+      hpUpdateGhostPointData_real_T(pmesh, us_smooth);
       /*  Step 9: Asynchronously rescale tangential displacements. */
       /* 'smoothing_single_iteration:40' [us_smooth,scaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
-      b_scaled = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris);
+      b_scaled = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, pmesh);
       *scaled = b_scaled;
 
       /* 'smoothing_single_iteration:41' if ~scaled */
@@ -16156,279 +16123,6 @@ static real_T sum(const emxArray_real_T *x)
   return y;
 }
 
-emxArray_boolean_T *emxCreateND_boolean_T(int32_T numDimensions, int32_T *size)
-{
-  emxArray_boolean_T *emx;
-  int32_T numEl;
-  int32_T loop_ub;
-  int32_T i;
-  b_emxInit_boolean_T(&emx, numDimensions);
-  numEl = 1;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = (boolean_T *)calloc((uint32_T)numEl, sizeof(boolean_T));
-  emx->numDimensions = numDimensions;
-  emx->allocatedSize = numEl;
-  return emx;
-}
-
-emxArray_int32_T *emxCreateND_int32_T(int32_T numDimensions, int32_T *size)
-{
-  emxArray_int32_T *emx;
-  int32_T numEl;
-  int32_T loop_ub;
-  int32_T i;
-  c_emxInit_int32_T(&emx, numDimensions);
-  numEl = 1;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = (int32_T *)calloc((uint32_T)numEl, sizeof(int32_T));
-  emx->numDimensions = numDimensions;
-  emx->allocatedSize = numEl;
-  return emx;
-}
-
-emxArray_real_T *emxCreateND_real_T(int32_T numDimensions, int32_T *size)
-{
-  emxArray_real_T *emx;
-  int32_T numEl;
-  int32_T loop_ub;
-  int32_T i;
-  d_emxInit_real_T(&emx, numDimensions);
-  numEl = 1;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = (real_T *)calloc((uint32_T)numEl, sizeof(real_T));
-  emx->numDimensions = numDimensions;
-  emx->allocatedSize = numEl;
-  return emx;
-}
-
-emxArray_boolean_T *emxCreateWrapperND_boolean_T(boolean_T *data, int32_T
-  numDimensions, int32_T *size)
-{
-  emxArray_boolean_T *emx;
-  int32_T numEl;
-  int32_T loop_ub;
-  int32_T i;
-  b_emxInit_boolean_T(&emx, numDimensions);
-  numEl = 1;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = data;
-  emx->numDimensions = numDimensions;
-  emx->allocatedSize = numEl;
-  emx->canFreeData = FALSE;
-  return emx;
-}
-
-emxArray_int32_T *emxCreateWrapperND_int32_T(int32_T *data, int32_T
-  numDimensions, int32_T *size)
-{
-  emxArray_int32_T *emx;
-  int32_T numEl;
-  int32_T loop_ub;
-  int32_T i;
-  c_emxInit_int32_T(&emx, numDimensions);
-  numEl = 1;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = data;
-  emx->numDimensions = numDimensions;
-  emx->allocatedSize = numEl;
-  emx->canFreeData = FALSE;
-  return emx;
-}
-
-emxArray_real_T *emxCreateWrapperND_real_T(real_T *data, int32_T numDimensions,
-  int32_T *size)
-{
-  emxArray_real_T *emx;
-  int32_T numEl;
-  int32_T loop_ub;
-  int32_T i;
-  d_emxInit_real_T(&emx, numDimensions);
-  numEl = 1;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = data;
-  emx->numDimensions = numDimensions;
-  emx->allocatedSize = numEl;
-  emx->canFreeData = FALSE;
-  return emx;
-}
-
-emxArray_boolean_T *emxCreateWrapper_boolean_T(boolean_T *data, int32_T rows,
-  int32_T cols)
-{
-  emxArray_boolean_T *emx;
-  int32_T size[2];
-  int32_T numEl;
-  int32_T i;
-  size[0] = rows;
-  size[1] = cols;
-  b_emxInit_boolean_T(&emx, 2);
-  numEl = 1;
-  for (i = 0; i < 2; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = data;
-  emx->numDimensions = 2;
-  emx->allocatedSize = numEl;
-  emx->canFreeData = FALSE;
-  return emx;
-}
-
-emxArray_int32_T *emxCreateWrapper_int32_T(int32_T *data, int32_T rows, int32_T
-  cols)
-{
-  emxArray_int32_T *emx;
-  int32_T size[2];
-  int32_T numEl;
-  int32_T i;
-  size[0] = rows;
-  size[1] = cols;
-  c_emxInit_int32_T(&emx, 2);
-  numEl = 1;
-  for (i = 0; i < 2; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = data;
-  emx->numDimensions = 2;
-  emx->allocatedSize = numEl;
-  emx->canFreeData = FALSE;
-  return emx;
-}
-
-emxArray_real_T *emxCreateWrapper_real_T(real_T *data, int32_T rows, int32_T
-  cols)
-{
-  emxArray_real_T *emx;
-  int32_T size[2];
-  int32_T numEl;
-  int32_T i;
-  size[0] = rows;
-  size[1] = cols;
-  d_emxInit_real_T(&emx, 2);
-  numEl = 1;
-  for (i = 0; i < 2; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = data;
-  emx->numDimensions = 2;
-  emx->allocatedSize = numEl;
-  emx->canFreeData = FALSE;
-  return emx;
-}
-
-emxArray_boolean_T *emxCreate_boolean_T(int32_T rows, int32_T cols)
-{
-  emxArray_boolean_T *emx;
-  int32_T size[2];
-  int32_T numEl;
-  int32_T i;
-  size[0] = rows;
-  size[1] = cols;
-  b_emxInit_boolean_T(&emx, 2);
-  numEl = 1;
-  for (i = 0; i < 2; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = (boolean_T *)calloc((uint32_T)numEl, sizeof(boolean_T));
-  emx->numDimensions = 2;
-  emx->allocatedSize = numEl;
-  return emx;
-}
-
-emxArray_int32_T *emxCreate_int32_T(int32_T rows, int32_T cols)
-{
-  emxArray_int32_T *emx;
-  int32_T size[2];
-  int32_T numEl;
-  int32_T i;
-  size[0] = rows;
-  size[1] = cols;
-  c_emxInit_int32_T(&emx, 2);
-  numEl = 1;
-  for (i = 0; i < 2; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = (int32_T *)calloc((uint32_T)numEl, sizeof(int32_T));
-  emx->numDimensions = 2;
-  emx->allocatedSize = numEl;
-  return emx;
-}
-
-emxArray_real_T *emxCreate_real_T(int32_T rows, int32_T cols)
-{
-  emxArray_real_T *emx;
-  int32_T size[2];
-  int32_T numEl;
-  int32_T i;
-  size[0] = rows;
-  size[1] = cols;
-  d_emxInit_real_T(&emx, 2);
-  numEl = 1;
-  for (i = 0; i < 2; i++) {
-    numEl *= size[i];
-    emx->size[i] = size[i];
-  }
-
-  emx->data = (real_T *)calloc((uint32_T)numEl, sizeof(real_T));
-  emx->numDimensions = 2;
-  emx->allocatedSize = numEl;
-  return emx;
-}
-
-void emxDestroyArray_boolean_T(emxArray_boolean_T *emxArray)
-{
-  emxFree_boolean_T(&emxArray);
-}
-
-void emxDestroyArray_int32_T(emxArray_int32_T *emxArray)
-{
-  emxFree_int32_T(&emxArray);
-}
-
-void emxDestroyArray_real_T(emxArray_real_T *emxArray)
-{
-  emxFree_real_T(&emxArray);
-}
-
 /*
  * function [xs, tris] = smooth_mesh_hisurf_cleanmesh( nv_clean, nt_clean, xs, ...
  * tris, degree, isridge, ridgeedge, flabel, niter, verbose, check_trank)
@@ -16437,7 +16131,7 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
   emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, const
   emxArray_boolean_T *isridge, const emxArray_boolean_T *ridgeedge, const
   emxArray_int32_T *flabel, int32_T niter, int32_T verbose, boolean_T
-  check_trank)
+  check_trank, hiPropMesh *pmesh)
 {
   int32_T step;
   static const char_T cv8[3] = { 'C', 'M', 'F' };
@@ -16477,7 +16171,7 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
   /* 'smooth_mesh_hisurf_cleanmesh:20' angletol_max = 27; */
   /* % Compute the following for the input clean mesh : 1. Normals, 2. Opposite half edges, 3. Quality */
   /* 'smooth_mesh_hisurf_cleanmesh:23' nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
-  compute_hisurf_normals(nv_clean, xs, tris, degree, nrms);
+  compute_hisurf_normals(nv_clean, xs, tris, degree, nrms, pmesh);
 
   /* 'smooth_mesh_hisurf_cleanmesh:24' opphes = determine_opposite_halfedge( int32(size(xs,1)), tris); */
   determine_opposite_halfedge(xs->size[0], tris, opphes);
@@ -16503,7 +16197,7 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
     /* 'smooth_mesh_hisurf_cleanmesh:41'         refareas2, mu, check_trank, hisurf_args, verbose); */
     smoothing_single_iteration(nv_clean, xs, tris, nrms, opphes, isridge,
       ridgeedge, flabel, &scaled, min_angle, check_trank, hisurf_args_method,
-      degree, verbose, us_smooth);
+      degree, verbose, us_smooth, pmesh);
 
     /* 'smooth_mesh_hisurf_cleanmesh:44' if scaled */
     guard1 = FALSE;
@@ -16520,8 +16214,11 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
         /*  Step 1: (a) Update position "xs" of "nv_clean" pnts */
         /*  (b) Communicate position "xs" of ghost pnts (>nv_clean) */
         /*  Step 2: Compute the normals for the new mesh */
+
+	  hpUpdateGhostPointData_real_T(pmesh, xs);
+
         /* 'smooth_mesh_hisurf_cleanmesh:53' nrms = compute_hisurf_normals(nv_clean,xs,tris, hisurf_args.degree); */
-        compute_hisurf_normals(nv_clean, xs, tris, degree, nrms);
+        compute_hisurf_normals(nv_clean, xs, tris, degree, nrms, pmesh);
 
         /* 'smooth_mesh_hisurf_cleanmesh:58' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
         compute_statistics_tris_global(nt_clean, xs, tris, &min_angle,

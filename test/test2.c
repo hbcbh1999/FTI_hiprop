@@ -56,18 +56,25 @@ int main(int argc, char* argv[])
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
-    hpBuildNRingGhost(mesh, 2);
+    hpBuildNRingGhost(mesh, 4);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
 
+    /*
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
 
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+    */
 
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
+    hpMeshSmoothing(mesh, 3);
+
+    printf("\n hpMeshSmoothing passed, proc %d \n", rank);
+
+    /*
     hpComputeDiffops(mesh, 3);
 
     char norcurv_filename[200];
@@ -84,6 +91,7 @@ int main(int argc, char* argv[])
 		mesh->curv->data[I2dm(i,1,mesh->curv->size)],
 		mesh->curv->data[I2dm(i,2,mesh->curv->size)]);
     }
+    */
 
     /*
     hpBuildOppositeHalfEdge(mesh);

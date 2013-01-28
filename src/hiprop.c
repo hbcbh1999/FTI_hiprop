@@ -4924,6 +4924,28 @@ void hpAdaptiveBuildGhost(hiPropMesh *mesh, const int32_T in_degree)
 }
 
 
+void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree)
+{
+    emxArray_boolean_T *in_isridge;
+    emxInit_boolean_T(&in_isridge, 1);
+    emxArray_boolean_T *in_ridgeedge;
+    emxInit_boolean_T(&in_ridgeedge, 2);
+    emxArray_int32_T *in_flabel;
+    emxInit_int32_T(&in_flabel, 1);
+
+    smooth_mesh_hisurf_cleanmesh(mesh->nps_clean, mesh->ntris_clean,
+	    mesh->ps, mesh->tris, in_degree,
+	    in_isridge, in_ridgeedge, in_flabel, 
+	    10, 2, false, mesh);
+
+    emxFree_boolean_T(&in_isridge);
+    emxFree_boolean_T(&in_ridgeedge);
+    emxFree_int32_T(&in_flabel);
+}
+
+
+
+
 
 
 
