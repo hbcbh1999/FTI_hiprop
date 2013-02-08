@@ -1297,6 +1297,7 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	    new_node->next = -1;
 	}
 	mesh->ps_pinfo->tail[I1dm(i)] = mesh->ps_pinfo->allocated_len;
+	cur_pt++;
     }
 
     hpDeletePInfoList(&old_ps_pinfo);
@@ -1353,7 +1354,9 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     free(nb_proc_bool);
 
     /* 7. since no overlapping trianlges, free mesh->tris_pinfo 
-     * and then reinitialize it*/
+     * and then reinitialize it
+     * seems to be no need, because have already done so in hpInitPInfo()*/
+/*
     hpDeletePInfoList(&(mesh->tris_pinfo));
 
     int num_tris_tmp = mesh->tris->size[0];
@@ -1376,6 +1379,7 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	mesh->tris_pinfo->tail[I1dm(i)] = i;
     }
     mesh->tris_pinfo->allocated_len = num_tris_tmp;
+*/
 
     mesh->nps_clean = mesh->ps->size[0];
     mesh->ntris_clean = mesh->tris->size[0];

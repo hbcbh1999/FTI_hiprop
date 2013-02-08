@@ -41,7 +41,7 @@ libhiprop.a: emx_util.o smoothing_clean.o compute_diffops_clean.o obtain_ringsz.
 	$(CXX) $(CPPFLAGS) $(Include_Dir) $< -o $@
 
 tagsfile:
-	ctags src/*.c include/*.h test/*.c
+	ctags -R --c++-kinds=+p --fields=+iaS --extra=+q src/*.c include/*.h test/*.c
 clean:
 	rm -f *.o *.exe *.a
 	rm -f *.gch
