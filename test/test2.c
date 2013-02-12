@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 
     char in_filename[200];
     sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
-    if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
+    if (!hpReadPolyMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
 	return 0;
@@ -47,17 +47,25 @@ int main(int argc, char* argv[])
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
-    hpBuildPInfoNoOverlappingTris(mesh);
+    hpBuildPInfoWithOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
 
-    hpBuildOppositeHalfEdge(mesh);
-    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+    hpCleanMeshByPinfo(mesh);
+    printf("\n After CleanMeshByPinfo\n");
 
-    hpBuildIncidentHalfEdge(mesh);
-    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+    char debug_filename[200];
+    sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
+    hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
+    printf("\n After WriteUnstrMeshWithPInfo\n");
 
-    hpBuildNRingGhost(mesh, 4);
-    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+//    hpBuildOppositeHalfEdge(mesh);
+//    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+//
+//    hpBuildIncidentHalfEdge(mesh);
+//    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+//
+//    hpBuildNRingGhost(mesh, 4);
+//    printf("\n BuildNRingGhost passed, proc %d \n", rank);
 
     /*
     hpBuildOppositeHalfEdge(mesh);
@@ -67,12 +75,12 @@ int main(int argc, char* argv[])
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
     */
 
-    hpBuildPUpdateInfo(mesh);
-    printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
-
-    hpMeshSmoothing(mesh, 3);
-
-    printf("\n hpMeshSmoothing passed, proc %d \n", rank);
+//    hpBuildPUpdateInfo(mesh);
+//    printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
+//
+//    hpMeshSmoothing(mesh, 3);
+//
+//    printf("\n hpMeshSmoothing passed, proc %d \n", rank);
 
     /*
     hpComputeDiffops(mesh, 3);

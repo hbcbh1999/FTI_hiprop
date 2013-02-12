@@ -1295,8 +1295,8 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	    new_node->proc = old_node->proc;
 	    new_node->lindex = pt_index[new_node->proc][I1dm(old_node->lindex)];
 	    new_node->next = -1;
+	    mesh->ps_pinfo->tail[I1dm(i)] = mesh->ps_pinfo->allocated_len;
 	}
-	mesh->ps_pinfo->tail[I1dm(i)] = mesh->ps_pinfo->allocated_len;
 	cur_pt++;
     }
 
