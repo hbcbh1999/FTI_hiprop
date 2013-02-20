@@ -3,13 +3,12 @@
 static void accumulate_isometry_energy_tri(const emxArray_real_T *xs, const
   emxArray_int32_T *tris, emxArray_real_T *elem_energies, emxArray_real_T
   *grads_smooth, emxArray_real_T *Hs_smooth);
-static boolean_T add_disps_to_pntpositions(int32_T nv_clean, int32_T nt_clean,
+static boolean_T add_disps_to_nodes(int32_T nv_clean, int32_T nt_clean,
   emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T
-  *us_smooth, real_T min_angle_pre, boolean_T scaled);
+  *us_smooth, real_T min_angle_pre);
 static boolean_T any(const boolean_T x[3]);
 static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
-  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris,
-  hiPropMesh *pmesh);
+  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris);
 static void b_abs(const real_T x[3], real_T y[3]);
 static void b_backsolve(const emxArray_real_T *R, emxArray_real_T *bs, int32_T
   cend, const emxArray_real_T *ws);
@@ -21,6 +20,9 @@ static void b_eigenanalysis_surf(const emxArray_real_T *As, const
   emxArray_real_T *bs, const emxArray_boolean_T *isridge, emxArray_real_T *us,
   emxArray_real_T *Vs);
 static boolean_T b_eml_strcmp(const char_T a[3]);
+
+static void b_emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T
+  numDimensions);
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
   numDimensions);
 static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
@@ -32,6 +34,7 @@ static int32_T b_eval_vander_bivar_cmf(const emxArray_real_T *us,
   emxArray_real_T *bs, int32_T degree, const emxArray_real_T *ws);
 static void b_fix(real_T *x);
 static int32_T b_min(const emxArray_int32_T *varargin_1);
+
 static int32_T b_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
   const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const
   emxArray_int32_T *v2he, int32_T ngbvs[128], emxArray_boolean_T *vtags,
@@ -65,6 +68,8 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
   *grads_smooth, const emxArray_real_T *Hs_smooth, boolean_T check_trank,
   emxArray_real_T *us_smooth);
 static boolean_T c_eml_strcmp(const char_T a[3]);
+static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
+  numDimensions);
 static void c_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T *degree, const emxArray_real_T *ws);
@@ -72,6 +77,13 @@ static void c_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
   int32_T nverts, const emxArray_real_T *xs, const emxArray_real_T *nrms_coor,
   int32_T degree, real_T nrm[3], int32_T *deg, real_T prcurvs[2], real_T
   maxprdir[3]);
+static boolean_T c_smoothing_single_iteration_ne(int32_T nv_clean, const
+  emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T *nrms,
+  const emxArray_int32_T *opphes, const emxArray_boolean_T *isridge, const
+  emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, int32_T nfolded,
+  real_T min_angle, boolean_T check_trank, const char_T hisurf_args_method[3],
+  int32_T hisurf_args_degree, boolean_T *change_scheme, real_T *scheme, int32_T
+  verbose, emxArray_real_T *us_smooth);
 static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
   emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_boolean_T
   *isridge, const emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel,
@@ -80,13 +92,15 @@ static real_T check_prism(const real_T xs[9], const real_T us[9]);
 static boolean_T compute_cmf_weights(const real_T pos[3], const emxArray_real_T *
   pnts, const emxArray_real_T *nrms, int32_T deg, emxArray_real_T *ws);
 
+
 static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T
   *nrms_proj, int32_T degree, real_T ring, emxArray_real_T *nrms, const
   emxArray_real_T *curs, const emxArray_real_T *prdirs);
 
+
 static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
-  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms, hiPropMesh *mesh);
+  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms);
 static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
   emxArray_int32_T *tris, const emxArray_int32_T *flabel, emxArray_real_T *As,
   emxArray_real_T *bs, emxArray_real_T *bs_lbl);
@@ -98,7 +112,11 @@ static void compute_statistics_tris_global(int32_T nt_clean, const
 static boolean_T compute_weights(const emxArray_real_T *us, const
   emxArray_real_T *nrms, int32_T deg, emxArray_real_T *ws);
 static real_T cos_angle(const real_T ts1[3], const real_T ts2[3]);
+static int32_T count_folded_tris_global(int32_T nt_clean, const emxArray_real_T *
+  ps, const emxArray_int32_T *tris, const emxArray_real_T *nrms);
 static boolean_T d_eml_strcmp(const char_T a[3]);
+static void d_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
+
 
 static void c_determine_incident_halfedges(const emxArray_int32_T *elems, const
   emxArray_int32_T *opphes, emxArray_int32_T *v2he);
@@ -112,8 +130,6 @@ static void eigenanalysis_surf(const emxArray_real_T *As, const emxArray_real_T 
   bs, const emxArray_boolean_T *isridge, emxArray_real_T *us, emxArray_real_T
   *Vs, emxArray_int8_T *tranks);
 static boolean_T eml_strcmp(const char_T a[3]);
-
-
 static void eval_curvature_lhf_surf(const real_T grad[2], const real_T H[4],
   real_T curvs[2], real_T dir[3]);
 static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
@@ -121,6 +137,9 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
 static int32_T eval_vander_bivar_cmf(const emxArray_real_T *us, emxArray_real_T *
   bs, int32_T degree, const emxArray_real_T *ws);
 static boolean_T f_eml_strcmp(const char_T a[3]);
+static int8_T fe2_encode_location(real_T nvpe, const real_T nc[2]);
+static void fe2_project_point_new(const real_T pnt[3], const real_T pnts_elem[9],
+  const real_T nrms_elem[9], int32_T *flag, real_T nc[2]);
 static void find_parent_triangle(const real_T pnt[3], int32_T heid, const
   emxArray_real_T *ps, const emxArray_real_T *nrms, const emxArray_int32_T *tris,
   const emxArray_int32_T *opphes, const emxArray_int32_T *v2he, int32_T *fid,
@@ -146,10 +165,12 @@ static int32_T obtain_nring_quad(int32_T vid, real_T ring, int32_T minpnts,
   emxArray_int32_T *v2he, int32_T ngbvs[128], emxArray_boolean_T *vtags,
   emxArray_boolean_T *ftags);
 
+
 static int32_T c_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
   const emxArray_int32_T *tris, const emxArray_int32_T *opphes, const
   emxArray_int32_T *v2he, int32_T ngbvs[128], emxArray_boolean_T *vtags,
   emxArray_boolean_T *ftags, const int32_T ngbfs[256]);
+
 
 static void polyfit3d_cmf_edge(const emxArray_real_T *ngbpnts1, const
   emxArray_real_T *nrms1, const emxArray_real_T *ngbpnts2, const emxArray_real_T
@@ -182,13 +203,10 @@ static void rescale_displacements(const emxArray_real_T *xs, const
   emxArray_real_T *us, const emxArray_int32_T *tris, emxArray_real_T *alpha_vs);
 static void rescale_matrix(emxArray_real_T *V, int32_T ncols, emxArray_real_T
   *ts);
-static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
-  *xs, const emxArray_int32_T *tris, const emxArray_real_T *nrms, const
-  emxArray_int32_T *opphes, const emxArray_boolean_T *isridge, const
-  emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, boolean_T
-  *scaled, real_T min_angle, boolean_T check_trank, const char_T
-  hisurf_args_method[3], int32_T hisurf_args_degree, int32_T verbose,
-  emxArray_real_T *us_smooth, hiPropMesh *pmesh);
+static void scale_one_ring_cleanmesh(int32_T nv_clean, const emxArray_real_T *xs,
+  const emxArray_int32_T *tris, const emxArray_real_T *nrms, emxArray_real_T
+  *us_smooth, const emxArray_int32_T *opphes);
+static void solve3x3(const real_T A[9], real_T bs[3], int32_T *flag);
 static real_T sum(const emxArray_real_T *x);
 
 /* Function Definitions */
@@ -719,109 +737,107 @@ static void accumulate_isometry_energy_tri(const emxArray_real_T *xs, const
 }
 
 /*
- * function [pnt_added,xs] = add_disps_to_pntpositions(nv_clean, nt_clean, xs, tris,...
- * us_smooth, min_angle_pre, angletol_max, scaled)
+ * function [pnt_added,xs] = add_disps_to_nodes(nv_clean, nt_clean, xs, tris,...
+ * us_smooth, min_angle_pre, angletol_max)
  */
-static boolean_T add_disps_to_pntpositions(int32_T nv_clean, int32_T nt_clean,
+static boolean_T add_disps_to_nodes(int32_T nv_clean, int32_T nt_clean,
   emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T
-  *us_smooth, real_T min_angle_pre, boolean_T scaled)
+  *us_smooth, real_T min_angle_pre)
 {
   boolean_T pnt_added;
-  emxArray_real_T *b_xs;
-  emxArray_real_T *c_xs;
-  int32_T i19;
+  int32_T i22;
   real_T max_area;
   real_T min_area;
   real_T max_angle;
   real_T min_angle;
-  int32_T i20;
+  emxArray_real_T *b_xs;
+  int32_T i23;
   int32_T loop_ub;
-  int32_T i21;
+  int32_T i24;
 
-  /* 'add_disps_to_pntpositions:3' coder.inline('never') */
-  /* 'add_disps_to_pntpositions:4' pnt_added = false; */
+  /* 'add_disps_to_nodes:3' coder.inline('never') */
+  /* 'add_disps_to_nodes:4' pnt_added = false; */
   pnt_added = FALSE;
 
-  /* 'add_disps_to_pntpositions:5' if min_angle_pre>=angletol_max && ~scaled */
-  emxInit_real_T(&b_xs, 2);
-  emxInit_real_T(&c_xs, 2);
-  if ((min_angle_pre >= 27.0) && (!scaled)) {
+  /* 'add_disps_to_nodes:5' if min_angle_pre>=angletol_max */
+  if (min_angle_pre >= 27.0) {
     /*  Step 1: Compute the new positions by adding the displacements */
-    /* 'add_disps_to_pntpositions:7' xs_new = xs(1:nv_clean,:) + us_smooth(1:nv_clean,:); */
+    /* 'add_disps_to_nodes:7' xs_new = xs(1:nv_clean,:) + us_smooth(1:nv_clean,:); */
     if (1 > nv_clean) {
-      i19 = 0;
+      i22 = 0;
     } else {
-      i19 = nv_clean;
+      i22 = nv_clean;
     }
 
     /*  Step 2: Compute the minimum angle of the new mesh     */
-    /* 'add_disps_to_pntpositions:10' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
+    /* 'add_disps_to_nodes:10' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
     compute_statistics_tris_global(nt_clean, xs, tris, &min_angle, &max_angle,
       &min_area, &max_area);
 
-    /* 'add_disps_to_pntpositions:12' if min_angle>min_angle_pre */
+    /* 'add_disps_to_nodes:12' if min_angle>min_angle_pre */
     if (min_angle > min_angle_pre) {
-      /* 'add_disps_to_pntpositions:13' xs(1:nv_clean,:) = xs_new; */
-      i20 = c_xs->size[0] * c_xs->size[1];
-      c_xs->size[0] = i19;
-      c_xs->size[1] = 3;
-      emxEnsureCapacity((emxArray__common *)c_xs, i20, (int32_T)sizeof(real_T));
-      for (i20 = 0; i20 < 3; i20++) {
-        loop_ub = i19 - 1;
-        for (i21 = 0; i21 <= loop_ub; i21++) {
-          c_xs->data[i21 + c_xs->size[0] * i20] = xs->data[i21 + xs->size[0] *
-            i20] + us_smooth->data[i21 + us_smooth->size[0] * i20];
+      /* 'add_disps_to_nodes:13' xs(1:nv_clean,:) = xs_new; */
+      emxInit_real_T(&b_xs, 2);
+      i23 = b_xs->size[0] * b_xs->size[1];
+      b_xs->size[0] = i22;
+      b_xs->size[1] = 3;
+      emxEnsureCapacity((emxArray__common *)b_xs, i23, (int32_T)sizeof(real_T));
+      for (i23 = 0; i23 < 3; i23++) {
+        loop_ub = i22 - 1;
+        for (i24 = 0; i24 <= loop_ub; i24++) {
+          b_xs->data[i24 + b_xs->size[0] * i23] = xs->data[i24 + xs->size[0] *
+            i23] + us_smooth->data[i24 + us_smooth->size[0] * i23];
         }
       }
 
-      for (i19 = 0; i19 < 3; i19++) {
-        loop_ub = c_xs->size[0] - 1;
-        for (i20 = 0; i20 <= loop_ub; i20++) {
-          xs->data[i20 + xs->size[0] * i19] = c_xs->data[i20 + c_xs->size[0] *
-            i19];
+      for (i22 = 0; i22 < 3; i22++) {
+        loop_ub = b_xs->size[0] - 1;
+        for (i23 = 0; i23 <= loop_ub; i23++) {
+          xs->data[i23 + xs->size[0] * i22] = b_xs->data[i23 + b_xs->size[0] *
+            i22];
         }
       }
 
-      /* 'add_disps_to_pntpositions:14' pnt_added = true; */
+      emxFree_real_T(&b_xs);
+
+      /* 'add_disps_to_nodes:14' pnt_added = true; */
       pnt_added = TRUE;
     }
   } else {
-    if (!scaled) {
-      /* 'add_disps_to_pntpositions:16' elseif ~scaled */
-      /* 'add_disps_to_pntpositions:17' xs(1:nv_clean,:)= xs(1:nv_clean,:) + us_smooth(1:nv_clean,:); */
-      if (1 > nv_clean) {
-        i19 = 0;
-      } else {
-        i19 = nv_clean;
-      }
-
-      i20 = b_xs->size[0] * b_xs->size[1];
-      b_xs->size[0] = i19;
-      b_xs->size[1] = 3;
-      emxEnsureCapacity((emxArray__common *)b_xs, i20, (int32_T)sizeof(real_T));
-      for (i20 = 0; i20 < 3; i20++) {
-        loop_ub = i19 - 1;
-        for (i21 = 0; i21 <= loop_ub; i21++) {
-          b_xs->data[i21 + b_xs->size[0] * i20] = xs->data[i21 + xs->size[0] *
-            i20] + us_smooth->data[i21 + us_smooth->size[0] * i20];
-        }
-      }
-
-      for (i19 = 0; i19 < 3; i19++) {
-        loop_ub = b_xs->size[0] - 1;
-        for (i20 = 0; i20 <= loop_ub; i20++) {
-          xs->data[i20 + xs->size[0] * i19] = b_xs->data[i20 + b_xs->size[0] *
-            i19];
-        }
-      }
-
-      /* 'add_disps_to_pntpositions:18' pnt_added = true; */
-      pnt_added = TRUE;
+    /* 'add_disps_to_nodes:16' else */
+    /* 'add_disps_to_nodes:17' xs(1:nv_clean,:)= xs(1:nv_clean,:) + us_smooth(1:nv_clean,:); */
+    if (1 > nv_clean) {
+      i22 = 0;
+    } else {
+      i22 = nv_clean;
     }
+
+    emxInit_real_T(&b_xs, 2);
+    i23 = b_xs->size[0] * b_xs->size[1];
+    b_xs->size[0] = i22;
+    b_xs->size[1] = 3;
+    emxEnsureCapacity((emxArray__common *)b_xs, i23, (int32_T)sizeof(real_T));
+    for (i23 = 0; i23 < 3; i23++) {
+      loop_ub = i22 - 1;
+      for (i24 = 0; i24 <= loop_ub; i24++) {
+        b_xs->data[i24 + b_xs->size[0] * i23] = xs->data[i24 + xs->size[0] * i23]
+          + us_smooth->data[i24 + us_smooth->size[0] * i23];
+      }
+    }
+
+    for (i22 = 0; i22 < 3; i22++) {
+      loop_ub = b_xs->size[0] - 1;
+      for (i23 = 0; i23 <= loop_ub; i23++) {
+        xs->data[i23 + xs->size[0] * i22] = b_xs->data[i23 + b_xs->size[0] * i22];
+      }
+    }
+
+    emxFree_real_T(&b_xs);
+
+    /* 'add_disps_to_nodes:18' pnt_added = true; */
+    pnt_added = TRUE;
   }
 
-  emxFree_real_T(&c_xs);
-  emxFree_real_T(&b_xs);
   return pnt_added;
 }
 
@@ -856,22 +872,21 @@ static boolean_T any(const boolean_T x[3])
 }
 
 /*
- * function [us_smooth, scaled] = async_scale_disps_tri_cleanmesh(nv_clean,xs, us_smooth, tris, tol)
+ * function [us_smooth, scaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol)
  */
 static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
-  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris,
-  hiPropMesh *pmesh)
+  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris)
 {
   boolean_T scaled;
   emxArray_real_T *alpha_tmp;
   int32_T niter;
-  emxArray_int32_T *r18;
-  emxArray_int32_T *r19;
+  emxArray_int32_T *r21;
+  emxArray_int32_T *r22;
   emxArray_real_T *b_alpha_tmp;
   emxArray_real_T *c_alpha_tmp;
   emxArray_real_T *d_alpha_tmp;
   int32_T exitg1;
-  int32_T i16;
+  int32_T i15;
   int32_T unnamed_idx_1;
   int32_T loop_ub;
   int32_T exitg2;
@@ -892,74 +907,74 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
   scaled = FALSE;
 
   /* 'async_scale_disps_tri_cleanmesh:15' while anylessthan(alpha_tmp(1:nv_clean), 1) */
-  b_emxInit_int32_T(&r18, 2);
-  emxInit_int32_T(&r19, 1);
+  b_emxInit_int32_T(&r21, 2);
+  emxInit_int32_T(&r22, 1);
   b_emxInit_real_T(&b_alpha_tmp, 1);
   b_emxInit_real_T(&c_alpha_tmp, 1);
   b_emxInit_real_T(&d_alpha_tmp, 1);
   do {
     exitg1 = 0U;
     if (1 > nv_clean) {
-      i16 = 0;
+      i15 = 0;
     } else {
-      i16 = nv_clean;
+      i15 = nv_clean;
     }
 
-    unnamed_idx_1 = r19->size[0];
-    r19->size[0] = i16;
-    emxEnsureCapacity((emxArray__common *)r19, unnamed_idx_1, (int32_T)sizeof
+    unnamed_idx_1 = r22->size[0];
+    r22->size[0] = i15;
+    emxEnsureCapacity((emxArray__common *)r22, unnamed_idx_1, (int32_T)sizeof
                       (int32_T));
-    loop_ub = i16 - 1;
-    for (i16 = 0; i16 <= loop_ub; i16++) {
-      r19->data[i16] = 1 + i16;
+    loop_ub = i15 - 1;
+    for (i15 = 0; i15 <= loop_ub; i15++) {
+      r22->data[i15] = 1 + i15;
     }
 
-    i16 = r18->size[0] * r18->size[1];
-    r18->size[0] = 1;
-    emxEnsureCapacity((emxArray__common *)r18, i16, (int32_T)sizeof(int32_T));
-    unnamed_idx_1 = r19->size[0];
-    i16 = r18->size[0] * r18->size[1];
-    r18->size[1] = unnamed_idx_1;
-    emxEnsureCapacity((emxArray__common *)r18, i16, (int32_T)sizeof(int32_T));
-    loop_ub = r19->size[0] - 1;
-    for (i16 = 0; i16 <= loop_ub; i16++) {
-      r18->data[i16] = r19->data[i16];
+    i15 = r21->size[0] * r21->size[1];
+    r21->size[0] = 1;
+    emxEnsureCapacity((emxArray__common *)r21, i15, (int32_T)sizeof(int32_T));
+    unnamed_idx_1 = r22->size[0];
+    i15 = r21->size[0] * r21->size[1];
+    r21->size[1] = unnamed_idx_1;
+    emxEnsureCapacity((emxArray__common *)r21, i15, (int32_T)sizeof(int32_T));
+    loop_ub = r22->size[0] - 1;
+    for (i15 = 0; i15 <= loop_ub; i15++) {
+      r21->data[i15] = r22->data[i15];
     }
 
     /*  Check whether any value within vector v is less than alpha. */
     /* 'anylessthan:4' for i=1:int32(length(v)) */
-    unnamed_idx_1 = r18->size[1];
-    i16 = b_alpha_tmp->size[0];
+    unnamed_idx_1 = r21->size[1];
+    i15 = b_alpha_tmp->size[0];
     b_alpha_tmp->size[0] = unnamed_idx_1;
-    emxEnsureCapacity((emxArray__common *)b_alpha_tmp, i16, (int32_T)sizeof
+    emxEnsureCapacity((emxArray__common *)b_alpha_tmp, i15, (int32_T)sizeof
                       (real_T));
     loop_ub = unnamed_idx_1 - 1;
-    for (i16 = 0; i16 <= loop_ub; i16++) {
-      b_alpha_tmp->data[i16] = alpha_tmp->data[r18->data[i16] - 1];
+    for (i15 = 0; i15 <= loop_ub; i15++) {
+      b_alpha_tmp->data[i15] = alpha_tmp->data[r21->data[i15] - 1];
     }
 
     if (b_alpha_tmp->size[0] == 0) {
       loop_ub = 0;
     } else {
-      unnamed_idx_1 = r18->size[1];
-      i16 = c_alpha_tmp->size[0];
+      unnamed_idx_1 = r21->size[1];
+      i15 = c_alpha_tmp->size[0];
       c_alpha_tmp->size[0] = unnamed_idx_1;
-      emxEnsureCapacity((emxArray__common *)c_alpha_tmp, i16, (int32_T)sizeof
+      emxEnsureCapacity((emxArray__common *)c_alpha_tmp, i15, (int32_T)sizeof
                         (real_T));
       loop_ub = unnamed_idx_1 - 1;
-      for (i16 = 0; i16 <= loop_ub; i16++) {
-        c_alpha_tmp->data[i16] = alpha_tmp->data[r18->data[i16] - 1];
+      for (i15 = 0; i15 <= loop_ub; i15++) {
+        c_alpha_tmp->data[i15] = alpha_tmp->data[r21->data[i15] - 1];
       }
 
       if (c_alpha_tmp->size[0] > 1) {
-        unnamed_idx_1 = r18->size[1];
-        i16 = d_alpha_tmp->size[0];
+        unnamed_idx_1 = r21->size[1];
+        i15 = d_alpha_tmp->size[0];
         d_alpha_tmp->size[0] = unnamed_idx_1;
-        emxEnsureCapacity((emxArray__common *)d_alpha_tmp, i16, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)d_alpha_tmp, i15, (int32_T)sizeof
                           (real_T));
         loop_ub = unnamed_idx_1 - 1;
-        for (i16 = 0; i16 <= loop_ub; i16++) {
-          d_alpha_tmp->data[i16] = alpha_tmp->data[r18->data[i16] - 1];
+        for (i15 = 0; i15 <= loop_ub; i15++) {
+          d_alpha_tmp->data[i15] = alpha_tmp->data[r21->data[i15] - 1];
         }
 
         loop_ub = d_alpha_tmp->size[0];
@@ -973,7 +988,7 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
       exitg2 = 0U;
       if (unnamed_idx_1 <= loop_ub) {
         /* 'anylessthan:5' if (v(i)<alpha) */
-        if (alpha_tmp->data[r18->data[unnamed_idx_1 - 1] - 1] < 1.0) {
+        if (alpha_tmp->data[r21->data[unnamed_idx_1 - 1] - 1] < 1.0) {
           /* 'anylessthan:5' b = true; */
           b = TRUE;
           exitg2 = 1U;
@@ -997,14 +1012,14 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
       /* 'async_scale_disps_tri_cleanmesh:18' if (niter>10) */
       if (niter > 10) {
         /* 'async_scale_disps_tri_cleanmesh:19' us_smooth(:) = 0; */
-        i16 = us_smooth->size[0] * us_smooth->size[1];
+        i15 = us_smooth->size[0] * us_smooth->size[1];
         us_smooth->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)us_smooth, i16, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)us_smooth, i15, (int32_T)sizeof
                           (real_T));
-        for (i16 = 0; i16 < 3; i16++) {
+        for (i15 = 0; i15 < 3; i15++) {
           loop_ub = us_smooth->size[0] - 1;
           for (unnamed_idx_1 = 0; unnamed_idx_1 <= loop_ub; unnamed_idx_1++) {
-            us_smooth->data[unnamed_idx_1 + us_smooth->size[0] * i16] = 0.0;
+            us_smooth->data[unnamed_idx_1 + us_smooth->size[0] * i15] = 0.0;
           }
         }
 
@@ -1026,14 +1041,9 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
             alpha_tmp->data[unnamed_idx_1];
         }
 
-        /*  Step 2: Update the variables 1. scaled "us_smooth" , 2. alpha_tmp */
-        /*  of "nv_clean" pnts and communicate values of ghost pnts (>nv_clean)  */
-
-	hpUpdateGhostPointData_real_T(pmesh, us_smooth);
-	hpUpdateGhostPointData_real_T(pmesh, alpha_tmp);
-
+        /*  Step 2: Communicate 'us_smooth' and 'alpha_tmp' for ghost points     */
         /*  Step 3: Again check if any rescaling has to be performed or not. */
-        /* 'async_scale_disps_tri_cleanmesh:33' [alpha_tmp,us_smooth] = rescale_displacements(xs, us_smooth, tris, tol, alpha_tmp); */
+        /* 'async_scale_disps_tri_cleanmesh:32' [alpha_tmp,us_smooth] = rescale_displacements(xs, us_smooth, tris, tol, alpha_tmp); */
         b_rescale_displacements(xs, us_smooth, tris, alpha_tmp);
       }
     } else {
@@ -1044,8 +1054,8 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
   emxFree_real_T(&d_alpha_tmp);
   emxFree_real_T(&c_alpha_tmp);
   emxFree_real_T(&b_alpha_tmp);
-  emxFree_int32_T(&r19);
-  emxFree_int32_T(&r18);
+  emxFree_int32_T(&r22);
+  emxFree_int32_T(&r21);
   emxFree_real_T(&alpha_tmp);
   return scaled;
 }
@@ -1272,14 +1282,20 @@ static void b_eigenanalysis_surf(const emxArray_real_T *As, const
   nv = As->size[2];
 
   /* 'eigenanalysis_surf:25' if nargin<4 */
-  /* 'eigenanalysis_surf:25' us = coder.nullcopy(zeros(nv,3)); */
+  /* 'eigenanalysis_surf:25' us = nullcopy(zeros(nv,3)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ix = us->size[0] * us->size[1];
   us->size[0] = nv;
   us->size[1] = 3;
   emxEnsureCapacity((emxArray__common *)us, ix, (int32_T)sizeof(real_T));
 
   /* 'eigenanalysis_surf:27' if nargout>1 */
-  /* 'eigenanalysis_surf:27' Vs = coder.nullcopy(zeros(3,3,nv)); */
+  /* 'eigenanalysis_surf:27' Vs = nullcopy(zeros(3,3,nv)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ix = Vs->size[0] * Vs->size[1] * Vs->size[2];
   Vs->size[0] = 3;
   Vs->size[1] = 3;
@@ -1468,6 +1484,25 @@ static boolean_T b_eml_strcmp(const char_T a[3])
   }
 
   return b_bool;
+}
+
+static void b_emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T
+  numDimensions)
+{
+  emxArray_boolean_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_boolean_T *)malloc(sizeof(emxArray_boolean_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (boolean_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
 }
 
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
@@ -1735,7 +1770,7 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   int32_T jj;
   emxArray_real_T *b_V;
   int32_T c_V;
-  int32_T i12;
+  int32_T i13;
   int32_T loop_ub;
   int32_T b_loop_ub;
   emxArray_real_T *ws1;
@@ -1779,15 +1814,15 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
 
   emxInit_real_T(&b_V, 2);
   c_V = V->size[0];
-  i12 = b_V->size[0] * b_V->size[1];
+  i13 = b_V->size[0] * b_V->size[1];
   b_V->size[0] = c_V;
   b_V->size[1] = ii - jj;
-  emxEnsureCapacity((emxArray__common *)b_V, i12, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_V, i13, (int32_T)sizeof(real_T));
   loop_ub = (ii - jj) - 1;
   for (ii = 0; ii <= loop_ub; ii++) {
     b_loop_ub = c_V - 1;
-    for (i12 = 0; i12 <= b_loop_ub; i12++) {
-      b_V->data[i12 + b_V->size[0] * ii] = V->data[i12 + V->size[0] * (jj + ii)];
+    for (i13 = 0; i13 <= b_loop_ub; i13++) {
+      b_V->data[i13 + b_V->size[0] * ii] = V->data[i13 + V->size[0] * (jj + ii)];
     }
   }
 
@@ -1830,7 +1865,10 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   b_emxInit_real_T(&D, 1);
 
   /* % Scale columns to reduce condition number */
-  /* 'eval_vander_bivar:65' ts = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:65' ts = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ii = ws1->size[0];
   ws1->size[0] = 2;
   emxEnsureCapacity((emxArray__common *)ws1, ii, (int32_T)sizeof(real_T));
@@ -1839,7 +1877,10 @@ static int32_T b_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T
   rescale_matrix(V, 2, ws1);
 
   /* % Perform Householder QR factorization */
-  /* 'eval_vander_bivar:69' D = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:69' D = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ii = D->size[0];
   D->size[0] = 2;
   emxEnsureCapacity((emxArray__common *)D, ii, (int32_T)sizeof(real_T));
@@ -1935,7 +1976,10 @@ static int32_T b_eval_vander_bivar_cmf(const emxArray_real_T *us,
   /* 'eval_vander_bivar_cmf:22' interp0 = (nargin>4 && interp0); */
   /* 'eval_vander_bivar_cmf:23' if nargin<6 */
   /*  Declaring the degree of output */
-  /* 'eval_vander_bivar_cmf:26' deg_out = coder.nullcopy(zeros(1,size(bs,2),'int32')); */
+  /* 'eval_vander_bivar_cmf:26' deg_out = nullcopy(zeros(1,size(bs,2),'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   /*  Determine degree of polynomial */
   /* 'eval_vander_bivar_cmf:30' ncols = int32(bitshift(uint32((degree+2)*(degree+1)),-1))-int32(interp0); */
   ncols = (int32_T)((uint32_T)((degree + 2) * (degree + 1)) >> 1U);
@@ -1989,7 +2033,10 @@ static int32_T b_eval_vander_bivar_cmf(const emxArray_real_T *us,
   b_emxInit_real_T(&D, 1);
 
   /* % Scale columns to reduce condition number */
-  /* 'eval_vander_bivar_cmf:53' ts = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar_cmf:53' ts = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   npnts = ts->size[0];
   ts->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)ts, npnts, (int32_T)sizeof(real_T));
@@ -1998,7 +2045,10 @@ static int32_T b_eval_vander_bivar_cmf(const emxArray_real_T *us,
   rescale_matrix(V, ncols, ts);
 
   /* % Perform Householder QR factorization */
-  /* 'eval_vander_bivar_cmf:57' D = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar_cmf:57' D = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   npnts = D->size[0];
   D->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)D, npnts, (int32_T)sizeof(real_T));
@@ -2221,7 +2271,10 @@ static int32_T b_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
     /* 'obtain_nring_surf:81' if nargin>=10 && ~isempty(ngbfs) */
     /* 'obtain_nring_surf:83' else */
     /* 'obtain_nring_surf:84' maxnf = 2*MAXNPNTS; */
-    /* 'obtain_nring_surf:84' ngbfs = coder.nullcopy(zeros(maxnf,1, 'int32')); */
+    /* 'obtain_nring_surf:84' ngbfs = nullcopy(zeros(maxnf,1, 'int32')); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     /* 'obtain_nring_surf:87' oneringonly = ring==1 && minpnts==0 && nargout<5; */
     if ((ring == 1.0) && (minpnts == 0)) {
       b5 = TRUE;
@@ -2229,7 +2282,10 @@ static int32_T b_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
       b5 = FALSE;
     }
 
-    /* 'obtain_nring_surf:88' hebuf = coder.nullcopy(zeros(maxnv,1, 'int32')); */
+    /* 'obtain_nring_surf:88' hebuf = nullcopy(zeros(maxnv,1, 'int32')); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     /*  Optimized version for collecting one-ring vertices */
     /* 'obtain_nring_surf:91' if opphes( fid, lid) */
     if (opphes->data[fid + opphes->size[0] * lid] != 0) {
@@ -2843,18 +2899,27 @@ static void b_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
     t2[2] = nrm[0] * absnrm[1] - nrm[1] * absnrm[0];
 
     /*  Project onto local coordinate system */
-    /* 'polyfit_lhf_surf_point:41' us = coder.nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'polyfit_lhf_surf_point:41' us = nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = us->size[0] * us->size[1];
     us->size[0] = nverts;
     us->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)us, ix, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhf_surf_point:42' bs = coder.nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'polyfit_lhf_surf_point:42' bs = nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = bs->size[0];
     bs->size[0] = nverts;
     emxEnsureCapacity((emxArray__common *)bs, ix, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhf_surf_point:43' ws_row = coder.nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'polyfit_lhf_surf_point:43' ws_row = nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = ws_row->size[0];
     ws_row->size[0] = nverts;
     emxEnsureCapacity((emxArray__common *)ws_row, ix, (int32_T)sizeof(real_T));
@@ -3064,7 +3129,10 @@ static void b_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
       H[3] = cs2[2];
     } else {
       /* 'polyfit_lhf_surf_point:88' else */
-      /* 'polyfit_lhf_surf_point:89' H = coder.nullcopy(zeros(2,2)); */
+      /* 'polyfit_lhf_surf_point:89' H = nullcopy(zeros(2,2)); */
+      /* 'nullcopy:3' if isempty(coder.target) */
+      /* 'nullcopy:12' else */
+      /* 'nullcopy:13' B = coder.nullcopy(A); */
     }
 
     emxFree_real_T(&ws_row);
@@ -3334,19 +3402,28 @@ static void b_polyfit_lhfgrad_surf_point(int32_T v, const int32_T ngbvs[128],
     t2[2] = nrm[0] * absnrm[1] - nrm[1] * absnrm[0];
 
     /*  Evaluate local coordinate system and weights */
-    /* 'polyfit_lhfgrad_surf_point:36' us = coder.nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'polyfit_lhfgrad_surf_point:36' us = nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     iy = us->size[0] * us->size[1];
     us->size[0] = nverts + 1;
     us->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)us, iy, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhfgrad_surf_point:37' bs = coder.nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'polyfit_lhfgrad_surf_point:37' bs = nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     iy = bs->size[0] * bs->size[1];
     bs->size[0] = nverts + 1;
     bs->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)bs, iy, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhfgrad_surf_point:38' ws_row = coder.nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'polyfit_lhfgrad_surf_point:38' ws_row = nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     iy = ws_row->size[0];
     ws_row->size[0] = nverts + 1;
     emxEnsureCapacity((emxArray__common *)ws_row, iy, (int32_T)sizeof(real_T));
@@ -3531,7 +3608,7 @@ static void b_rescale_displacements(const emxArray_real_T *xs, const
 {
   int32_T nv;
   int32_T ntri;
-  int32_T i18;
+  int32_T i17;
   int32_T ii;
   real_T b_us[9];
   boolean_T x[9];
@@ -3545,37 +3622,37 @@ static void b_rescale_displacements(const emxArray_real_T *xs, const
   /* RESCALE_DISPLACEMENTS */
   /*  Given layers of surfaces and the displacement of a particular layer, */
   /*  scale the vertex displacements to avoid folding */
-  /* 'async_scale_disps_tri_cleanmesh:40' coder.inline('never') */
-  /* 'async_scale_disps_tri_cleanmesh:41' nv   = int32(size(xs,1)); */
+  /* 'async_scale_disps_tri_cleanmesh:39' coder.inline('never') */
+  /* 'async_scale_disps_tri_cleanmesh:40' nv   = int32(size(xs,1)); */
   nv = xs->size[0];
 
-  /* 'async_scale_disps_tri_cleanmesh:42' ntri = int32(size(tris,1)); */
+  /* 'async_scale_disps_tri_cleanmesh:41' ntri = int32(size(tris,1)); */
   ntri = tris->size[0];
 
-  /* 'async_scale_disps_tri_cleanmesh:43' alpha_vs = ones(nv,1); */
-  i18 = alpha_vs->size[0];
+  /* 'async_scale_disps_tri_cleanmesh:42' alpha_vs = ones(nv,1); */
+  i17 = alpha_vs->size[0];
   alpha_vs->size[0] = nv;
-  emxEnsureCapacity((emxArray__common *)alpha_vs, i18, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)alpha_vs, i17, (int32_T)sizeof(real_T));
   nv--;
-  for (i18 = 0; i18 <= nv; i18++) {
-    alpha_vs->data[i18] = 1.0;
+  for (i17 = 0; i17 <= nv; i17++) {
+    alpha_vs->data[i17] = 1.0;
   }
 
-  /* 'async_scale_disps_tri_cleanmesh:45' for ii=1:ntri */
+  /* 'async_scale_disps_tri_cleanmesh:44' for ii=1:ntri */
   for (ii = 0; ii + 1 <= ntri; ii++) {
-    /* 'async_scale_disps_tri_cleanmesh:46' vs = tris(ii,1:3); */
-    /* 'async_scale_disps_tri_cleanmesh:47' if nargin>6 && all(alpha_in(vs)==1) */
-    /* 'async_scale_disps_tri_cleanmesh:52' us_tri = us(vs,1:3); */
-    /* 'async_scale_disps_tri_cleanmesh:53' if all(us_tri(:)==0) */
-    for (i18 = 0; i18 < 3; i18++) {
+    /* 'async_scale_disps_tri_cleanmesh:45' vs = tris(ii,1:3); */
+    /* 'async_scale_disps_tri_cleanmesh:46' if nargin>6 && all(alpha_in(vs)==1) */
+    /* 'async_scale_disps_tri_cleanmesh:51' us_tri = us(vs,1:3); */
+    /* 'async_scale_disps_tri_cleanmesh:52' if all(us_tri(:)==0) */
+    for (i17 = 0; i17 < 3; i17++) {
       for (nv = 0; nv < 3; nv++) {
-        b_us[nv + 3 * i18] = us->data[(tris->data[ii + tris->size[0] * nv] +
-          us->size[0] * i18) - 1];
+        b_us[nv + 3 * i17] = us->data[(tris->data[ii + tris->size[0] * nv] +
+          us->size[0] * i17) - 1];
       }
     }
 
-    for (i18 = 0; i18 < 9; i18++) {
-      x[i18] = (b_us[i18] == 0.0);
+    for (i17 = 0; i17 < 9; i17++) {
+      x[i17] = (b_us[i17] == 0.0);
     }
 
     y = TRUE;
@@ -3592,40 +3669,40 @@ static void b_rescale_displacements(const emxArray_real_T *xs, const
 
     if (y) {
     } else {
-      /* 'async_scale_disps_tri_cleanmesh:55' alpha_tri = check_prism( xs(vs,1:3), us_tri); */
-      for (i18 = 0; i18 < 3; i18++) {
+      /* 'async_scale_disps_tri_cleanmesh:54' alpha_tri = check_prism( xs(vs,1:3), us_tri); */
+      for (i17 = 0; i17 < 3; i17++) {
         for (nv = 0; nv < 3; nv++) {
-          b_xs[nv + 3 * i18] = xs->data[(tris->data[ii + tris->size[0] * nv] +
-            xs->size[0] * i18) - 1];
+          b_xs[nv + 3 * i17] = xs->data[(tris->data[ii + tris->size[0] * nv] +
+            xs->size[0] * i17) - 1];
         }
       }
 
-      for (i18 = 0; i18 < 3; i18++) {
+      for (i17 = 0; i17 < 3; i17++) {
         for (nv = 0; nv < 3; nv++) {
-          b_us[nv + 3 * i18] = us->data[(tris->data[ii + tris->size[0] * nv] +
-            us->size[0] * i18) - 1];
+          b_us[nv + 3 * i17] = us->data[(tris->data[ii + tris->size[0] * nv] +
+            us->size[0] * i17) - 1];
         }
       }
 
       alpha_tri = check_prism(b_xs, b_us);
 
-      /* 'async_scale_disps_tri_cleanmesh:57' if alpha_tri < tol */
+      /* 'async_scale_disps_tri_cleanmesh:56' if alpha_tri < tol */
       if (alpha_tri < 0.1) {
-        /* 'async_scale_disps_tri_cleanmesh:57' alpha_tri = 0.5*alpha_tri; */
+        /* 'async_scale_disps_tri_cleanmesh:56' alpha_tri = 0.5*alpha_tri; */
         alpha_tri *= 0.5;
       }
 
-      /* 'async_scale_disps_tri_cleanmesh:59' if alpha_tri<1 */
+      /* 'async_scale_disps_tri_cleanmesh:58' if alpha_tri<1 */
       if (alpha_tri < 1.0) {
-        /* 'async_scale_disps_tri_cleanmesh:60' alpha_vs(vs) = min( alpha_vs(vs), alpha_tri); */
+        /* 'async_scale_disps_tri_cleanmesh:59' alpha_vs(vs) = min( alpha_vs(vs), alpha_tri); */
         for (nv = 0; nv < 3; nv++) {
           u0 = alpha_vs->data[tris->data[ii + tris->size[0] * nv] - 1];
           u0 = u0 <= alpha_tri ? u0 : alpha_tri;
           minval[nv] = u0;
         }
 
-        for (i18 = 0; i18 < 3; i18++) {
-          alpha_vs->data[tris->data[ii + tris->size[0] * i18] - 1] = minval[i18];
+        for (i17 = 0; i17 < 3; i17++) {
+          alpha_vs->data[tris->data[ii + tris->size[0] * i17] - 1] = minval[i17];
         }
       }
     }
@@ -3752,9 +3829,10 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
 {
   int32_T deg_out;
   emxArray_real_T *bs_bak;
+  emxArray_real_T *r25;
   int32_T ncols;
   int32_T ii;
-  int32_T i;
+  int32_T loop_ub;
   int32_T b_bs[2];
   emxArray_real_T c_bs;
   emxArray_real_T *tb;
@@ -3781,6 +3859,7 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
   int32_T n_bs[2];
   int32_T o_bs[2];
   b_emxInit_real_T(&bs_bak, 1);
+  b_emxInit_real_T(&r25, 1);
 
   /*  Perform back substitution with safeguards to downgrade the order if necessary. */
   /*      [bs,deg_out] = backsolve_bivar_safeguarded(R, bs, degree, interp, ws) */
@@ -3789,7 +3868,7 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
   /* 'backsolve_bivar_safeguarded:8' tol = 0.05; */
   /*  Second, solve for each degree in decending order */
   /* 'backsolve_bivar_safeguarded:11' if nargout>1 */
-  /* 'backsolve_bivar_safeguarded:11' deg_out = coder.nullcopy( zeros(1,size(bs,2),'int32')); */
+  /* 'backsolve_bivar_safeguarded:11' deg_out = nullcopy( zeros(1,size(bs,2),'int32')); */
   /* 'backsolve_bivar_safeguarded:13' for kk=1:int32(size(bs,2)) */
   /* 'backsolve_bivar_safeguarded:14' deg = degree; */
   deg_out = degree;
@@ -3797,10 +3876,22 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
   /* 'backsolve_bivar_safeguarded:15' ncols = int32(bitshift(uint32((deg+2)*(deg+1)),-1))-int32(interp); */
   ncols = (int32_T)((uint32_T)((degree + 2) * (degree + 1)) >> 1U);
 
-  /* 'backsolve_bivar_safeguarded:16' bs_bak = coder.nullcopy( zeros(ncols,1)); */
+  /* 'backsolve_bivar_safeguarded:16' bs_bak = nullcopy( zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  ii = r25->size[0];
+  r25->size[0] = ncols;
+  emxEnsureCapacity((emxArray__common *)r25, ii, (int32_T)sizeof(real_T));
   ii = bs_bak->size[0];
-  bs_bak->size[0] = ncols;
+  bs_bak->size[0] = r25->size[0];
   emxEnsureCapacity((emxArray__common *)bs_bak, ii, (int32_T)sizeof(real_T));
+  loop_ub = r25->size[0] - 1;
+  for (ii = 0; ii <= loop_ub; ii++) {
+    bs_bak->data[ii] = r25->data[ii];
+  }
+
+  emxFree_real_T(&r25);
 
   /* 'backsolve_bivar_safeguarded:17' if deg>=2 */
   if (degree >= 2) {
@@ -3808,14 +3899,14 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
     /*  the backsolve after lowering degree. */
     /* 'backsolve_bivar_safeguarded:20' assert(ncols<=28); */
     /* 'backsolve_bivar_safeguarded:21' for i=1:ncols */
-    for (i = 0; i + 1 <= ncols; i++) {
+    for (loop_ub = 0; loop_ub + 1 <= ncols; loop_ub++) {
       /* 'backsolve_bivar_safeguarded:21' bs_bak(i) = bs(i,kk); */
       b_bs[0] = bs->size[0];
       b_bs[1] = 1;
       c_bs = *bs;
       c_bs.size = (int32_T *)&b_bs;
       c_bs.numDimensions = 1;
-      bs_bak->data[i] = c_bs.data[i];
+      bs_bak->data[loop_ub] = c_bs.data[loop_ub];
     }
   }
 
@@ -3838,9 +3929,9 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
 
       /*  Solve for bs */
       /* 'backsolve_bivar_safeguarded:32' for jj=cend:-1:cstart */
-      for (i = cend - 1; i + 1 >= cstart + 1; i--) {
+      for (loop_ub = cend - 1; loop_ub + 1 >= cstart + 1; loop_ub--) {
         /* 'backsolve_bivar_safeguarded:33' for ii=jj+1:ncols */
-        for (ii = i + 1; ii + 1 <= ncols; ii++) {
+        for (ii = loop_ub + 1; ii + 1 <= ncols; ii++) {
           /* 'backsolve_bivar_safeguarded:34' bs(jj,kk) = bs(jj,kk) - R(jj,ii) * bs(ii,kk); */
           d_bs[0] = bs->size[0];
           d_bs[1] = 1;
@@ -3857,8 +3948,8 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
           h_bs = *bs;
           h_bs.size = (int32_T *)&f_bs;
           h_bs.numDimensions = 1;
-          c_bs.data[i] = g_bs.data[i] - R->data[i + R->size[0] * ii] *
-            h_bs.data[ii];
+          c_bs.data[loop_ub] = g_bs.data[loop_ub] - R->data[loop_ub + R->size[0]
+            * ii] * h_bs.data[ii];
         }
 
         /* 'backsolve_bivar_safeguarded:36' bs(jj,kk) = bs(jj,kk) / R(jj,jj); */
@@ -3872,7 +3963,8 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
         g_bs = *bs;
         g_bs.size = (int32_T *)&j_bs;
         g_bs.numDimensions = 1;
-        c_bs.data[i] = g_bs.data[i] / R->data[i + R->size[0] * i];
+        c_bs.data[loop_ub] = g_bs.data[loop_ub] / R->data[loop_ub + R->size[0] *
+          loop_ub];
       }
 
       /*  Check whether a coefficient has changed substantially by higher- */
@@ -3889,30 +3981,31 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
           jind = cend;
         }
 
-        i = tb->size[0];
+        loop_ub = tb->size[0];
         tb->size[0] = jind - ii;
-        emxEnsureCapacity((emxArray__common *)tb, i, (int32_T)sizeof(real_T));
-        i = (jind - ii) - 1;
-        for (jind = 0; jind <= i; jind++) {
+        emxEnsureCapacity((emxArray__common *)tb, loop_ub, (int32_T)sizeof
+                          (real_T));
+        loop_ub = (jind - ii) - 1;
+        for (jind = 0; jind <= loop_ub; jind++) {
           tb->data[jind] = bs_bak->data[ii + jind];
         }
 
         /* 'backsolve_bivar_safeguarded:44' for jj=cend:-1:cstart */
-        i = cend - 1;
+        loop_ub = cend - 1;
         exitg3 = 0U;
-        while ((exitg3 == 0U) && (i + 1 >= cstart + 1)) {
+        while ((exitg3 == 0U) && (loop_ub + 1 >= cstart + 1)) {
           /* 'backsolve_bivar_safeguarded:45' jind = jj-cstart+1; */
-          jind = i - cstart;
+          jind = loop_ub - cstart;
 
           /* 'backsolve_bivar_safeguarded:46' for ii=jj+1:cend */
-          for (ii = i + 2; ii <= cend; ii++) {
+          for (ii = loop_ub + 2; ii <= cend; ii++) {
             /* 'backsolve_bivar_safeguarded:47' tb(jind) = tb(jind) - R(jj,ii) * tb(ii-cstart+1); */
-            tb->data[jind] -= R->data[i + R->size[0] * (ii - 1)] * tb->data[(ii
-              - cstart) - 1];
+            tb->data[jind] -= R->data[loop_ub + R->size[0] * (ii - 1)] *
+              tb->data[(ii - cstart) - 1];
           }
 
           /* 'backsolve_bivar_safeguarded:49' tb(jind)  = tb(jind) / R(jj,jj); */
-          tb->data[jind] /= R->data[i + R->size[0] * i];
+          tb->data[jind] /= R->data[loop_ub + R->size[0] * loop_ub];
 
           /* 'backsolve_bivar_safeguarded:51' err = abs(bs(jj,kk)-tb(jind)); */
           k_bs[0] = bs->size[0];
@@ -3920,7 +4013,7 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
           c_bs = *bs;
           c_bs.size = (int32_T *)&k_bs;
           c_bs.numDimensions = 1;
-          err = c_bs.data[i] - tb->data[jind];
+          err = c_bs.data[loop_ub] - tb->data[jind];
           err = fabs(err);
 
           /* 'backsolve_bivar_safeguarded:52' if err > tol && err >= (1+tol)*abs(tb(jind)) */
@@ -3929,7 +4022,7 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
             downgrade = TRUE;
             exitg3 = 1U;
           } else {
-            i--;
+            loop_ub--;
           }
         }
 
@@ -3972,8 +4065,8 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
         ii = ncols - 1;
       }
 
-      i = bs->size[0];
-      l_bs[0] = i;
+      loop_ub = bs->size[0];
+      l_bs[0] = loop_ub;
       l_bs[1] = 1;
       for (jind = 0; jind <= ii; jind++) {
         c_bs = *bs;
@@ -3993,7 +4086,7 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
   /* 'backsolve_bivar_safeguarded:80' if nargin>4 */
   /*  Scale back bs. */
   /* 'backsolve_bivar_safeguarded:82' for jj = 1:ncols */
-  for (i = 0; i + 1 <= ncols; i++) {
+  for (loop_ub = 0; loop_ub + 1 <= ncols; loop_ub++) {
     /* 'backsolve_bivar_safeguarded:82' bs(jj,kk) = bs(jj,kk) / ws(jj); */
     m_bs[0] = bs->size[0];
     m_bs[1] = 1;
@@ -4005,12 +4098,12 @@ static int32_T backsolve_bivar_safeguarded(const emxArray_real_T *R,
     g_bs = *bs;
     g_bs.size = (int32_T *)&n_bs;
     g_bs.numDimensions = 1;
-    c_bs.data[i] = g_bs.data[i] / ws->data[i];
+    c_bs.data[loop_ub] = g_bs.data[loop_ub] / ws->data[loop_ub];
   }
 
   /* 'backsolve_bivar_safeguarded:84' for jj = ncols+1:int32(size(bs,1)) */
-  i = bs->size[0];
-  while (ncols + 1 <= i) {
+  loop_ub = bs->size[0];
+  while (ncols + 1 <= loop_ub) {
     /* 'backsolve_bivar_safeguarded:84' bs(jj,kk) = 0; */
     o_bs[0] = bs->size[0];
     o_bs[1] = 1;
@@ -4039,11 +4132,11 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
   int32_T offset;
   int32_T nelems;
   emxArray_int32_T *allv_offsets;
-  int32_T i13;
+  int32_T i18;
   int32_T i;
-  emxArray_int32_T *r16;
-  int32_T i14;
-  emxArray_int32_T *r17;
+  emxArray_int32_T *r23;
+  int32_T i19;
+  emxArray_int32_T *r24;
   emxArray_int32_T *ngbvs1;
   emxArray_int32_T *ngbvs2;
   emxArray_int32_T *ngbvs3;
@@ -4162,10 +4255,13 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
 
   emxInit_int32_T(&allv_offsets, 1);
 
-  /* 'determine_offsets_mixed_elems:30' offsets = coder.nullcopy(zeros(nelems,1,'int32')); */
-  i13 = allv_offsets->size[0];
+  /* 'determine_offsets_mixed_elems:30' offsets = nullcopy(zeros(nelems,1,'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  i18 = allv_offsets->size[0];
   allv_offsets->size[0] = nelems;
-  emxEnsureCapacity((emxArray__common *)allv_offsets, i13, (int32_T)sizeof
+  emxEnsureCapacity((emxArray__common *)allv_offsets, i18, (int32_T)sizeof
                     (int32_T));
 
   /*  Set offset for the elements. */
@@ -4189,41 +4285,41 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
 
   /*  Reset the rest to zero. */
   /* 'determine_offsets_mixed_elems:42' offsets(i:end) = 0; */
-  i13 = allv_offsets->size[0];
-  if (i > i13) {
+  i18 = allv_offsets->size[0];
+  if (i > i18) {
     i = 1;
-    i13 = 0;
+    i18 = 0;
   }
 
-  emxInit_int32_T(&r16, 1);
-  i14 = r16->size[0];
-  r16->size[0] = (i13 - i) + 1;
-  emxEnsureCapacity((emxArray__common *)r16, i14, (int32_T)sizeof(int32_T));
-  nelems = i13 - i;
-  for (i13 = 0; i13 <= nelems; i13++) {
-    r16->data[i13] = i + i13;
+  emxInit_int32_T(&r23, 1);
+  i19 = r23->size[0];
+  r23->size[0] = (i18 - i) + 1;
+  emxEnsureCapacity((emxArray__common *)r23, i19, (int32_T)sizeof(int32_T));
+  nelems = i18 - i;
+  for (i18 = 0; i18 <= nelems; i18++) {
+    r23->data[i18] = i + i18;
   }
 
-  b_emxInit_int32_T(&r17, 2);
-  i13 = r17->size[0] * r17->size[1];
-  r17->size[0] = 1;
-  emxEnsureCapacity((emxArray__common *)r17, i13, (int32_T)sizeof(int32_T));
-  offset = r16->size[0];
-  i13 = r17->size[0] * r17->size[1];
-  r17->size[1] = offset;
-  emxEnsureCapacity((emxArray__common *)r17, i13, (int32_T)sizeof(int32_T));
-  nelems = r16->size[0] - 1;
-  for (i13 = 0; i13 <= nelems; i13++) {
-    r17->data[i13] = r16->data[i13];
+  b_emxInit_int32_T(&r24, 2);
+  i18 = r24->size[0] * r24->size[1];
+  r24->size[0] = 1;
+  emxEnsureCapacity((emxArray__common *)r24, i18, (int32_T)sizeof(int32_T));
+  offset = r23->size[0];
+  i18 = r24->size[0] * r24->size[1];
+  r24->size[1] = offset;
+  emxEnsureCapacity((emxArray__common *)r24, i18, (int32_T)sizeof(int32_T));
+  nelems = r23->size[0] - 1;
+  for (i18 = 0; i18 <= nelems; i18++) {
+    r24->data[i18] = r23->data[i18];
   }
 
-  emxFree_int32_T(&r16);
-  nelems = r17->size[0] * r17->size[1] - 1;
-  for (i13 = 0; i13 <= nelems; i13++) {
-    allv_offsets->data[r17->data[i13] - 1] = 0;
+  emxFree_int32_T(&r23);
+  nelems = r24->size[0] * r24->size[1] - 1;
+  for (i18 = 0; i18 <= nelems; i18++) {
+    allv_offsets->data[r24->data[i18] - 1] = 0;
   }
 
-  emxFree_int32_T(&r17);
+  emxFree_int32_T(&r24);
 
   /*  Loop through the points to project them onto the surface one by one. */
   /* 'adjust_disps_onto_hisurf_cleanmesh:39' for i= 1: nv_clean */
@@ -4258,9 +4354,9 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
   emxInit_real_T(&p_ps, 2);
   while (i + 1 <= nv_clean) {
     /* 'adjust_disps_onto_hisurf_cleanmesh:40' pnt = (ps(i,1:3)+us_smooth(i,1:3))'; */
-    for (i13 = 0; i13 < 3; i13++) {
-      pnt1[i13] = ps->data[i + ps->size[0] * i13] + us_smooth->data[i +
-        us_smooth->size[0] * i13];
+    for (i18 = 0; i18 < 3; i18++) {
+      pnt1[i18] = ps->data[i + ps->size[0] * i18] + us_smooth->data[i +
+        us_smooth->size[0] * i18];
     }
 
     /* 'adjust_disps_onto_hisurf_cleanmesh:41' heid = v2he(i); */
@@ -4274,67 +4370,67 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
     if ((loc == 0) || (xi > 1.0E-6)) {
       /* 'adjust_disps_onto_hisurf_cleanmesh:50' offset1 = allv_offsets(tris(fid,1)); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:51' ngbvs1 = [tris(fid,1); allv_ngbvs( offset1+1:offset1+allv_ngbvs( offset1))]; */
-      i13 = allv_offsets->data[tris->data[fid - 1] - 1] + 1;
-      i14 = allv_offsets->data[tris->data[fid - 1] - 1] + allv_ngbvs->
+      i18 = allv_offsets->data[tris->data[fid - 1] - 1] + 1;
+      i19 = allv_offsets->data[tris->data[fid - 1] - 1] + allv_ngbvs->
         data[allv_offsets->data[tris->data[fid - 1] - 1] - 1];
-      if (i13 > i14) {
-        i13 = 1;
-        i14 = 0;
+      if (i18 > i19) {
+        i18 = 1;
+        i19 = 0;
       }
 
       offset = ngbvs1->size[0];
-      ngbvs1->size[0] = (i14 - i13) + 2;
+      ngbvs1->size[0] = (i19 - i18) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs1, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs1->data[0] = tris->data[fid - 1];
-      nelems = i14 - i13;
-      for (i14 = 0; i14 <= nelems; i14++) {
-        ngbvs1->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
+      nelems = i19 - i18;
+      for (i19 = 0; i19 <= nelems; i19++) {
+        ngbvs1->data[i19 + 1] = allv_ngbvs->data[(i18 + i19) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:52' ngbpnts1 = ps(ngbvs1,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:52' nrms1 = nrms(ngbvs1,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:54' offset2 = allv_offsets(tris(fid,2)); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:55' ngbvs2 = [tris(fid,2); allv_ngbvs( offset2+1:offset2+allv_ngbvs( offset2))]; */
-      i13 = allv_offsets->data[tris->data[(fid + tris->size[0]) - 1] - 1] + 1;
-      i14 = allv_offsets->data[tris->data[(fid + tris->size[0]) - 1] - 1] +
+      i18 = allv_offsets->data[tris->data[(fid + tris->size[0]) - 1] - 1] + 1;
+      i19 = allv_offsets->data[tris->data[(fid + tris->size[0]) - 1] - 1] +
         allv_ngbvs->data[allv_offsets->data[tris->data[(fid + tris->size[0]) - 1]
         - 1] - 1];
-      if (i13 > i14) {
-        i13 = 1;
-        i14 = 0;
+      if (i18 > i19) {
+        i18 = 1;
+        i19 = 0;
       }
 
       offset = ngbvs2->size[0];
-      ngbvs2->size[0] = (i14 - i13) + 2;
+      ngbvs2->size[0] = (i19 - i18) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs2, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs2->data[0] = tris->data[(fid + tris->size[0]) - 1];
-      nelems = i14 - i13;
-      for (i14 = 0; i14 <= nelems; i14++) {
-        ngbvs2->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
+      nelems = i19 - i18;
+      for (i19 = 0; i19 <= nelems; i19++) {
+        ngbvs2->data[i19 + 1] = allv_ngbvs->data[(i18 + i19) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:56' ngbpnts2 = ps(ngbvs2,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:56' nrms2 = nrms(ngbvs2,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:58' offset3 = allv_offsets(tris(fid,1)); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:59' ngbvs3 = [tris(fid,3); allv_ngbvs( offset3+1:offset3+allv_ngbvs( offset3))]; */
-      i13 = allv_offsets->data[tris->data[fid - 1] - 1] + 1;
-      i14 = allv_offsets->data[tris->data[fid - 1] - 1] + allv_ngbvs->
+      i18 = allv_offsets->data[tris->data[fid - 1] - 1] + 1;
+      i19 = allv_offsets->data[tris->data[fid - 1] - 1] + allv_ngbvs->
         data[allv_offsets->data[tris->data[fid - 1] - 1] - 1];
-      if (i13 > i14) {
-        i13 = 1;
-        i14 = 0;
+      if (i18 > i19) {
+        i18 = 1;
+        i19 = 0;
       }
 
       offset = ngbvs3->size[0];
-      ngbvs3->size[0] = (i14 - i13) + 2;
+      ngbvs3->size[0] = (i19 - i18) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs3, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs3->data[0] = tris->data[(fid + (tris->size[0] << 1)) - 1];
-      nelems = i14 - i13;
-      for (i14 = 0; i14 <= nelems; i14++) {
-        ngbvs3->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
+      nelems = i19 - i18;
+      for (i19 = 0; i19 <= nelems; i19++) {
+        ngbvs3->data[i19 + 1] = allv_ngbvs->data[(i18 + i19) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:60' ngbpnts3 = ps(ngbvs3,:); */
@@ -4381,128 +4477,128 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /*  end */
         /* 'polyfit3d_walf_tri:33' pos = (1-xi-eta).*ngbpnts1(1,1:3) +xi*ngbpnts2(1,1:3)+eta*ngbpnts3(1,1:3); */
         d4 = (1.0 - lcoor[0]) - lcoor[1];
-        i13 = n_ps->size[0] * n_ps->size[1];
+        i18 = n_ps->size[0] * n_ps->size[1];
         n_ps->size[0] = ngbvs1->size[0];
         n_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)n_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)n_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            n_ps->data[i14 + n_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            n_ps->data[i19 + n_ps->size[0] * i18] = ps->data[(ngbvs1->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = o_ps->size[0] * o_ps->size[1];
+        i18 = o_ps->size[0] * o_ps->size[1];
         o_ps->size[0] = ngbvs2->size[0];
         o_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)o_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)o_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            o_ps->data[i14 + o_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            o_ps->data[i19 + o_ps->size[0] * i18] = ps->data[(ngbvs2->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = p_ps->size[0] * p_ps->size[1];
+        i18 = p_ps->size[0] * p_ps->size[1];
         p_ps->size[0] = ngbvs3->size[0];
         p_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)p_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)p_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            p_ps->data[i14 + p_ps->size[0] * i13] = ps->data[(ngbvs3->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            p_ps->data[i19 + p_ps->size[0] * i18] = ps->data[(ngbvs3->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        for (i13 = 0; i13 < 3; i13++) {
-          pos[i13] = (d4 * n_ps->data[n_ps->size[0] * i13] + lcoor[0] *
-                      o_ps->data[o_ps->size[0] * i13]) + lcoor[1] * p_ps->
-            data[p_ps->size[0] * i13];
+        for (i18 = 0; i18 < 3; i18++) {
+          pos[i18] = (d4 * n_ps->data[n_ps->size[0] * i18] + lcoor[0] *
+                      o_ps->data[o_ps->size[0] * i18]) + lcoor[1] * p_ps->
+            data[p_ps->size[0] * i18];
         }
 
         /*  Interpolate using vertex-based polynomial fittings at three vertices */
         /* 'polyfit3d_walf_tri:36' pnt1 = polyfit3d_walf_vertex(ngbpnts1, nrms1, pos, deg, interp); */
-        i13 = h_ps->size[0] * h_ps->size[1];
+        i18 = h_ps->size[0] * h_ps->size[1];
         h_ps->size[0] = ngbvs1->size[0];
         h_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)h_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)h_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            h_ps->data[i14 + h_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            h_ps->data[i19 + h_ps->size[0] * i18] = ps->data[(ngbvs1->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = h_nrms->size[0] * h_nrms->size[1];
+        i18 = h_nrms->size[0] * h_nrms->size[1];
         h_nrms->size[0] = ngbvs1->size[0];
         h_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)h_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)h_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            h_nrms->data[i14 + h_nrms->size[0] * i13] = nrms->data[(ngbvs1->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            h_nrms->data[i19 + h_nrms->size[0] * i18] = nrms->data[(ngbvs1->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
         polyfit3d_walf_vertex(h_ps, h_nrms, pos, offset, pnt1);
 
         /* 'polyfit3d_walf_tri:37' pnt2 = polyfit3d_walf_vertex(ngbpnts2, nrms2, pos, deg, interp); */
-        i13 = g_ps->size[0] * g_ps->size[1];
+        i18 = g_ps->size[0] * g_ps->size[1];
         g_ps->size[0] = ngbvs2->size[0];
         g_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)g_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)g_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            g_ps->data[i14 + g_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            g_ps->data[i19 + g_ps->size[0] * i18] = ps->data[(ngbvs2->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = g_nrms->size[0] * g_nrms->size[1];
+        i18 = g_nrms->size[0] * g_nrms->size[1];
         g_nrms->size[0] = ngbvs2->size[0];
         g_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)g_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)g_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            g_nrms->data[i14 + g_nrms->size[0] * i13] = nrms->data[(ngbvs2->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            g_nrms->data[i19 + g_nrms->size[0] * i18] = nrms->data[(ngbvs2->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
         polyfit3d_walf_vertex(g_ps, g_nrms, pos, offset, pnt2);
 
         /* 'polyfit3d_walf_tri:38' pnt3 = polyfit3d_walf_vertex(ngbpnts3, nrms3, pos, deg, interp); */
-        i13 = f_ps->size[0] * f_ps->size[1];
+        i18 = f_ps->size[0] * f_ps->size[1];
         f_ps->size[0] = ngbvs3->size[0];
         f_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)f_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)f_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            f_ps->data[i14 + f_ps->size[0] * i13] = ps->data[(ngbvs3->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            f_ps->data[i19 + f_ps->size[0] * i18] = ps->data[(ngbvs3->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = f_nrms->size[0] * f_nrms->size[1];
+        i18 = f_nrms->size[0] * f_nrms->size[1];
         f_nrms->size[0] = ngbvs3->size[0];
         f_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)f_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)f_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            f_nrms->data[i14 + f_nrms->size[0] * i13] = nrms->data[(ngbvs3->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            f_nrms->data[i19 + f_nrms->size[0] * i18] = nrms->data[(ngbvs3->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
@@ -4511,9 +4607,9 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /*  Compute weighted average of the three points */
         /* 'polyfit3d_walf_tri:41' pnt = (1-xi-eta).*pnt1 + xi.*pnt2 + eta.*pnt3; */
         d4 = (1.0 - lcoor[0]) - lcoor[1];
-        for (i13 = 0; i13 < 3; i13++) {
-          pnt1[i13] = (d4 * pnt1[i13] + lcoor[0] * pnt2[i13]) + lcoor[1] *
-            pnt3[i13];
+        for (i18 = 0; i18 < 3; i18++) {
+          pnt1[i18] = (d4 * pnt1[i18] + lcoor[0] * pnt2[i18]) + lcoor[1] *
+            pnt3[i18];
         }
 
         /*  pnt = coder.nullcopy(zeros(np,3)); */
@@ -4526,78 +4622,78 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /* 'adjust_disps_onto_hisurf_cleanmesh:66' case CMF */
         /* 'adjust_disps_onto_hisurf_cleanmesh:67' pnt = polyfit3d_cmf_tri(ngbpnts1, nrms1, ngbpnts2, nrms2, ... */
         /* 'adjust_disps_onto_hisurf_cleanmesh:68'                     ngbpnts3, nrms3, lcoor(1), lcoor(2), args.degree); */
-        i13 = i_ps->size[0] * i_ps->size[1];
+        i18 = i_ps->size[0] * i_ps->size[1];
         i_ps->size[0] = ngbvs1->size[0];
         i_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)i_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)i_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            i_ps->data[i14 + i_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            i_ps->data[i19 + i_ps->size[0] * i18] = ps->data[(ngbvs1->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = i_nrms->size[0] * i_nrms->size[1];
+        i18 = i_nrms->size[0] * i_nrms->size[1];
         i_nrms->size[0] = ngbvs1->size[0];
         i_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)i_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)i_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            i_nrms->data[i14 + i_nrms->size[0] * i13] = nrms->data[(ngbvs1->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            i_nrms->data[i19 + i_nrms->size[0] * i18] = nrms->data[(ngbvs1->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
-        i13 = j_ps->size[0] * j_ps->size[1];
+        i18 = j_ps->size[0] * j_ps->size[1];
         j_ps->size[0] = ngbvs2->size[0];
         j_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)j_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)j_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            j_ps->data[i14 + j_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            j_ps->data[i19 + j_ps->size[0] * i18] = ps->data[(ngbvs2->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = j_nrms->size[0] * j_nrms->size[1];
+        i18 = j_nrms->size[0] * j_nrms->size[1];
         j_nrms->size[0] = ngbvs2->size[0];
         j_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)j_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)j_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            j_nrms->data[i14 + j_nrms->size[0] * i13] = nrms->data[(ngbvs2->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            j_nrms->data[i19 + j_nrms->size[0] * i18] = nrms->data[(ngbvs2->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
-        i13 = k_ps->size[0] * k_ps->size[1];
+        i18 = k_ps->size[0] * k_ps->size[1];
         k_ps->size[0] = ngbvs3->size[0];
         k_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)k_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)k_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            k_ps->data[i14 + k_ps->size[0] * i13] = ps->data[(ngbvs3->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            k_ps->data[i19 + k_ps->size[0] * i18] = ps->data[(ngbvs3->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = k_nrms->size[0] * k_nrms->size[1];
+        i18 = k_nrms->size[0] * k_nrms->size[1];
         k_nrms->size[0] = ngbvs3->size[0];
         k_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)k_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)k_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs3->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            k_nrms->data[i14 + k_nrms->size[0] * i13] = nrms->data[(ngbvs3->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            k_nrms->data[i19 + k_nrms->size[0] * i18] = nrms->data[(ngbvs3->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
@@ -4609,8 +4705,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
       /* 'adjust_disps_onto_hisurf_cleanmesh:70' elseif loc>=4 */
       /* 'adjust_disps_onto_hisurf_cleanmesh:71' pnt = ps(tris(fid,loc-3),1:3)'; */
       offset = tris->data[(fid + tris->size[0] * (loc - 4)) - 1];
-      for (i13 = 0; i13 < 3; i13++) {
-        pnt1[i13] = ps->data[(offset + ps->size[0] * i13) - 1];
+      for (i18 = 0; i18 < 3; i18++) {
+        pnt1[i18] = ps->data[(offset + ps->size[0] * i18) - 1];
       }
 
       /* pnt = ps(i,1:3)'; */
@@ -4619,8 +4715,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
       /* 'adjust_disps_onto_hisurf_cleanmesh:74' if loc==1 */
       if (loc == 1) {
         /* 'adjust_disps_onto_hisurf_cleanmesh:75' verts=[1; 2]; */
-        for (i13 = 0; i13 < 2; i13++) {
-          verts[i13] = (int8_T)(1 + i13);
+        for (i18 = 0; i18 < 2; i18++) {
+          verts[i18] = (int8_T)(1 + i18);
         }
 
         /* 'adjust_disps_onto_hisurf_cleanmesh:75' xi = lcoor(1); */
@@ -4628,8 +4724,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
       } else if (loc == 2) {
         /* 'adjust_disps_onto_hisurf_cleanmesh:76' elseif loc==2 */
         /* 'adjust_disps_onto_hisurf_cleanmesh:77' verts=[2; 3]; */
-        for (i13 = 0; i13 < 2; i13++) {
-          verts[i13] = (int8_T)(2 + i13);
+        for (i18 = 0; i18 < 2; i18++) {
+          verts[i18] = (int8_T)(2 + i18);
         }
 
         /* 'adjust_disps_onto_hisurf_cleanmesh:77' xi = lcoor(2); */
@@ -4638,8 +4734,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /* 'adjust_disps_onto_hisurf_cleanmesh:78' else */
         /* 'adjust_disps_onto_hisurf_cleanmesh:79' assert( loc==3); */
         /* 'adjust_disps_onto_hisurf_cleanmesh:80' verts=[1; 3]; */
-        for (i13 = 0; i13 < 2; i13++) {
-          verts[i13] = (int8_T)(1 + (i13 << 1));
+        for (i18 = 0; i18 < 2; i18++) {
+          verts[i18] = (int8_T)(1 + (i18 << 1));
         }
 
         /* 'adjust_disps_onto_hisurf_cleanmesh:80' xi = lcoor(2); */
@@ -4648,48 +4744,48 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:83' offset1 = allv_offsets(tris(fid,verts(1))); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:84' ngbvs1 = [tris(fid,verts(1)); allv_ngbvs( offset1+1:offset1+allv_ngbvs( offset1))]; */
-      i13 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[0] - 1))
+      i18 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[0] - 1))
         - 1] - 1] + 1;
-      i14 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[0] - 1))
+      i19 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[0] - 1))
         - 1] - 1] + allv_ngbvs->data[allv_offsets->data[tris->data[(fid +
         tris->size[0] * (verts[0] - 1)) - 1] - 1] - 1];
-      if (i13 > i14) {
-        i13 = 1;
-        i14 = 0;
+      if (i18 > i19) {
+        i18 = 1;
+        i19 = 0;
       }
 
       offset = ngbvs1->size[0];
-      ngbvs1->size[0] = (i14 - i13) + 2;
+      ngbvs1->size[0] = (i19 - i18) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs1, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs1->data[0] = tris->data[(fid + tris->size[0] * (verts[0] - 1)) - 1];
-      nelems = i14 - i13;
-      for (i14 = 0; i14 <= nelems; i14++) {
-        ngbvs1->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
+      nelems = i19 - i18;
+      for (i19 = 0; i19 <= nelems; i19++) {
+        ngbvs1->data[i19 + 1] = allv_ngbvs->data[(i18 + i19) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:85' ngbpnts1 = ps(ngbvs1,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:85' nrms1 = nrms(ngbvs1,:); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:87' offset2 = allv_offsets(tris(fid,verts(2))); */
       /* 'adjust_disps_onto_hisurf_cleanmesh:88' ngbvs2 = [tris(fid,verts(2)); allv_ngbvs( offset2+1:offset2+allv_ngbvs( offset2))]; */
-      i13 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[1] - 1))
+      i18 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[1] - 1))
         - 1] - 1] + 1;
-      i14 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[1] - 1))
+      i19 = allv_offsets->data[tris->data[(fid + tris->size[0] * (verts[1] - 1))
         - 1] - 1] + allv_ngbvs->data[allv_offsets->data[tris->data[(fid +
         tris->size[0] * (verts[1] - 1)) - 1] - 1] - 1];
-      if (i13 > i14) {
-        i13 = 1;
-        i14 = 0;
+      if (i18 > i19) {
+        i18 = 1;
+        i19 = 0;
       }
 
       offset = ngbvs2->size[0];
-      ngbvs2->size[0] = (i14 - i13) + 2;
+      ngbvs2->size[0] = (i19 - i18) + 2;
       emxEnsureCapacity((emxArray__common *)ngbvs2, offset, (int32_T)sizeof
                         (int32_T));
       ngbvs2->data[0] = tris->data[(fid + tris->size[0] * (verts[1] - 1)) - 1];
-      nelems = i14 - i13;
-      for (i14 = 0; i14 <= nelems; i14++) {
-        ngbvs2->data[i14 + 1] = allv_ngbvs->data[(i13 + i14) - 1];
+      nelems = i19 - i18;
+      for (i19 = 0; i19 <= nelems; i19++) {
+        ngbvs2->data[i19 + 1] = allv_ngbvs->data[(i18 + i19) - 1];
       }
 
       /* 'adjust_disps_onto_hisurf_cleanmesh:89' ngbpnts2 = ps(ngbvs2,:); */
@@ -4731,87 +4827,87 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /*  Compute face normal vector and the local coordinate */
         /* 'polyfit3d_walf_edge:27' pos = (1-xi).*ngbpnts1(1,1:3) + xi*ngbpnts2(1,1:3); */
         d4 = 1.0 - xi;
-        i13 = l_ps->size[0] * l_ps->size[1];
+        i18 = l_ps->size[0] * l_ps->size[1];
         l_ps->size[0] = ngbvs1->size[0];
         l_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)l_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)l_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            l_ps->data[i14 + l_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            l_ps->data[i19 + l_ps->size[0] * i18] = ps->data[(ngbvs1->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = m_ps->size[0] * m_ps->size[1];
+        i18 = m_ps->size[0] * m_ps->size[1];
         m_ps->size[0] = ngbvs2->size[0];
         m_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)m_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)m_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            m_ps->data[i14 + m_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            m_ps->data[i19 + m_ps->size[0] * i18] = ps->data[(ngbvs2->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        for (i13 = 0; i13 < 3; i13++) {
-          pos[i13] = d4 * l_ps->data[l_ps->size[0] * i13] + xi * m_ps->data
-            [m_ps->size[0] * i13];
+        for (i18 = 0; i18 < 3; i18++) {
+          pos[i18] = d4 * l_ps->data[l_ps->size[0] * i18] + xi * m_ps->data
+            [m_ps->size[0] * i18];
         }
 
         /*  Interpolate using vertex-based polynomial fittings at two vertices */
         /* 'polyfit3d_walf_edge:30' pnt1 = polyfit3d_walf_vertex(ngbpnts1, nrms1, pos, deg, interp); */
-        i13 = c_ps->size[0] * c_ps->size[1];
+        i18 = c_ps->size[0] * c_ps->size[1];
         c_ps->size[0] = ngbvs1->size[0];
         c_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)c_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)c_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            c_ps->data[i14 + c_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            c_ps->data[i19 + c_ps->size[0] * i18] = ps->data[(ngbvs1->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = c_nrms->size[0] * c_nrms->size[1];
+        i18 = c_nrms->size[0] * c_nrms->size[1];
         c_nrms->size[0] = ngbvs1->size[0];
         c_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)c_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)c_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            c_nrms->data[i14 + c_nrms->size[0] * i13] = nrms->data[(ngbvs1->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            c_nrms->data[i19 + c_nrms->size[0] * i18] = nrms->data[(ngbvs1->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
         polyfit3d_walf_vertex(c_ps, c_nrms, pos, offset, pnt1);
 
         /* 'polyfit3d_walf_edge:31' pnt2 = polyfit3d_walf_vertex(ngbpnts2, nrms2, pos, deg, interp); */
-        i13 = b_ps->size[0] * b_ps->size[1];
+        i18 = b_ps->size[0] * b_ps->size[1];
         b_ps->size[0] = ngbvs2->size[0];
         b_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)b_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)b_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            b_ps->data[i14 + b_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            b_ps->data[i19 + b_ps->size[0] * i18] = ps->data[(ngbvs2->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = b_nrms->size[0] * b_nrms->size[1];
+        i18 = b_nrms->size[0] * b_nrms->size[1];
         b_nrms->size[0] = ngbvs2->size[0];
         b_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)b_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)b_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            b_nrms->data[i14 + b_nrms->size[0] * i13] = nrms->data[(ngbvs2->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            b_nrms->data[i19 + b_nrms->size[0] * i18] = nrms->data[(ngbvs2->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
@@ -4820,8 +4916,8 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /*  Compute weighted average of the two points */
         /* 'polyfit3d_walf_edge:34' pnt = (1-xi).*pnt1 +xi*pnt2; */
         d4 = 1.0 - xi;
-        for (i13 = 0; i13 < 3; i13++) {
-          pnt1[i13] = d4 * pnt1[i13] + xi * pnt2[i13];
+        for (i18 = 0; i18 < 3; i18++) {
+          pnt1[i18] = d4 * pnt1[i18] + xi * pnt2[i18];
         }
         break;
 
@@ -4829,53 +4925,53 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
         /* 'adjust_disps_onto_hisurf_cleanmesh:95' case CMF */
         /* 'adjust_disps_onto_hisurf_cleanmesh:96' pnt = polyfit3d_cmf_edge(ngbpnts1, nrms1, ngbpnts2, nrms2, ... */
         /* 'adjust_disps_onto_hisurf_cleanmesh:97'                     xi, args.degree); */
-        i13 = d_ps->size[0] * d_ps->size[1];
+        i18 = d_ps->size[0] * d_ps->size[1];
         d_ps->size[0] = ngbvs1->size[0];
         d_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)d_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)d_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            d_ps->data[i14 + d_ps->size[0] * i13] = ps->data[(ngbvs1->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            d_ps->data[i19 + d_ps->size[0] * i18] = ps->data[(ngbvs1->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = d_nrms->size[0] * d_nrms->size[1];
+        i18 = d_nrms->size[0] * d_nrms->size[1];
         d_nrms->size[0] = ngbvs1->size[0];
         d_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)d_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)d_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs1->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            d_nrms->data[i14 + d_nrms->size[0] * i13] = nrms->data[(ngbvs1->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            d_nrms->data[i19 + d_nrms->size[0] * i18] = nrms->data[(ngbvs1->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
-        i13 = e_ps->size[0] * e_ps->size[1];
+        i18 = e_ps->size[0] * e_ps->size[1];
         e_ps->size[0] = ngbvs2->size[0];
         e_ps->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)e_ps, i13, (int32_T)sizeof(real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        emxEnsureCapacity((emxArray__common *)e_ps, i18, (int32_T)sizeof(real_T));
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            e_ps->data[i14 + e_ps->size[0] * i13] = ps->data[(ngbvs2->data[i14]
-              + ps->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            e_ps->data[i19 + e_ps->size[0] * i18] = ps->data[(ngbvs2->data[i19]
+              + ps->size[0] * i18) - 1];
           }
         }
 
-        i13 = e_nrms->size[0] * e_nrms->size[1];
+        i18 = e_nrms->size[0] * e_nrms->size[1];
         e_nrms->size[0] = ngbvs2->size[0];
         e_nrms->size[1] = 3;
-        emxEnsureCapacity((emxArray__common *)e_nrms, i13, (int32_T)sizeof
+        emxEnsureCapacity((emxArray__common *)e_nrms, i18, (int32_T)sizeof
                           (real_T));
-        for (i13 = 0; i13 < 3; i13++) {
+        for (i18 = 0; i18 < 3; i18++) {
           nelems = ngbvs2->size[0] - 1;
-          for (i14 = 0; i14 <= nelems; i14++) {
-            e_nrms->data[i14 + e_nrms->size[0] * i13] = nrms->data[(ngbvs2->
-              data[i14] + nrms->size[0] * i13) - 1];
+          for (i19 = 0; i19 <= nelems; i19++) {
+            e_nrms->data[i19 + e_nrms->size[0] * i18] = nrms->data[(ngbvs2->
+              data[i19] + nrms->size[0] * i18) - 1];
           }
         }
 
@@ -4885,9 +4981,9 @@ static void c_adjust_disps_onto_hisurf_clea(int32_T nv_clean, const
     }
 
     /* 'adjust_disps_onto_hisurf_cleanmesh:101' us_smooth( i,1:3) = pnt' - ps(i,1:3); */
-    for (i13 = 0; i13 < 3; i13++) {
-      us_smooth->data[i + us_smooth->size[0] * i13] = pnt1[i13] - ps->data[i +
-        ps->size[0] * i13];
+    for (i18 = 0; i18 < 3; i18++) {
+      us_smooth->data[i + us_smooth->size[0] * i18] = pnt1[i18] - ps->data[i +
+        ps->size[0] * i18];
     }
 
     i++;
@@ -5427,7 +5523,8 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
 
         g = sqrt(h + 1.0E-100);
 
-        /* 'constrained_smooth_surf_cleanmesh:40' T = obtain_tangents_surf( nrm); */
+        /*  fprintf('Point = %d, Normal = %g %g %g\n',jj,nrm(1),nrm(2),nrm(3)) */
+        /* 'constrained_smooth_surf_cleanmesh:41' T = obtain_tangents_surf( nrm); */
         /* OBTAIN_TANGENTS_SURF Obtain orthonormal tangent vectors from given unit  */
         /* normal. */
         /*  T = OBTAIN_TANGENTS_SURF(NRM) Obtains orthonormal tangent vectors in 3x1  */
@@ -5492,7 +5589,7 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
           T[3 + k] = b_absnrm[k];
         }
 
-        /* 'constrained_smooth_surf_cleanmesh:42' H2 = T'*Hs_smooth(:,:,jj)*T; */
+        /* 'constrained_smooth_surf_cleanmesh:43' H2 = T'*Hs_smooth(:,:,jj)*T; */
         for (k = 0; k < 2; k++) {
           for (ix = 0; ix < 3; ix++) {
             b_T[k + (ix << 1)] = 0.0;
@@ -5513,7 +5610,7 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
           }
         }
 
-        /* 'constrained_smooth_surf_cleanmesh:43' [R2, err] = chol2(H2); */
+        /* 'constrained_smooth_surf_cleanmesh:44' [R2, err] = chol2(H2); */
         /*  CHOL2 Perform cholesky factorization of a 2x2 SPD matrix. */
         /*    R=CHOL2(A). */
         /*    A is a 2-by-2 SPD matrix. Only its upper triangular part is accessed. */
@@ -5551,9 +5648,9 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
           }
         }
 
-        /* 'constrained_smooth_surf_cleanmesh:45' if ~err */
+        /* 'constrained_smooth_surf_cleanmesh:46' if ~err */
         if (!(ix != 0)) {
-          /* 'constrained_smooth_surf_cleanmesh:46' g2 = T'*(-grads_smooth(:,jj)); */
+          /* 'constrained_smooth_surf_cleanmesh:47' g2 = T'*(-grads_smooth(:,jj)); */
           for (k = 0; k < 3; k++) {
             absnrm[k] = -grads_smooth->data[k + grads_smooth->size[0] * jj];
           }
@@ -5565,7 +5662,7 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
             }
           }
 
-          /* 'constrained_smooth_surf_cleanmesh:47' us_smooth(jj,:) = T*backsolve( R2,forwardsolve_trans(R2, g2)); */
+          /* 'constrained_smooth_surf_cleanmesh:48' us_smooth(jj,:) = T*backsolve( R2,forwardsolve_trans(R2, g2)); */
           /*  Perform forward substitution R'\bs. */
           /*      bs = forwardsolve_trans(R, bs) */
           /*      bs = forwardsolve_trans(R, bs, cend) */
@@ -5648,19 +5745,19 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
           }
         }
       } else {
-        /* 'constrained_smooth_surf_cleanmesh:49' else */
+        /* 'constrained_smooth_surf_cleanmesh:50' else */
         /*  Otherwise, tranks(jj)=0, and us_smooth should be zero. */
       }
 
-      /* 'constrained_smooth_surf_cleanmesh:53' if any(ns_constrained(:,jj)~=0) */
+      /* 'constrained_smooth_surf_cleanmesh:54' if any(ns_constrained(:,jj)~=0) */
       for (k = 0; k < 3; k++) {
         b_ns_constrained[k] = (ns_constrained->data[k + ns_constrained->size[0] *
           jj] != 0.0);
       }
 
       if (any(b_ns_constrained)) {
-        /* 'constrained_smooth_surf_cleanmesh:54' nrm = ns_constrained(:,jj); */
-        /* 'constrained_smooth_surf_cleanmesh:55' us_smooth(jj,:) = us_smooth(jj,:) - (us_smooth(jj,:)/(nrm'*nrm)*nrm) * nrm'; */
+        /* 'constrained_smooth_surf_cleanmesh:55' nrm = ns_constrained(:,jj); */
+        /* 'constrained_smooth_surf_cleanmesh:56' us_smooth(jj,:) = us_smooth(jj,:) - (us_smooth(jj,:)/(nrm'*nrm)*nrm) * nrm'; */
         h = 0.0;
         ix = 0;
         iy = 0;
@@ -5745,6 +5842,25 @@ static boolean_T c_eml_strcmp(const char_T a[3])
   }
 
   return b_bool;
+}
+
+static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
+  numDimensions)
+{
+  emxArray_int32_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_int32_T *)malloc(sizeof(emxArray_int32_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (int32_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
 }
 
 static void c_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
@@ -5911,7 +6027,10 @@ static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   b_emxInit_real_T(&D, 1);
 
   /* % Scale columns to reduce condition number */
-  /* 'eval_vander_bivar:65' ts = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:65' ts = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   jj = ws1->size[0];
   ws1->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)ws1, jj, (int32_T)sizeof(real_T));
@@ -5920,7 +6039,10 @@ static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   rescale_matrix(V, ncols, ws1);
 
   /* % Perform Householder QR factorization */
-  /* 'eval_vander_bivar:69' D = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:69' D = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   jj = D->size[0];
   D->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)D, jj, (int32_T)sizeof(real_T));
@@ -6125,18 +6247,27 @@ static void c_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
     t2[2] = nrm[0] * absnrm[1] - nrm[1] * absnrm[0];
 
     /*  Project onto local coordinate system */
-    /* 'polyfit_lhf_surf_point:41' us = coder.nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'polyfit_lhf_surf_point:41' us = nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = us->size[0] * us->size[1];
     us->size[0] = nverts;
     us->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)us, ix, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhf_surf_point:42' bs = coder.nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'polyfit_lhf_surf_point:42' bs = nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = bs->size[0];
     bs->size[0] = nverts;
     emxEnsureCapacity((emxArray__common *)bs, ix, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhf_surf_point:43' ws_row = coder.nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'polyfit_lhf_surf_point:43' ws_row = nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = ws_row->size[0];
     ws_row->size[0] = nverts;
     emxEnsureCapacity((emxArray__common *)ws_row, ix, (int32_T)sizeof(real_T));
@@ -6346,7 +6477,10 @@ static void c_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
       H[3] = cs2[2];
     } else {
       /* 'polyfit_lhf_surf_point:88' else */
-      /* 'polyfit_lhf_surf_point:89' H = coder.nullcopy(zeros(2,2)); */
+      /* 'polyfit_lhf_surf_point:89' H = nullcopy(zeros(2,2)); */
+      /* 'nullcopy:3' if isempty(coder.target) */
+      /* 'nullcopy:12' else */
+      /* 'nullcopy:13' B = coder.nullcopy(A); */
     }
 
     emxFree_real_T(&ws_row);
@@ -6402,6 +6536,156 @@ static void c_polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128],
 }
 
 /*
+ * function [us_smooth,scaled,change_scheme,scheme] = smoothing_single_iteration_new_try1(nv_clean, xs, tris,...
+ *     nrms, opphes, isridge, ridgeedge, flabel, nfolded, nfoldedtol_min, min_angle, angletol_min,...
+ *     refareas2, mu, check_trank, hisurf_args, change_scheme, scheme, verbose)
+ */
+static boolean_T c_smoothing_single_iteration_ne(int32_T nv_clean, const
+  emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T *nrms,
+  const emxArray_int32_T *opphes, const emxArray_boolean_T *isridge, const
+  emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, int32_T nfolded,
+  real_T min_angle, boolean_T check_trank, const char_T hisurf_args_method[3],
+  int32_T hisurf_args_degree, boolean_T *change_scheme, real_T *scheme, int32_T
+  verbose, emxArray_real_T *us_smooth)
+{
+  boolean_T scaled;
+  int32_T count;
+  int32_T i14;
+  boolean_T exitg1;
+
+  /* 'smoothing_single_iteration_new_try1:4' coder.extrinsic('warning','fprintf') */
+  /* 'smoothing_single_iteration_new_try1:5' coder.inline('never') */
+  /* % Smoothing iteration */
+  /* 'smoothing_single_iteration_new_try1:7' tol = 0.1; */
+  /* 'smoothing_single_iteration_new_try1:7' ISO = 1; */
+  /* 'smoothing_single_iteration_new_try1:7' WL = 2; */
+  /* 'smoothing_single_iteration_new_try1:7' us_smooth = zeros(size(xs,1),3); */
+  count = xs->size[0];
+  i14 = us_smooth->size[0] * us_smooth->size[1];
+  us_smooth->size[0] = count;
+  us_smooth->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)us_smooth, i14, (int32_T)sizeof(real_T));
+  count = xs->size[0] * 3 - 1;
+  for (i14 = 0; i14 <= count; i14++) {
+    us_smooth->data[i14] = 0.0;
+  }
+
+  /*  % Step 1: Getting displacements out of isometric/weighted-laplacian */
+  /*  smoothing */
+  /* 'smoothing_single_iteration_new_try1:10' if change_scheme */
+  if (*change_scheme) {
+    /* 'smoothing_single_iteration_new_try1:11' if scheme == ISO */
+    if (*scheme == 1.0) {
+      /* 'smoothing_single_iteration_new_try1:12' if verbose > 1 */
+      /* 'smoothing_single_iteration_new_try1:13' us_smooth = ismooth_trimesh_cleanmesh(nv_clean,xs, tris, isridge, flabel, refareas2, mu, check_trank); */
+      ismooth_trimesh_cleanmesh(nv_clean, xs, tris, isridge, flabel, check_trank,
+        us_smooth);
+    } else {
+      if (*scheme == 2.0) {
+        /* 'smoothing_single_iteration_new_try1:14' elseif scheme == WL */
+        /* 'smoothing_single_iteration_new_try1:15' if verbose > 1 */
+        /* 'smoothing_single_iteration_new_try1:16' us_smooth = weighted_Laplacian_tri_cleanmesh(nv_clean,xs, tris, isridge, ridgeedge, flabel,check_trank); */
+        c_weighted_Laplacian_tri_cleanm(nv_clean, xs, tris, isridge, ridgeedge,
+          flabel, check_trank, us_smooth);
+      }
+    }
+  } else {
+    /* 'smoothing_single_iteration_new_try1:18' else */
+    /* 'smoothing_single_iteration_new_try1:19' if (min_angle < angletol_min) || (nfolded > nfoldedtol_min) */
+    if ((min_angle < 5.0) || (nfolded > 0)) {
+      /* 'smoothing_single_iteration_new_try1:20' if verbose > 1 */
+      /* 'smoothing_single_iteration_new_try1:21' us_smooth = weighted_Laplacian_tri_cleanmesh(nv_clean,xs, tris, isridge, ridgeedge, flabel,check_trank); */
+      c_weighted_Laplacian_tri_cleanm(nv_clean, xs, tris, isridge, ridgeedge,
+        flabel, check_trank, us_smooth);
+
+      /* 'smoothing_single_iteration_new_try1:22' scheme = WL; */
+      *scheme = 2.0;
+    } else {
+      /* 'smoothing_single_iteration_new_try1:23' else */
+      /* 'smoothing_single_iteration_new_try1:24' if verbose > 1 */
+      /* 'smoothing_single_iteration_new_try1:25' us_smooth = ismooth_trimesh_cleanmesh(nv_clean,xs, tris, isridge, flabel, refareas2, mu, check_trank); */
+      ismooth_trimesh_cleanmesh(nv_clean, xs, tris, isridge, flabel, check_trank,
+        us_smooth);
+
+      /* 'smoothing_single_iteration_new_try1:26' scheme = ISO; */
+      *scheme = 1.0;
+    }
+  }
+
+  /*  DEBUG 2 Print out: 'us_smooth' */
+  /*  Step 2: Communicate 'us_smooth' for ghost points */
+  /*  Step 3: New Scaling */
+  /* 'smoothing_single_iteration_new_try1:34' us_smooth = scale_one_ring_cleanmesh(nv_clean, xs, tris, nrms, us_smooth, opphes); */
+  scale_one_ring_cleanmesh(nv_clean, xs, tris, nrms, us_smooth, opphes);
+
+  /* 'smoothing_single_iteration_new_try1:35' fprintf('Scaled displacements withing 1-ring\n'); */
+  /*  DEBUG 3 Print out: 'us_smooth' */
+  /*  Step 4: Communicate 'us_smooth' for ghost points */
+  /*  Step 5: Asynchronously rescale tangential displacements. */
+  /* 'smoothing_single_iteration_new_try1:41' [us_smooth,escaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
+  async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris);
+
+  /* 'smoothing_single_iteration_new_try1:42' fprintf('Finished asynchronous scaling of displacements\n'); */
+  /*  DEBUG 4 Print out: 'us_smooth' */
+  /*  Adjust the displacements onto the high order surface */
+  /* 'smoothing_single_iteration_new_try1:47' scaled = true; */
+  scaled = TRUE;
+
+  /* 'smoothing_single_iteration_new_try1:47' count=int32(0); */
+  count = 0;
+
+  /* 'smoothing_single_iteration_new_try1:48' while scaled */
+  exitg1 = 0U;
+  while ((exitg1 == 0U) && scaled) {
+    /* 'smoothing_single_iteration_new_try1:49' us_smooth = adjust_disps_onto_hisurf_cleanmesh(nv_clean, xs, us_smooth, nrms, ... */
+    /* 'smoothing_single_iteration_new_try1:50'         tris, opphes, isridge, ridgeedge, flabel, hisurf_args); */
+    c_adjust_disps_onto_hisurf_clea(nv_clean, xs, us_smooth, nrms, tris, opphes,
+      hisurf_args_method, hisurf_args_degree);
+
+    /*  Step 6: Communicate 'us_smooth' for ghost points */
+    /*  Step 7: Asynchronously rescale tangential displacements. */
+    /* 'smoothing_single_iteration_new_try1:55' [us_smooth,scaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
+    scaled = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris);
+
+    /* 'smoothing_single_iteration_new_try1:56' if ~scaled */
+    if (!scaled) {
+      /* 'smoothing_single_iteration_new_try1:57' change_scheme = false; */
+      *change_scheme = FALSE;
+
+      /* 'smoothing_single_iteration_new_try1:58' fprintf('Adjusted displacements onto hisurf\n'); */
+      exitg1 = 1U;
+    } else {
+      /* 'smoothing_single_iteration_new_try1:60' else */
+      /* 'smoothing_single_iteration_new_try1:61' count = count+1; */
+      count++;
+
+      /* 'smoothing_single_iteration_new_try1:62' if count>4 */
+      if (count > 4) {
+        /* 'smoothing_single_iteration_new_try1:63' change_scheme = true; */
+        *change_scheme = TRUE;
+
+        /* 'smoothing_single_iteration_new_try1:64' if scheme == ISO */
+        if (*scheme == 1.0) {
+          /* 'smoothing_single_iteration_new_try1:65' scheme = WL; */
+          *scheme = 2.0;
+        } else {
+          if (*scheme == 2.0) {
+            /* 'smoothing_single_iteration_new_try1:66' elseif scheme == WL */
+            /* 'smoothing_single_iteration_new_try1:67' scheme = ISO; */
+            *scheme = 1.0;
+          }
+        }
+
+        /* 'smoothing_single_iteration_new_try1:69' if verbose>1 */
+        exitg1 = 1U;
+      }
+    }
+  }
+
+  return scaled;
+}
+
+/*
  * function us_smooth = weighted_Laplacian_tri_cleanmesh(nv_clean, xs, tris, isridge, ridgeedge, flabel, check_trank)
  */
 static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
@@ -6412,7 +6696,7 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
   emxArray_real_T *fcenters;
   int32_T nv;
   int32_T ntri;
-  int32_T i3;
+  int32_T i5;
   int32_T ix;
   uint32_T jj;
   int32_T b_jj;
@@ -6423,7 +6707,7 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
   int32_T kk;
   real_T w;
   real_T nrm[3];
-  static const int8_T iv14[3] = { 2, 3, 1 };
+  static const int8_T iv15[3] = { 2, 3, 1 };
 
   emxArray_real_T *b_us_smooth;
   emxArray_real_T *b_ws_smooth;
@@ -6456,41 +6740,41 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
   ntri = tris->size[0];
 
   /* 'weighted_Laplacian_tri_cleanmesh:18' fcenters = zeros(ntri,3); */
-  i3 = fcenters->size[0] * fcenters->size[1];
+  i5 = fcenters->size[0] * fcenters->size[1];
   fcenters->size[0] = ntri;
   fcenters->size[1] = 3;
-  emxEnsureCapacity((emxArray__common *)fcenters, i3, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)fcenters, i5, (int32_T)sizeof(real_T));
   ix = ntri * 3 - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    fcenters->data[i3] = 0.0;
+  for (i5 = 0; i5 <= ix; i5++) {
+    fcenters->data[i5] = 0.0;
   }
 
   /* 'weighted_Laplacian_tri_cleanmesh:19' for jj=1:ntri */
   for (jj = 1U; jj <= (uint32_T)ntri; jj++) {
     /* 'weighted_Laplacian_tri_cleanmesh:20' fcenters(jj,:) = sum(xs(tris(jj,:),:),1)/3; */
     b_jj = (int32_T)jj;
-    for (i3 = 0; i3 < 3; i3++) {
+    for (i5 = 0; i5 < 3; i5++) {
       for (k = 0; k < 3; k++) {
-        b_xs[k + 3 * i3] = xs->data[(tris->data[(b_jj + tris->size[0] * k) - 1]
-          + xs->size[0] * i3) - 1];
+        b_xs[k + 3 * i5] = xs->data[(tris->data[(b_jj + tris->size[0] * k) - 1]
+          + xs->size[0] * i5) - 1];
       }
     }
 
     b_sum(b_xs, disp);
     b_jj = (int32_T)jj;
-    for (i3 = 0; i3 < 3; i3++) {
-      fcenters->data[(b_jj + fcenters->size[0] * i3) - 1] = disp[i3] / 3.0;
+    for (i5 = 0; i5 < 3; i5++) {
+      fcenters->data[(b_jj + fcenters->size[0] * i5) - 1] = disp[i5] / 3.0;
     }
   }
 
   /* 'weighted_Laplacian_tri_cleanmesh:23' us_smooth = zeros(nv,3); */
-  i3 = us_smooth->size[0] * us_smooth->size[1];
+  i5 = us_smooth->size[0] * us_smooth->size[1];
   us_smooth->size[0] = nv;
   us_smooth->size[1] = 3;
-  emxEnsureCapacity((emxArray__common *)us_smooth, i3, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)us_smooth, i5, (int32_T)sizeof(real_T));
   ix = nv * 3 - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    us_smooth->data[i3] = 0.0;
+  for (i5 = 0; i5 <= ix; i5++) {
+    us_smooth->data[i5] = 0.0;
   }
 
   b_emxInit_real_T(&ws_smooth, 1);
@@ -6514,9 +6798,9 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
           /* 'weighted_Laplacian_tri_cleanmesh:35' disp = center-xs(v,:); */
           b_jj = (int32_T)jj;
           nv = tris->data[((int32_T)jj + tris->size[0] * kk) - 1];
-          for (i3 = 0; i3 < 3; i3++) {
-            disp[i3] = fcenters->data[(b_jj + fcenters->size[0] * i3) - 1] -
-              xs->data[(nv + xs->size[0] * i3) - 1];
+          for (i5 = 0; i5 < 3; i5++) {
+            disp[i5] = fcenters->data[(b_jj + fcenters->size[0] * i5) - 1] -
+              xs->data[(nv + xs->size[0] * i5) - 1];
           }
 
           /* 'weighted_Laplacian_tri_cleanmesh:35' w=sqrt(disp*disp'); */
@@ -6534,13 +6818,13 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
           /* 'weighted_Laplacian_tri_cleanmesh:37' us_smooth(v,1:3) = us_smooth(v,1:3) + disp*w; */
           nv = tris->data[((int32_T)jj + tris->size[0] * kk) - 1];
           ix = tris->data[((int32_T)jj + tris->size[0] * kk) - 1];
-          for (i3 = 0; i3 < 3; i3++) {
-            nrm[i3] = us_smooth->data[(ix + us_smooth->size[0] * i3) - 1] +
-              disp[i3] * w;
+          for (i5 = 0; i5 < 3; i5++) {
+            nrm[i5] = us_smooth->data[(ix + us_smooth->size[0] * i5) - 1] +
+              disp[i5] * w;
           }
 
-          for (i3 = 0; i3 < 3; i3++) {
-            us_smooth->data[(nv + us_smooth->size[0] * i3) - 1] = nrm[i3];
+          for (i5 = 0; i5 < 3; i5++) {
+            us_smooth->data[(nv + us_smooth->size[0] * i5) - 1] = nrm[i5];
           }
 
           /* 'weighted_Laplacian_tri_cleanmesh:38' ws_smooth(v) = ws_smooth(v) + w; */
@@ -6551,24 +6835,24 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
                ridgeedge->size[0] * kk) - 1]) {
             /* 'weighted_Laplacian_tri_cleanmesh:39' elseif ~isempty(ridgeedge) && ridgeedge(jj,kk) */
             /* 'weighted_Laplacian_tri_cleanmesh:40' disp = xs(tris(jj,next(kk)),:)-xs(v,:); */
-            nv = tris->data[((int32_T)jj + tris->size[0] * (iv14[kk] - 1)) - 1];
+            nv = tris->data[((int32_T)jj + tris->size[0] * (iv15[kk] - 1)) - 1];
             ix = tris->data[((int32_T)jj + tris->size[0] * kk) - 1];
-            for (i3 = 0; i3 < 3; i3++) {
-              disp[i3] = xs->data[(nv + xs->size[0] * i3) - 1] - xs->data[(ix +
-                xs->size[0] * i3) - 1];
+            for (i5 = 0; i5 < 3; i5++) {
+              disp[i5] = xs->data[(nv + xs->size[0] * i5) - 1] - xs->data[(ix +
+                xs->size[0] * i5) - 1];
             }
 
             /* 'weighted_Laplacian_tri_cleanmesh:40' w=1; */
             /* 'weighted_Laplacian_tri_cleanmesh:41' us_smooth(v,1:3) = us_smooth(v,1:3) + disp(1:3).*w; */
             nv = tris->data[((int32_T)jj + tris->size[0] * kk) - 1];
             ix = tris->data[((int32_T)jj + tris->size[0] * kk) - 1];
-            for (i3 = 0; i3 < 3; i3++) {
-              nrm[i3] = us_smooth->data[(ix + us_smooth->size[0] * i3) - 1] +
-                disp[i3];
+            for (i5 = 0; i5 < 3; i5++) {
+              nrm[i5] = us_smooth->data[(ix + us_smooth->size[0] * i5) - 1] +
+                disp[i5];
             }
 
-            for (i3 = 0; i3 < 3; i3++) {
-              us_smooth->data[(nv + us_smooth->size[0] * i3) - 1] = nrm[i3];
+            for (i5 = 0; i5 < 3; i5++) {
+              us_smooth->data[(nv + us_smooth->size[0] * i5) - 1] = nrm[i5];
             }
 
             /* 'weighted_Laplacian_tri_cleanmesh:42' ws_smooth(v) = ws_smooth(v) + 2*w; */
@@ -6583,9 +6867,9 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
   /*  Compute smoothing term and project onto constrained surface */
   /* 'weighted_Laplacian_tri_cleanmesh:50' us_smooth(1:nv_clean,1) = us_smooth(1:nv_clean,1) ./ ws_smooth(1:nv_clean); */
   if (1 > nv_clean) {
-    i3 = 0;
+    i5 = 0;
   } else {
-    i3 = nv_clean;
+    i5 = nv_clean;
   }
 
   if (1 > nv_clean) {
@@ -6596,20 +6880,20 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
 
   b_emxInit_real_T(&b_us_smooth, 1);
   ix = b_us_smooth->size[0];
-  b_us_smooth->size[0] = i3;
+  b_us_smooth->size[0] = i5;
   emxEnsureCapacity((emxArray__common *)b_us_smooth, ix, (int32_T)sizeof(real_T));
-  ix = i3 - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    b_us_smooth->data[i3] = us_smooth->data[i3];
+  ix = i5 - 1;
+  for (i5 = 0; i5 <= ix; i5++) {
+    b_us_smooth->data[i5] = us_smooth->data[i5];
   }
 
   b_emxInit_real_T(&b_ws_smooth, 1);
-  i3 = b_ws_smooth->size[0];
+  i5 = b_ws_smooth->size[0];
   b_ws_smooth->size[0] = k;
-  emxEnsureCapacity((emxArray__common *)b_ws_smooth, i3, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_ws_smooth, i5, (int32_T)sizeof(real_T));
   ix = k - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    b_ws_smooth->data[i3] = ws_smooth->data[i3];
+  for (i5 = 0; i5 <= ix; i5++) {
+    b_ws_smooth->data[i5] = ws_smooth->data[i5];
   }
 
   b_emxInit_real_T(&r6, 1);
@@ -6617,15 +6901,15 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
   emxFree_real_T(&b_ws_smooth);
   emxFree_real_T(&b_us_smooth);
   ix = r6->size[0] - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    us_smooth->data[i3] = r6->data[i3];
+  for (i5 = 0; i5 <= ix; i5++) {
+    us_smooth->data[i5] = r6->data[i5];
   }
 
   /* 'weighted_Laplacian_tri_cleanmesh:51' us_smooth(1:nv_clean,2) = us_smooth(1:nv_clean,2) ./ ws_smooth(1:nv_clean); */
   if (1 > nv_clean) {
-    i3 = 0;
+    i5 = 0;
   } else {
-    i3 = nv_clean;
+    i5 = nv_clean;
   }
 
   if (1 > nv_clean) {
@@ -6636,35 +6920,35 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
 
   b_emxInit_real_T(&c_us_smooth, 1);
   ix = c_us_smooth->size[0];
-  c_us_smooth->size[0] = i3;
+  c_us_smooth->size[0] = i5;
   emxEnsureCapacity((emxArray__common *)c_us_smooth, ix, (int32_T)sizeof(real_T));
-  ix = i3 - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    c_us_smooth->data[i3] = us_smooth->data[i3 + us_smooth->size[0]];
+  ix = i5 - 1;
+  for (i5 = 0; i5 <= ix; i5++) {
+    c_us_smooth->data[i5] = us_smooth->data[i5 + us_smooth->size[0]];
   }
 
   b_emxInit_real_T(&c_ws_smooth, 1);
-  i3 = c_ws_smooth->size[0];
+  i5 = c_ws_smooth->size[0];
   c_ws_smooth->size[0] = k;
-  emxEnsureCapacity((emxArray__common *)c_ws_smooth, i3, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)c_ws_smooth, i5, (int32_T)sizeof(real_T));
   ix = k - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    c_ws_smooth->data[i3] = ws_smooth->data[i3];
+  for (i5 = 0; i5 <= ix; i5++) {
+    c_ws_smooth->data[i5] = ws_smooth->data[i5];
   }
 
   rdivide(c_us_smooth, c_ws_smooth, r6);
   emxFree_real_T(&c_ws_smooth);
   emxFree_real_T(&c_us_smooth);
   ix = r6->size[0] - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    us_smooth->data[i3 + us_smooth->size[0]] = r6->data[i3];
+  for (i5 = 0; i5 <= ix; i5++) {
+    us_smooth->data[i5 + us_smooth->size[0]] = r6->data[i5];
   }
 
   /* 'weighted_Laplacian_tri_cleanmesh:52' us_smooth(1:nv_clean,3) = us_smooth(1:nv_clean,3) ./ ws_smooth(1:nv_clean); */
   if (1 > nv_clean) {
-    i3 = 0;
+    i5 = 0;
   } else {
-    i3 = nv_clean;
+    i5 = nv_clean;
   }
 
   if (1 > nv_clean) {
@@ -6675,20 +6959,20 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
 
   b_emxInit_real_T(&d_us_smooth, 1);
   ix = d_us_smooth->size[0];
-  d_us_smooth->size[0] = i3;
+  d_us_smooth->size[0] = i5;
   emxEnsureCapacity((emxArray__common *)d_us_smooth, ix, (int32_T)sizeof(real_T));
-  ix = i3 - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    d_us_smooth->data[i3] = us_smooth->data[i3 + (us_smooth->size[0] << 1)];
+  ix = i5 - 1;
+  for (i5 = 0; i5 <= ix; i5++) {
+    d_us_smooth->data[i5] = us_smooth->data[i5 + (us_smooth->size[0] << 1)];
   }
 
   b_emxInit_real_T(&d_ws_smooth, 1);
-  i3 = d_ws_smooth->size[0];
+  i5 = d_ws_smooth->size[0];
   d_ws_smooth->size[0] = k;
-  emxEnsureCapacity((emxArray__common *)d_ws_smooth, i3, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)d_ws_smooth, i5, (int32_T)sizeof(real_T));
   ix = k - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    d_ws_smooth->data[i3] = ws_smooth->data[i3];
+  for (i5 = 0; i5 <= ix; i5++) {
+    d_ws_smooth->data[i5] = ws_smooth->data[i5];
   }
 
   emxFree_real_T(&ws_smooth);
@@ -6696,8 +6980,8 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
   emxFree_real_T(&d_ws_smooth);
   emxFree_real_T(&d_us_smooth);
   ix = r6->size[0] - 1;
-  for (i3 = 0; i3 <= ix; i3++) {
-    us_smooth->data[i3 + (us_smooth->size[0] << 1)] = r6->data[i3];
+  for (i5 = 0; i5 <= ix; i5++) {
+    us_smooth->data[i5 + (us_smooth->size[0] << 1)] = r6->data[i5];
   }
 
   emxFree_real_T(&r6);
@@ -6715,14 +6999,14 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
     c_emxInit_real_T(&b_Vs, 3);
 
     /* 'weighted_Laplacian_tri_cleanmesh:57' [nrm_surf, Vs, tranks] = eigenanalysis_surf( Vs, bs_m, isridge); */
-    i3 = b_Vs->size[0] * b_Vs->size[1] * b_Vs->size[2];
+    i5 = b_Vs->size[0] * b_Vs->size[1] * b_Vs->size[2];
     b_Vs->size[0] = 3;
     b_Vs->size[1] = 3;
     b_Vs->size[2] = Vs->size[2];
-    emxEnsureCapacity((emxArray__common *)b_Vs, i3, (int32_T)sizeof(real_T));
+    emxEnsureCapacity((emxArray__common *)b_Vs, i5, (int32_T)sizeof(real_T));
     ix = Vs->size[0] * Vs->size[1] * Vs->size[2] - 1;
-    for (i3 = 0; i3 <= ix; i3++) {
-      b_Vs->data[i3] = Vs->data[i3];
+    for (i5 = 0; i5 <= ix; i5++) {
+      b_Vs->data[i5] = Vs->data[i5];
     }
 
     eigenanalysis_surf(b_Vs, bs_m, isridge, fcenters, Vs, tranks);
@@ -6732,26 +7016,26 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
 
     /* 'weighted_Laplacian_tri_cleanmesh:58' else */
     /* 'weighted_Laplacian_tri_cleanmesh:59' [nrm_surf, Vs] = eigenanalysis_surf( Vs, bs_m, isridge); */
-    i3 = b_Vs->size[0] * b_Vs->size[1] * b_Vs->size[2];
+    i5 = b_Vs->size[0] * b_Vs->size[1] * b_Vs->size[2];
     b_Vs->size[0] = 3;
     b_Vs->size[1] = 3;
     b_Vs->size[2] = Vs->size[2];
-    emxEnsureCapacity((emxArray__common *)b_Vs, i3, (int32_T)sizeof(real_T));
+    emxEnsureCapacity((emxArray__common *)b_Vs, i5, (int32_T)sizeof(real_T));
     ix = Vs->size[0] * Vs->size[1] * Vs->size[2] - 1;
-    for (i3 = 0; i3 <= ix; i3++) {
-      b_Vs->data[i3] = Vs->data[i3];
+    for (i5 = 0; i5 <= ix; i5++) {
+      b_Vs->data[i5] = Vs->data[i5];
     }
 
     b_eigenanalysis_surf(b_Vs, bs_m, isridge, fcenters, Vs);
 
     /* 'weighted_Laplacian_tri_cleanmesh:60' tranks = zeros(size(xs,1),1,'int8'); */
-    i3 = tranks->size[0];
+    i5 = tranks->size[0];
     tranks->size[0] = xs->size[0];
-    emxEnsureCapacity((emxArray__common *)tranks, i3, (int32_T)sizeof(int8_T));
+    emxEnsureCapacity((emxArray__common *)tranks, i5, (int32_T)sizeof(int8_T));
     emxFree_real_T(&b_Vs);
     ix = xs->size[0] - 1;
-    for (i3 = 0; i3 <= ix; i3++) {
-      tranks->data[i3] = 0;
+    for (i5 = 0; i5 <= ix; i5++) {
+      tranks->data[i5] = 0;
     }
   }
 
@@ -6774,23 +7058,23 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
         nv++;
       }
 
-      for (i3 = 0; i3 < 3; i3++) {
-        us_smooth->data[b_jj + us_smooth->size[0] * i3] = w * Vs->data[(i3 +
+      for (i5 = 0; i5 < 3; i5++) {
+        us_smooth->data[b_jj + us_smooth->size[0] * i5] = w * Vs->data[(i5 +
           (Vs->size[0] << 1)) + Vs->size[0] * Vs->size[1] * b_jj];
       }
     } else {
       if (check_trank && (tranks->data[b_jj] == 0)) {
         /* 'weighted_Laplacian_tri_cleanmesh:67' elseif check_trank && tranks(jj)==0 */
         /* 'weighted_Laplacian_tri_cleanmesh:68' us_smooth(jj,:) = 0; */
-        for (i3 = 0; i3 < 3; i3++) {
-          us_smooth->data[b_jj + us_smooth->size[0] * i3] = 0.0;
+        for (i5 = 0; i5 < 3; i5++) {
+          us_smooth->data[b_jj + us_smooth->size[0] * i5] = 0.0;
         }
       }
     }
 
     /* 'weighted_Laplacian_tri_cleanmesh:71' if any(ns_constrained(:,jj)~=0) */
-    for (i3 = 0; i3 < 3; i3++) {
-      b_ns_constrained[i3] = (ns_constrained->data[i3 + ns_constrained->size[0] *
+    for (i5 = 0; i5 < 3; i5++) {
+      b_ns_constrained[i5] = (ns_constrained->data[i5 + ns_constrained->size[0] *
         b_jj] != 0.0);
     }
 
@@ -6807,15 +7091,15 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
         nv++;
       }
 
-      for (i3 = 0; i3 < 3; i3++) {
-        us_smooth->data[b_jj + us_smooth->size[0] * i3] -= w *
-          ns_constrained->data[i3 + ns_constrained->size[0] * b_jj];
+      for (i5 = 0; i5 < 3; i5++) {
+        us_smooth->data[b_jj + us_smooth->size[0] * i5] -= w *
+          ns_constrained->data[i5 + ns_constrained->size[0] * b_jj];
       }
     } else {
       /* 'weighted_Laplacian_tri_cleanmesh:74' else */
       /* 'weighted_Laplacian_tri_cleanmesh:75' nrm = nrm_surf(jj,:)'; */
-      for (i3 = 0; i3 < 3; i3++) {
-        nrm[i3] = fcenters->data[b_jj + fcenters->size[0] * i3];
+      for (i5 = 0; i5 < 3; i5++) {
+        nrm[i5] = fcenters->data[b_jj + fcenters->size[0] * i5];
       }
 
       /* 'weighted_Laplacian_tri_cleanmesh:77' us_smooth(jj,:) = us_smooth(jj,:) - ... */
@@ -6839,8 +7123,8 @@ static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
       }
 
       w /= y + 1.0E-100;
-      for (i3 = 0; i3 < 3; i3++) {
-        us_smooth->data[b_jj + us_smooth->size[0] * i3] -= w * nrm[i3];
+      for (i5 = 0; i5 < 3; i5++) {
+        us_smooth->data[b_jj + us_smooth->size[0] * i5] -= w * nrm[i5];
       }
     }
   }
@@ -7096,16 +7380,18 @@ static boolean_T compute_cmf_weights(const real_T pos[3], const emxArray_real_T 
   pnts, const emxArray_real_T *nrms, int32_T deg, emxArray_real_T *ws)
 {
   boolean_T toocoarse;
+  emxArray_real_T *r14;
+  int32_T iy;
   int32_T ix;
   int32_T j;
   real_T uu[3];
   real_T d;
-  int32_T iy;
   int32_T k;
   real_T costheta;
   real_T d3;
   uint32_T bku;
   int32_T exitg1;
+  b_emxInit_real_T(&r14, 1);
 
   /*  Compute weights for continuous moving frames. */
   /*  [ws,toocoarse] = compute_cmf_weights( pos, pnts, nrms, h, interp,tol) */
@@ -7118,16 +7404,28 @@ static boolean_T compute_cmf_weights(const real_T pos[3], const emxArray_real_T 
   /* 'compute_cmf_weights:18' toocoarse = false; */
   toocoarse = FALSE;
 
-  /* 'compute_cmf_weights:19' ws = coder.nullcopy(zeros(size(pnts,1),1)); */
-  ix = ws->size[0];
-  ws->size[0] = pnts->size[0];
-  emxEnsureCapacity((emxArray__common *)ws, ix, (int32_T)sizeof(real_T));
+  /* 'compute_cmf_weights:19' ws = nullcopy(zeros(size(pnts,1),1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  iy = r14->size[0];
+  r14->size[0] = pnts->size[0];
+  emxEnsureCapacity((emxArray__common *)r14, iy, (int32_T)sizeof(real_T));
+  iy = ws->size[0];
+  ws->size[0] = r14->size[0];
+  emxEnsureCapacity((emxArray__common *)ws, iy, (int32_T)sizeof(real_T));
+  ix = r14->size[0] - 1;
+  for (iy = 0; iy <= ix; iy++) {
+    ws->data[iy] = r14->data[iy];
+  }
+
+  emxFree_real_T(&r14);
 
   /* 'compute_cmf_weights:20' for j = 1+int32(interp):int32(size(pnts,1)) */
   for (j = 0; j + 1 <= pnts->size[0]; j++) {
     /* 'compute_cmf_weights:21' uu = pnts(j,:)-pos; */
-    for (ix = 0; ix < 3; ix++) {
-      uu[ix] = pnts->data[j + pnts->size[0] * ix] - pos[ix];
+    for (iy = 0; iy < 3; iy++) {
+      uu[iy] = pnts->data[j + pnts->size[0] * iy] - pos[iy];
     }
 
     /* 'compute_cmf_weights:23' d = uu*uu.'; */
@@ -7141,8 +7439,8 @@ static boolean_T compute_cmf_weights(const real_T pos[3], const emxArray_real_T 
     }
 
     /* 'compute_cmf_weights:24' costheta = nrms(j,:)*nrms(1,:).'; */
-    for (ix = 0; ix < 3; ix++) {
-      uu[ix] = nrms->data[nrms->size[0] * ix];
+    for (iy = 0; iy < 3; iy++) {
+      uu[iy] = nrms->data[nrms->size[0] * iy];
     }
 
     costheta = 0.0;
@@ -7206,7 +7504,7 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   *nrms_proj, int32_T degree, real_T ring, emxArray_real_T *nrms, const
   emxArray_real_T *curs, const emxArray_real_T *prdirs)
 {
-  int32_T i10;
+  int32_T i11;
   uint32_T uv0[2];
   emxArray_int32_T *opphes;
   emxArray_int32_T *is_index;
@@ -7258,16 +7556,16 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   /* 'compute_diffops_surf_cleanmesh:20' ring = max(1,min(3.5,ring)); */
   /*  Determine opposite halfedges */
   /* 'compute_diffops_surf_cleanmesh:22' opphes = coder.nullcopy(zeros(size(tris),'int32')); */
-  for (i10 = 0; i10 < 2; i10++) {
-    uv0[i10] = (uint32_T)tris->size[i10];
+  for (i11 = 0; i11 < 2; i11++) {
+    uv0[i11] = (uint32_T)tris->size[i11];
   }
 
   b_emxInit_int32_T(&opphes, 2);
   emxInit_int32_T(&is_index, 1);
-  i10 = opphes->size[0] * opphes->size[1];
+  i11 = opphes->size[0] * opphes->size[1];
   opphes->size[0] = (int32_T)uv0[0];
   opphes->size[1] = 3;
-  emxEnsureCapacity((emxArray__common *)opphes, i10, (int32_T)sizeof(int32_T));
+  emxEnsureCapacity((emxArray__common *)opphes, i11, (int32_T)sizeof(int32_T));
 
   /* 'compute_diffops_surf_cleanmesh:23' opphes = determine_opposite_halfedge_tri(int32(size(xs,1)), tris, opphes); */
   nv = xs->size[0];
@@ -7300,11 +7598,11 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
 
   /* % First, build is_index to store starting position for each vertex. */
   /* 'determine_opposite_halfedge_tri:29' is_index = zeros(nv+1,1,'int32'); */
-  i10 = is_index->size[0];
+  i11 = is_index->size[0];
   is_index->size[0] = nv + 1;
-  emxEnsureCapacity((emxArray__common *)is_index, i10, (int32_T)sizeof(int32_T));
-  for (i10 = 0; i10 <= nv; i10++) {
-    is_index->data[i10] = 0;
+  emxEnsureCapacity((emxArray__common *)is_index, i11, (int32_T)sizeof(int32_T));
+  for (i11 = 0; i11 <= nv; i11++) {
+    is_index->data[i11] = 0;
   }
 
   /* 'determine_opposite_halfedge_tri:30' for ii=1:ntris */
@@ -7318,13 +7616,13 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
       exitg1 = 1U;
     } else {
       /* 'determine_opposite_halfedge_tri:32' is_index(tris(ii,inds)+1) = is_index(tris(ii,inds)+1) + 1; */
-      for (i10 = 0; i10 < 3; i10++) {
-        b_is_index[i10] = is_index->data[tris->data[ii + tris->size[0] * i10]] +
+      for (i11 = 0; i11 < 3; i11++) {
+        b_is_index[i11] = is_index->data[tris->data[ii + tris->size[0] * i11]] +
           1;
       }
 
-      for (i10 = 0; i10 < 3; i10++) {
-        is_index->data[tris->data[ii + tris->size[0] * i10]] = b_is_index[i10];
+      for (i11 = 0; i11 < 3; i11++) {
+        is_index->data[tris->data[ii + tris->size[0] * i11]] = b_is_index[i11];
       }
 
       ii++;
@@ -7346,41 +7644,47 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   /* 'determine_opposite_halfedge_tri:39' ne = ntris*nepE; */
   ne = ntris * 3;
 
-  /* 'determine_opposite_halfedge_tri:40' v2nv = coder.nullcopy(zeros( ne,1, 'int32')); */
-  i10 = v2nv->size[0];
+  /* 'determine_opposite_halfedge_tri:40' v2nv = nullcopy(zeros( ne,1, 'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  i11 = v2nv->size[0];
   v2nv->size[0] = ne;
-  emxEnsureCapacity((emxArray__common *)v2nv, i10, (int32_T)sizeof(int32_T));
+  emxEnsureCapacity((emxArray__common *)v2nv, i11, (int32_T)sizeof(int32_T));
 
   /*  Vertex to next vertex in each halfedge. */
-  /* 'determine_opposite_halfedge_tri:41' v2he = coder.nullcopy(zeros( ne,1, 'int32')); */
-  i10 = v2he->size[0];
+  /* 'determine_opposite_halfedge_tri:41' v2he = nullcopy(zeros( ne,1, 'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  i11 = v2he->size[0];
   v2he->size[0] = ne;
-  emxEnsureCapacity((emxArray__common *)v2he, i10, (int32_T)sizeof(int32_T));
+  emxEnsureCapacity((emxArray__common *)v2he, i11, (int32_T)sizeof(int32_T));
 
   /*  Vertex to half-edge. */
   /* 'determine_opposite_halfedge_tri:42' for ii=1:ntris */
   for (ii = 0; ii + 1 <= ntris; ii++) {
     /* 'determine_opposite_halfedge_tri:43' v2nv(is_index( tris(ii,inds))) = tris(ii,next); */
-    for (i10 = 0; i10 < 3; i10++) {
-      v2nv->data[is_index->data[tris->data[ii + tris->size[0] * i10] - 1] - 1] =
-        tris->data[ii + tris->size[0] * iv24[i10]];
+    for (i11 = 0; i11 < 3; i11++) {
+      v2nv->data[is_index->data[tris->data[ii + tris->size[0] * i11] - 1] - 1] =
+        tris->data[ii + tris->size[0] * iv24[i11]];
     }
 
     /* 'determine_opposite_halfedge_tri:44' v2he(is_index( tris(ii,inds))) = 4*ii-1+inds; */
     ne = (ii + 1) << 2;
-    for (i10 = 0; i10 < 3; i10++) {
-      v2he->data[is_index->data[tris->data[ii + tris->size[0] * i10] - 1] - 1] =
-        i10 + ne;
+    for (i11 = 0; i11 < 3; i11++) {
+      v2he->data[is_index->data[tris->data[ii + tris->size[0] * i11] - 1] - 1] =
+        i11 + ne;
     }
 
     /* 'determine_opposite_halfedge_tri:45' is_index(tris(ii,inds)) = is_index(tris(ii,inds)) + 1; */
-    for (i10 = 0; i10 < 3; i10++) {
-      b_is_index[i10] = is_index->data[tris->data[ii + tris->size[0] * i10] - 1]
+    for (i11 = 0; i11 < 3; i11++) {
+      b_is_index[i11] = is_index->data[tris->data[ii + tris->size[0] * i11] - 1]
         + 1;
     }
 
-    for (i10 = 0; i10 < 3; i10++) {
-      is_index->data[tris->data[ii + tris->size[0] * i10] - 1] = b_is_index[i10];
+    for (i11 = 0; i11 < 3; i11++) {
+      is_index->data[tris->data[ii + tris->size[0] * i11] - 1] = b_is_index[i11];
     }
   }
 
@@ -7398,25 +7702,25 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   if (opphes->size[0] == 0) {
     /* 'determine_opposite_halfedge_tri:51' opphes = zeros(size(tris,1), nepE, 'int32'); */
     ne = tris->size[0];
-    i10 = opphes->size[0] * opphes->size[1];
+    i11 = opphes->size[0] * opphes->size[1];
     opphes->size[0] = ne;
     opphes->size[1] = 3;
-    emxEnsureCapacity((emxArray__common *)opphes, i10, (int32_T)sizeof(int32_T));
+    emxEnsureCapacity((emxArray__common *)opphes, i11, (int32_T)sizeof(int32_T));
     loop_ub = tris->size[0] * 3 - 1;
-    for (i10 = 0; i10 <= loop_ub; i10++) {
-      opphes->data[i10] = 0;
+    for (i11 = 0; i11 <= loop_ub; i11++) {
+      opphes->data[i11] = 0;
     }
   } else {
     /* 'determine_opposite_halfedge_tri:52' else */
     /* 'determine_opposite_halfedge_tri:53' assert( size(opphes,1)>=ntris && size(opphes,2)>=nepE); */
     /* 'determine_opposite_halfedge_tri:54' opphes(:) = 0; */
-    i10 = opphes->size[0] * opphes->size[1];
+    i11 = opphes->size[0] * opphes->size[1];
     opphes->size[1] = 3;
-    emxEnsureCapacity((emxArray__common *)opphes, i10, (int32_T)sizeof(int32_T));
-    for (i10 = 0; i10 < 3; i10++) {
+    emxEnsureCapacity((emxArray__common *)opphes, i11, (int32_T)sizeof(int32_T));
+    for (i11 = 0; i11 < 3; i11++) {
       loop_ub = opphes->size[0] - 1;
       for (ne = 0; ne <= loop_ub; ne++) {
-        opphes->data[ne + opphes->size[0] * i10] = 0;
+        opphes->data[ne + opphes->size[0] * i11] = 0;
       }
     }
   }
@@ -7465,9 +7769,9 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
 
   /*  Determine incident halfedge. */
   /* 'compute_diffops_surf_cleanmesh:26' v2he = coder.nullcopy(zeros( size(xs,1),1,'int32')); */
-  i10 = v2he->size[0];
+  i11 = v2he->size[0];
   v2he->size[0] = xs->size[0];
-  emxEnsureCapacity((emxArray__common *)v2he, i10, (int32_T)sizeof(int32_T));
+  emxEnsureCapacity((emxArray__common *)v2he, i11, (int32_T)sizeof(int32_T));
 
   /* 'compute_diffops_surf_cleanmesh:27' v2he = determine_incident_halfedges( tris, opphes, v2he); */
   b_determine_incident_halfedges(tris, opphes, v2he);
@@ -7478,23 +7782,23 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
   /* 'compute_diffops_surf_cleanmesh:35' else */
   /* 'compute_diffops_surf_cleanmesh:36' [nrms,curs,prdirs] = polyfit_lhf_surf_cleanmesh(nv_clean, xs, tris, ... */
   /* 'compute_diffops_surf_cleanmesh:37'         nrms_proj, opphes, v2he, degree, ring, iterfit, true, nrms, curs, prdirs); */
-  i10 = b_curs->size[0] * b_curs->size[1];
+  i11 = b_curs->size[0] * b_curs->size[1];
   b_curs->size[0] = curs->size[0];
   b_curs->size[1] = 2;
-  emxEnsureCapacity((emxArray__common *)b_curs, i10, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_curs, i11, (int32_T)sizeof(real_T));
   loop_ub = curs->size[0] * curs->size[1] - 1;
-  for (i10 = 0; i10 <= loop_ub; i10++) {
-    b_curs->data[i10] = curs->data[i10];
+  for (i11 = 0; i11 <= loop_ub; i11++) {
+    b_curs->data[i11] = curs->data[i11];
   }
 
   emxInit_real_T(&b_prdirs, 2);
-  i10 = b_prdirs->size[0] * b_prdirs->size[1];
+  i11 = b_prdirs->size[0] * b_prdirs->size[1];
   b_prdirs->size[0] = prdirs->size[0];
   b_prdirs->size[1] = 3;
-  emxEnsureCapacity((emxArray__common *)b_prdirs, i10, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_prdirs, i11, (int32_T)sizeof(real_T));
   loop_ub = prdirs->size[0] * prdirs->size[1] - 1;
-  for (i10 = 0; i10 <= loop_ub; i10++) {
-    b_prdirs->data[i10] = prdirs->data[i10];
+  for (i11 = 0; i11 <= loop_ub; i11++) {
+    b_prdirs->data[i11] = prdirs->data[i11];
   }
 
   u1 = 3.5 <= ring ? 3.5 : ring;
@@ -7511,7 +7815,7 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
  * function nrms = compute_hisurf_normals(nv_clean,xs,tris, degree)
  */
 static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
-  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms, hiPropMesh *pmesh)
+  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms)
 {
   emxArray_real_T *r0;
   int32_T nv;
@@ -7547,8 +7851,6 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
   c_average_vertex_normal_tri_cle(nv_clean, xs, tris, r0, nrms_proj);
 
   /* Step2: Communicate variable "nrms_proj" at the ghost points (>nv_clean) */
-  hpUpdateGhostPointData_real_T(pmesh, nrms_proj);
-
   /* Step3: Compute normals from polynomial fitting */
   /* 'compute_hisurf_normals:16' [nrms] = compute_diffops_surf_cleanmesh(nv_clean, xs, int32(tris), ... */
   /* 'compute_hisurf_normals:17'     nrms_proj, int32(degree), ring, iterfit, nrms, curs, prdirs); */
@@ -7589,8 +7891,6 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
 
   /* Step4: (a) Update variable "nrms" of "nv_clean" pnts */
   /*  (b) Communicate variable "nrms" of ghost pnts (>nv_clean) */
-  hpUpdateGhostPointData_real_T(pmesh, nrms);
-
   emxFree_real_T(&r2);
   emxFree_real_T(&r1);
   emxFree_real_T(&nrms_proj);
@@ -7606,7 +7906,7 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
   int32_T nv;
   int32_T nume;
   int32_T ix;
-  int32_T i6;
+  int32_T i4;
   int32_T jj;
   real_T b_xs[9];
   real_T c_xs[9];
@@ -7667,37 +7967,37 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
 
   /*  Compute normal tensor and bs */
   /* 'compute_medial_quadric_tri:25' As = zeros(3,3,nv); */
-  i6 = As->size[0] * As->size[1] * As->size[2];
+  i4 = As->size[0] * As->size[1] * As->size[2];
   As->size[0] = 3;
   As->size[1] = 3;
   As->size[2] = nv;
-  emxEnsureCapacity((emxArray__common *)As, i6, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)As, i4, (int32_T)sizeof(real_T));
   ix = 9 * nv - 1;
-  for (i6 = 0; i6 <= ix; i6++) {
-    As->data[i6] = 0.0;
+  for (i4 = 0; i4 <= ix; i4++) {
+    As->data[i4] = 0.0;
   }
 
   /* 'compute_medial_quadric_tri:26' bs = zeros(3,nv); */
-  i6 = bs->size[0] * bs->size[1];
+  i4 = bs->size[0] * bs->size[1];
   bs->size[0] = 3;
   bs->size[1] = nv;
-  emxEnsureCapacity((emxArray__common *)bs, i6, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)bs, i4, (int32_T)sizeof(real_T));
   ix = 3 * nv - 1;
-  for (i6 = 0; i6 <= ix; i6++) {
-    bs->data[i6] = 0.0;
+  for (i4 = 0; i4 <= ix; i4++) {
+    bs->data[i4] = 0.0;
   }
 
   /*  Stores right-hand side for computing vertex displacements */
   /*  Allocate space */
   /* 'compute_medial_quadric_tri:29' if nargout>2 */
   /* 'compute_medial_quadric_tri:29' bs_lbl = zeros(3,nv); */
-  i6 = bs_lbl->size[0] * bs_lbl->size[1];
+  i4 = bs_lbl->size[0] * bs_lbl->size[1];
   bs_lbl->size[0] = 3;
   bs_lbl->size[1] = nv;
-  emxEnsureCapacity((emxArray__common *)bs_lbl, i6, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)bs_lbl, i4, (int32_T)sizeof(real_T));
   ix = 3 * nv - 1;
-  for (i6 = 0; i6 <= ix; i6++) {
-    bs_lbl->data[i6] = 0.0;
+  for (i4 = 0; i4 <= ix; i4++) {
+    bs_lbl->data[i4] = 0.0;
   }
 
   /* 'compute_medial_quadric_tri:31' for jj=1:ntri */
@@ -7706,40 +8006,40 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
     /*  Compute face normals */
     /* 'compute_medial_quadric_tri:35' xs_tri = xs(vs,1:3); */
     /* 'compute_medial_quadric_tri:36' nrm = cross_col(xs_tri(2,1:3)-xs_tri(1,1:3),xs_tri(3,1:3)-xs_tri(1,1:3)); */
-    for (i6 = 0; i6 < 3; i6++) {
+    for (i4 = 0; i4 < 3; i4++) {
       for (ix = 0; ix < 3; ix++) {
-        b_xs[ix + 3 * i6] = xs->data[(tris->data[jj + tris->size[0] * ix] +
-          xs->size[0] * i6) - 1];
+        b_xs[ix + 3 * i4] = xs->data[(tris->data[jj + tris->size[0] * ix] +
+          xs->size[0] * i4) - 1];
       }
     }
 
-    for (i6 = 0; i6 < 3; i6++) {
+    for (i4 = 0; i4 < 3; i4++) {
       for (ix = 0; ix < 3; ix++) {
-        c_xs[ix + 3 * i6] = xs->data[(tris->data[jj + tris->size[0] * ix] +
-          xs->size[0] * i6) - 1];
+        c_xs[ix + 3 * i4] = xs->data[(tris->data[jj + tris->size[0] * ix] +
+          xs->size[0] * i4) - 1];
       }
     }
 
-    for (i6 = 0; i6 < 3; i6++) {
-      a[i6] = b_xs[1 + 3 * i6] - c_xs[3 * i6];
+    for (i4 = 0; i4 < 3; i4++) {
+      a[i4] = b_xs[1 + 3 * i4] - c_xs[3 * i4];
     }
 
-    for (i6 = 0; i6 < 3; i6++) {
+    for (i4 = 0; i4 < 3; i4++) {
       for (ix = 0; ix < 3; ix++) {
-        b_xs[ix + 3 * i6] = xs->data[(tris->data[jj + tris->size[0] * ix] +
-          xs->size[0] * i6) - 1];
+        b_xs[ix + 3 * i4] = xs->data[(tris->data[jj + tris->size[0] * ix] +
+          xs->size[0] * i4) - 1];
       }
     }
 
-    for (i6 = 0; i6 < 3; i6++) {
+    for (i4 = 0; i4 < 3; i4++) {
       for (ix = 0; ix < 3; ix++) {
-        c_xs[ix + 3 * i6] = xs->data[(tris->data[jj + tris->size[0] * ix] +
-          xs->size[0] * i6) - 1];
+        c_xs[ix + 3 * i4] = xs->data[(tris->data[jj + tris->size[0] * ix] +
+          xs->size[0] * i4) - 1];
       }
     }
 
-    for (i6 = 0; i6 < 3; i6++) {
-      nrm_a[i6] = b_xs[2 + 3 * i6] - c_xs[3 * i6];
+    for (i4 = 0; i4 < 3; i4++) {
+      nrm_a[i4] = b_xs[2 + 3 * i4] - c_xs[3 * i4];
     }
 
     /* CROSS_COL Efficient routine for computing cross product of two  */
@@ -7767,20 +8067,20 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
 
     /* 'compute_medial_quadric_tri:40' if farea==0 */
     /* 'compute_medial_quadric_tri:41' nrm = nrm / farea; */
-    for (i6 = 0; i6 < 3; i6++) {
-      nrm[i6] /= farea;
+    for (i4 = 0; i4 < 3; i4++) {
+      nrm[i4] /= farea;
     }
 
     /*  Update As and bs for the vertices of the triangle. */
     /*  T=a * nrm * nrm', but update only upper-trangular part. */
     /* 'compute_medial_quadric_tri:45' T = [nrm(1)*nrm_a'; 0, nrm(2)*nrm_a(2:3)'; 0, 0, nrm(3)*nrm_a(3)]; */
-    for (i6 = 0; i6 < 3; i6++) {
-      T[3 * i6] = nrm[0] * nrm_a[i6];
+    for (i4 = 0; i4 < 3; i4++) {
+      T[3 * i4] = nrm[0] * nrm_a[i4];
     }
 
     T[1] = 0.0;
-    for (i6 = 0; i6 < 2; i6++) {
-      T[1 + 3 * (i6 + 1)] = nrm[1] * nrm_a[i6 + 1];
+    for (i4 = 0; i4 < 2; i4++) {
+      T[1 + 3 * (i4 + 1)] = nrm[1] * nrm_a[i4 + 1];
     }
 
     T[2] = 0.0;
@@ -7794,26 +8094,26 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
       /* 'compute_medial_quadric_tri:51' As(1,:,v)   = As(1,:,v)+T(1,:); */
       ix = tris->data[jj + tris->size[0] * nv];
       i = tris->data[jj + tris->size[0] * nv];
-      for (i6 = 0; i6 < 3; i6++) {
-        a[i6] = As->data[As->size[0] * i6 + As->size[0] * As->size[1] * (i - 1)]
-          + T[3 * i6];
+      for (i4 = 0; i4 < 3; i4++) {
+        a[i4] = As->data[As->size[0] * i4 + As->size[0] * As->size[1] * (i - 1)]
+          + T[3 * i4];
       }
 
-      for (i6 = 0; i6 < 3; i6++) {
-        As->data[As->size[0] * i6 + As->size[0] * As->size[1] * (ix - 1)] = a[i6];
+      for (i4 = 0; i4 < 3; i4++) {
+        As->data[As->size[0] * i4 + As->size[0] * As->size[1] * (ix - 1)] = a[i4];
       }
 
       /* 'compute_medial_quadric_tri:52' As(2,2:3,v) = As(2,2:3,v)+T(2,2:3); */
       ix = tris->data[jj + tris->size[0] * nv];
       i = tris->data[jj + tris->size[0] * nv];
-      for (i6 = 0; i6 < 2; i6++) {
-        b_As[i6] = As->data[(As->size[0] * (1 + i6) + As->size[0] * As->size[1] *
-                             (i - 1)) + 1] + T[1 + 3 * (1 + i6)];
+      for (i4 = 0; i4 < 2; i4++) {
+        b_As[i4] = As->data[(As->size[0] * (1 + i4) + As->size[0] * As->size[1] *
+                             (i - 1)) + 1] + T[1 + 3 * (1 + i4)];
       }
 
-      for (i6 = 0; i6 < 2; i6++) {
-        As->data[(As->size[0] * (1 + i6) + As->size[0] * As->size[1] * (ix - 1))
-          + 1] = b_As[i6];
+      for (i4 = 0; i4 < 2; i4++) {
+        As->data[(As->size[0] * (1 + i4) + As->size[0] * As->size[1] * (ix - 1))
+          + 1] = b_As[i4];
       }
 
       /* 'compute_medial_quadric_tri:53' As(3,3,v)   = As(3,3,v)+T(3,3); */
@@ -7823,12 +8123,12 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
       /* 'compute_medial_quadric_tri:55' bs(:,v) = bs(:,v) + nrm_a; */
       ix = tris->data[jj + tris->size[0] * nv];
       i = tris->data[jj + tris->size[0] * nv];
-      for (i6 = 0; i6 < 3; i6++) {
-        a[i6] = bs->data[i6 + bs->size[0] * (i - 1)] + nrm_a[i6];
+      for (i4 = 0; i4 < 3; i4++) {
+        a[i4] = bs->data[i4 + bs->size[0] * (i - 1)] + nrm_a[i4];
       }
 
-      for (i6 = 0; i6 < 3; i6++) {
-        bs->data[i6 + bs->size[0] * (ix - 1)] = a[i6];
+      for (i4 = 0; i4 < 3; i4++) {
+        bs->data[i4 + bs->size[0] * (ix - 1)] = a[i4];
       }
 
       /*  Update bs_lbl */
@@ -7837,12 +8137,12 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
         /* 'compute_medial_quadric_tri:59' bs_lbl(:,v) = bs_lbl(:,v) + nrm_a; */
         ix = tris->data[jj + tris->size[0] * nv];
         i = tris->data[jj + tris->size[0] * nv];
-        for (i6 = 0; i6 < 3; i6++) {
-          a[i6] = bs_lbl->data[i6 + bs_lbl->size[0] * (i - 1)] + nrm_a[i6];
+        for (i4 = 0; i4 < 3; i4++) {
+          a[i4] = bs_lbl->data[i4 + bs_lbl->size[0] * (i - 1)] + nrm_a[i4];
         }
 
-        for (i6 = 0; i6 < 3; i6++) {
-          bs_lbl->data[i6 + bs_lbl->size[0] * (ix - 1)] = a[i6];
+        for (i4 = 0; i4 < 3; i4++) {
+          bs_lbl->data[i4 + bs_lbl->size[0] * (ix - 1)] = a[i4];
         }
       }
     }
@@ -7853,21 +8153,21 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
   /*  Copy from upper-triangular to lower-triangular part of As. */
   /* 'compute_medial_quadric_tri:65' As(2,1,:) = As(1,2,:); */
   ix = As->size[2];
-  i6 = c_As->size[0] * c_As->size[1] * c_As->size[2];
+  i4 = c_As->size[0] * c_As->size[1] * c_As->size[2];
   c_As->size[0] = 1;
   c_As->size[1] = 1;
   c_As->size[2] = ix;
-  emxEnsureCapacity((emxArray__common *)c_As, i6, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)c_As, i4, (int32_T)sizeof(real_T));
   ix--;
-  for (i6 = 0; i6 <= ix; i6++) {
-    c_As->data[c_As->size[0] * c_As->size[1] * i6] = As->data[As->size[0] +
-      As->size[0] * As->size[1] * i6];
+  for (i4 = 0; i4 <= ix; i4++) {
+    c_As->data[c_As->size[0] * c_As->size[1] * i4] = As->data[As->size[0] +
+      As->size[0] * As->size[1] * i4];
   }
 
   ix = c_As->size[2] - 1;
-  for (i6 = 0; i6 <= ix; i6++) {
-    As->data[1 + As->size[0] * As->size[1] * i6] = c_As->data[c_As->size[0] *
-      c_As->size[1] * i6];
+  for (i4 = 0; i4 <= ix; i4++) {
+    As->data[1 + As->size[0] * As->size[1] * i4] = c_As->data[c_As->size[0] *
+      c_As->size[1] * i4];
   }
 
   emxFree_real_T(&c_As);
@@ -7875,21 +8175,21 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
 
   /* 'compute_medial_quadric_tri:66' As(3,1,:) = As(1,3,:); */
   ix = As->size[2];
-  i6 = d_As->size[0] * d_As->size[1] * d_As->size[2];
+  i4 = d_As->size[0] * d_As->size[1] * d_As->size[2];
   d_As->size[0] = 1;
   d_As->size[1] = 1;
   d_As->size[2] = ix;
-  emxEnsureCapacity((emxArray__common *)d_As, i6, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)d_As, i4, (int32_T)sizeof(real_T));
   ix--;
-  for (i6 = 0; i6 <= ix; i6++) {
-    d_As->data[d_As->size[0] * d_As->size[1] * i6] = As->data[(As->size[0] << 1)
-      + As->size[0] * As->size[1] * i6];
+  for (i4 = 0; i4 <= ix; i4++) {
+    d_As->data[d_As->size[0] * d_As->size[1] * i4] = As->data[(As->size[0] << 1)
+      + As->size[0] * As->size[1] * i4];
   }
 
   ix = d_As->size[2] - 1;
-  for (i6 = 0; i6 <= ix; i6++) {
-    As->data[2 + As->size[0] * As->size[1] * i6] = d_As->data[d_As->size[0] *
-      d_As->size[1] * i6];
+  for (i4 = 0; i4 <= ix; i4++) {
+    As->data[2 + As->size[0] * As->size[1] * i4] = d_As->data[d_As->size[0] *
+      d_As->size[1] * i4];
   }
 
   emxFree_real_T(&d_As);
@@ -7897,21 +8197,21 @@ static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
 
   /* 'compute_medial_quadric_tri:67' As(3,2,:) = As(2,3,:); */
   ix = As->size[2];
-  i6 = e_As->size[0] * e_As->size[1] * e_As->size[2];
+  i4 = e_As->size[0] * e_As->size[1] * e_As->size[2];
   e_As->size[0] = 1;
   e_As->size[1] = 1;
   e_As->size[2] = ix;
-  emxEnsureCapacity((emxArray__common *)e_As, i6, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)e_As, i4, (int32_T)sizeof(real_T));
   ix--;
-  for (i6 = 0; i6 <= ix; i6++) {
-    e_As->data[e_As->size[0] * e_As->size[1] * i6] = As->data[((As->size[0] << 1)
-      + As->size[0] * As->size[1] * i6) + 1];
+  for (i4 = 0; i4 <= ix; i4++) {
+    e_As->data[e_As->size[0] * e_As->size[1] * i4] = As->data[((As->size[0] << 1)
+      + As->size[0] * As->size[1] * i4) + 1];
   }
 
   ix = e_As->size[2] - 1;
-  for (i6 = 0; i6 <= ix; i6++) {
-    As->data[(As->size[0] + As->size[0] * As->size[1] * i6) + 2] = e_As->
-      data[e_As->size[0] * e_As->size[1] * i6];
+  for (i4 = 0; i4 <= ix; i4++) {
+    As->data[(As->size[0] + As->size[0] * As->size[1] * i4) + 2] = e_As->
+      data[e_As->size[0] * e_As->size[1] * i4];
   }
 
   emxFree_real_T(&e_As);
@@ -7994,21 +8294,6 @@ static void compute_statistics_tris_global(int32_T nt_clean, const
   /*  max_area . This step would require communicating the min_angle from other */
   /*  processor and performing a comparision among them to obtain the global */
   /*  minimum angle.  */
-
-  real_T out_min_angle, out_max_angle, out_min_area, out_max_area;
-
-  MPI_Allreduce(min_angle, &(out_min_angle), 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  MPI_Allreduce(min_area, &(out_min_area), 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-
-  MPI_Allreduce(max_angle, &(out_max_angle), 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  MPI_Allreduce(max_area, &(out_max_area), 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-  *min_angle = out_min_angle;
-  *max_angle = out_max_angle;
-
-  *min_area = out_min_area;
-  *max_area = out_max_area;
-
 }
 
 /*
@@ -8018,17 +8303,19 @@ static boolean_T compute_weights(const emxArray_real_T *us, const
   emxArray_real_T *nrms, int32_T deg, emxArray_real_T *ws)
 {
   boolean_T toocoarse;
+  emxArray_real_T *r16;
   boolean_T interp;
+  int32_T iy;
   int32_T ix;
   int32_T j;
   real_T b[2];
   real_T A;
-  int32_T iy;
   int32_T k;
   real_T h;
   real_T b_b[3];
   real_T costheta;
   real_T u1;
+  b_emxInit_real_T(&r16, 1);
 
   /*  Compute weights for polynomial fitting. */
   /*  [ws,toocoarse] = compute_weights( us, nrms, deg, tol) */
@@ -8046,16 +8333,28 @@ static boolean_T compute_weights(const emxArray_real_T *us, const
 
   /* 'compute_weights:18' epsilon = 1e-2; */
   /*  First, compute squared distance from each input point to the pos */
-  /* 'compute_weights:21' ws = coder.nullcopy(zeros(size(us,1),1)); */
-  ix = ws->size[0];
-  ws->size[0] = us->size[0];
-  emxEnsureCapacity((emxArray__common *)ws, ix, (int32_T)sizeof(real_T));
+  /* 'compute_weights:21' ws = nullcopy(zeros(size(us,1),1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  iy = r16->size[0];
+  r16->size[0] = us->size[0];
+  emxEnsureCapacity((emxArray__common *)r16, iy, (int32_T)sizeof(real_T));
+  iy = ws->size[0];
+  ws->size[0] = r16->size[0];
+  emxEnsureCapacity((emxArray__common *)ws, iy, (int32_T)sizeof(real_T));
+  ix = r16->size[0] - 1;
+  for (iy = 0; iy <= ix; iy++) {
+    ws->data[iy] = r16->data[iy];
+  }
+
+  emxFree_real_T(&r16);
 
   /* 'compute_weights:22' for j = 1:int32(size(us,1)) */
   for (j = 0; j + 1 <= us->size[0]; j++) {
     /* 'compute_weights:23' ws(j) = us(j,:)*us(j,:)'; */
-    for (ix = 0; ix < 2; ix++) {
-      b[ix] = us->data[j + us->size[0] * ix];
+    for (iy = 0; iy < 2; iy++) {
+      b[iy] = us->data[j + us->size[0] * iy];
     }
 
     A = 0.0;
@@ -8082,8 +8381,8 @@ static boolean_T compute_weights(const emxArray_real_T *us, const
   /* 'compute_weights:31' for j = 1:int32(size(us,1)) */
   for (j = 0; j + 1 <= us->size[0]; j++) {
     /* 'compute_weights:32' costheta = nrms(j+int32(interp),:)*nrms(1,:).'; */
-    for (ix = 0; ix < 3; ix++) {
-      b_b[ix] = nrms->data[nrms->size[0] * ix];
+    for (iy = 0; iy < 3; iy++) {
+      b_b[iy] = nrms->data[nrms->size[0] * iy];
     }
 
     costheta = 0.0;
@@ -8158,6 +8457,119 @@ static real_T cos_angle(const real_T ts1[3], const real_T ts2[3])
 }
 
 /*
+ * function [nfolded,angles] = count_folded_tris_global(nt_clean, ps, tris, nrms)
+ */
+static int32_T count_folded_tris_global(int32_T nt_clean, const emxArray_real_T *
+  ps, const emxArray_int32_T *tris, const emxArray_real_T *nrms)
+{
+  int32_T nfolded;
+  int32_T kk;
+  int32_T i3;
+  int32_T ix;
+  real_T b_ps[9];
+  real_T c_ps[9];
+  real_T d_ps[9];
+  real_T e_ps[9];
+  real_T ts_uv[6];
+  real_T nrm_tri[3];
+  int32_T iy;
+  int32_T b_tris;
+  real_T nrm_ave[3];
+  real_T y;
+
+  /*  Count the number of folded triangles in a surface mesh. */
+  /* 'count_folded_tris_global:6' coder.inline('never') */
+  /* Step 1: Compute the no. of folded triangles for the clean-mesh */
+  /* 'count_folded_tris_global:8' nfolded = int32(0); */
+  nfolded = 0;
+
+  /* 'count_folded_tris_global:9' if nargout>1 */
+  /* 'count_folded_tris_global:13' for kk=1:nt_clean */
+  for (kk = 0; kk + 1 <= nt_clean; kk++) {
+    /* 'count_folded_tris_global:14' xs_tri = ps( tris(kk,:), 1:3); */
+    /* 'count_folded_tris_global:15' ts_uv = [xs_tri(3,1:3)-xs_tri(2,1:3); xs_tri(1,1:3)-xs_tri(3,1:3)]; */
+    for (i3 = 0; i3 < 3; i3++) {
+      for (ix = 0; ix < 3; ix++) {
+        b_ps[ix + 3 * i3] = ps->data[(tris->data[kk + tris->size[0] * ix] +
+          ps->size[0] * i3) - 1];
+      }
+    }
+
+    for (i3 = 0; i3 < 3; i3++) {
+      for (ix = 0; ix < 3; ix++) {
+        c_ps[ix + 3 * i3] = ps->data[(tris->data[kk + tris->size[0] * ix] +
+          ps->size[0] * i3) - 1];
+      }
+    }
+
+    for (i3 = 0; i3 < 3; i3++) {
+      for (ix = 0; ix < 3; ix++) {
+        d_ps[ix + 3 * i3] = ps->data[(tris->data[kk + tris->size[0] * ix] +
+          ps->size[0] * i3) - 1];
+      }
+    }
+
+    for (i3 = 0; i3 < 3; i3++) {
+      for (ix = 0; ix < 3; ix++) {
+        e_ps[ix + 3 * i3] = ps->data[(tris->data[kk + tris->size[0] * ix] +
+          ps->size[0] * i3) - 1];
+      }
+    }
+
+    for (i3 = 0; i3 < 3; i3++) {
+      ts_uv[i3 << 1] = b_ps[2 + 3 * i3] - c_ps[1 + 3 * i3];
+      ts_uv[1 + (i3 << 1)] = d_ps[3 * i3] - e_ps[2 + 3 * i3];
+    }
+
+    /* 'count_folded_tris_global:16' nrm_tri = cross_col(ts_uv(1,:),ts_uv(2,:)); */
+    /* CROSS_COL Efficient routine for computing cross product of two  */
+    /* 3-dimensional column vectors. */
+    /*  CROSS_COL(A,B) Efficiently computes the cross product between */
+    /*  3-dimensional column vector A, and 3-dimensional column vector B. */
+    /* 'cross_col:7' c = [a(2)*b(3)-a(3)*b(2); a(3)*b(1)-a(1)*b(3); a(1)*b(2)-a(2)*b(1)]; */
+    nrm_tri[0] = ts_uv[2] * ts_uv[5] - ts_uv[4] * ts_uv[3];
+    nrm_tri[1] = ts_uv[4] * ts_uv[1] - ts_uv[0] * ts_uv[5];
+    nrm_tri[2] = ts_uv[0] * ts_uv[3] - ts_uv[2] * ts_uv[1];
+
+    /* 'count_folded_tris_global:17' nrm_ave = nrms(tris(kk,1),1:3)'+nrms(tris(kk,2),1:3)'+nrms(tris(kk,3),1:3)'; */
+    ix = tris->data[kk];
+    iy = tris->data[kk + tris->size[0]];
+    b_tris = tris->data[kk + (tris->size[0] << 1)];
+    for (i3 = 0; i3 < 3; i3++) {
+      nrm_ave[i3] = (nrms->data[(ix + nrms->size[0] * i3) - 1] + nrms->data[(iy
+        + nrms->size[0] * i3) - 1]) + nrms->data[(b_tris + nrms->size[0] * i3) -
+        1];
+    }
+
+    /* 'count_folded_tris_global:19' if nargout<=1 */
+    /* 'count_folded_tris_global:20' nfolded = nfolded + int32(nrm_tri'*nrm_ave<=0); */
+    y = 0.0;
+    ix = 0;
+    iy = 0;
+    for (b_tris = 0; b_tris < 3; b_tris++) {
+      y += nrm_tri[ix] * nrm_ave[iy];
+      ix++;
+      iy++;
+    }
+
+    nfolded += (y <= 0.0);
+  }
+
+  /* 'count_folded_tris_global:29' if nfolded>0.5*nt_clean */
+  y = 0.5 * (real_T)nt_clean;
+  y = y < 0.0 ? ceil(y - 0.5) : floor(y + 0.5);
+  if (nfolded > (int32_T)y) {
+    /*  If more than half folded, then the orientation must be wrong. */
+    /* 'count_folded_tris_global:31' nfolded = nt_clean-nfolded; */
+    nfolded = nt_clean - nfolded;
+  }
+
+  /* Step 2: Obtain a global count of no. of folded triangles by adding the no. */
+  /* of folded triangles from other processors.  */
+  return nfolded;
+}
+
+/*
  *
  */
 static boolean_T d_eml_strcmp(const char_T a[3])
@@ -8203,6 +8615,24 @@ static boolean_T d_eml_strcmp(const char_T a[3])
   }
 
   return b_bool;
+}
+
+static void d_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
+{
+  emxArray_real_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_real_T *)malloc(sizeof(emxArray_real_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (real_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
 }
 
 /*
@@ -8426,13 +8856,19 @@ static void determine_opposite_halfedge(int32_T nv, const emxArray_int32_T
   /* 'determine_opposite_halfedge_tri:39' ne = ntris*nepE; */
   ne = ntris * 3;
 
-  /* 'determine_opposite_halfedge_tri:40' v2nv = coder.nullcopy(zeros( ne,1, 'int32')); */
+  /* 'determine_opposite_halfedge_tri:40' v2nv = nullcopy(zeros( ne,1, 'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   found = v2nv->size[0];
   v2nv->size[0] = ne;
   emxEnsureCapacity((emxArray__common *)v2nv, found, (int32_T)sizeof(int32_T));
 
   /*  Vertex to next vertex in each halfedge. */
-  /* 'determine_opposite_halfedge_tri:41' v2he = coder.nullcopy(zeros( ne,1, 'int32')); */
+  /* 'determine_opposite_halfedge_tri:41' v2he = nullcopy(zeros( ne,1, 'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   found = v2he->size[0];
   v2he->size[0] = ne;
   emxEnsureCapacity((emxArray__common *)v2he, found, (int32_T)sizeof(int32_T));
@@ -8645,7 +9081,7 @@ static void eig3_sorted(const real_T A[9], real_T V[9], real_T lambdas[3])
   real_T f;
   real_T q2;
   real_T w[3];
-  static const int8_T iv15[3] = { 1, 0, 0 };
+  static const int8_T iv14[3] = { 1, 0, 0 };
 
   real_T e[3];
   int32_T exitg1;
@@ -8775,7 +9211,7 @@ static void eig3_sorted(const real_T A[9], real_T V[9], real_T lambdas[3])
     /* 'eig3:149'         0, 1 - omega * u2 *u2, - omega * u2 *u3; */
     /* 'eig3:150'         0, 0, 1 - omega * u3 *u3]; */
     for (ix = 0; ix < 3; ix++) {
-      V[3 * ix] = (real_T)iv15[ix];
+      V[3 * ix] = (real_T)iv14[ix];
     }
 
     V[1] = 0.0;
@@ -9089,14 +9525,20 @@ static void eigenanalysis_surf(const emxArray_real_T *As, const emxArray_real_T 
   nv = As->size[2];
 
   /* 'eigenanalysis_surf:25' if nargin<4 */
-  /* 'eigenanalysis_surf:25' us = coder.nullcopy(zeros(nv,3)); */
+  /* 'eigenanalysis_surf:25' us = nullcopy(zeros(nv,3)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ix = us->size[0] * us->size[1];
   us->size[0] = nv;
   us->size[1] = 3;
   emxEnsureCapacity((emxArray__common *)us, ix, (int32_T)sizeof(real_T));
 
   /* 'eigenanalysis_surf:27' if nargout>1 */
-  /* 'eigenanalysis_surf:27' Vs = coder.nullcopy(zeros(3,3,nv)); */
+  /* 'eigenanalysis_surf:27' Vs = nullcopy(zeros(3,3,nv)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ix = Vs->size[0] * Vs->size[1] * Vs->size[2];
   Vs->size[0] = 3;
   Vs->size[1] = 3;
@@ -9104,7 +9546,10 @@ static void eigenanalysis_surf(const emxArray_real_T *As, const emxArray_real_T 
   emxEnsureCapacity((emxArray__common *)Vs, ix, (int32_T)sizeof(real_T));
 
   /* 'eigenanalysis_surf:28' if nargout>2 */
-  /* 'eigenanalysis_surf:28' tranks = coder.nullcopy(zeros(nv,1,'int8')); */
+  /* 'eigenanalysis_surf:28' tranks = nullcopy(zeros(nv,1,'int8')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ix = tranks->size[0];
   tranks->size[0] = nv;
   emxEnsureCapacity((emxArray__common *)tranks, ix, (int32_T)sizeof(int8_T));
@@ -9527,7 +9972,7 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T jj;
   emxArray_real_T *b_V;
   int32_T c_V;
-  int32_T i11;
+  int32_T i12;
   int32_T loop_ub;
   int32_T b_loop_ub;
   emxArray_real_T *ws1;
@@ -9588,15 +10033,15 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
 
   emxInit_real_T(&b_V, 2);
   c_V = V->size[0];
-  i11 = b_V->size[0] * b_V->size[1];
+  i12 = b_V->size[0] * b_V->size[1];
   b_V->size[0] = c_V;
   b_V->size[1] = ii - jj;
-  emxEnsureCapacity((emxArray__common *)b_V, i11, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b_V, i12, (int32_T)sizeof(real_T));
   loop_ub = (ii - jj) - 1;
   for (ii = 0; ii <= loop_ub; ii++) {
     b_loop_ub = c_V - 1;
-    for (i11 = 0; i11 <= b_loop_ub; i11++) {
-      b_V->data[i11 + b_V->size[0] * ii] = V->data[i11 + V->size[0] * (jj + ii)];
+    for (i12 = 0; i12 <= b_loop_ub; i12++) {
+      b_V->data[i12 + b_V->size[0] * ii] = V->data[i12 + V->size[0] * (jj + ii)];
     }
   }
 
@@ -9723,7 +10168,10 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   b_emxInit_real_T(&D, 1);
 
   /* % Scale columns to reduce condition number */
-  /* 'eval_vander_bivar:65' ts = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:65' ts = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ii = ws1->size[0];
   ws1->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)ws1, ii, (int32_T)sizeof(real_T));
@@ -9732,7 +10180,10 @@ static void eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   rescale_matrix(V, ncols, ws1);
 
   /* % Perform Householder QR factorization */
-  /* 'eval_vander_bivar:69' D = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar:69' D = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   ii = D->size[0];
   D->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)D, ii, (int32_T)sizeof(real_T));
@@ -9834,7 +10285,10 @@ static int32_T eval_vander_bivar_cmf(const emxArray_real_T *us, emxArray_real_T 
   /* 'eval_vander_bivar_cmf:23' if nargin<6 */
   /* 'eval_vander_bivar_cmf:23' safeguard=false; */
   /*  Declaring the degree of output */
-  /* 'eval_vander_bivar_cmf:26' deg_out = coder.nullcopy(zeros(1,size(bs,2),'int32')); */
+  /* 'eval_vander_bivar_cmf:26' deg_out = nullcopy(zeros(1,size(bs,2),'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   /*  Determine degree of polynomial */
   /* 'eval_vander_bivar_cmf:30' ncols = int32(bitshift(uint32((degree+2)*(degree+1)),-1))-int32(interp0); */
   ncols = (int32_T)((uint32_T)((degree + 2) * (degree + 1)) >> 1U);
@@ -9888,7 +10342,10 @@ static int32_T eval_vander_bivar_cmf(const emxArray_real_T *us, emxArray_real_T 
   b_emxInit_real_T(&D, 1);
 
   /* % Scale columns to reduce condition number */
-  /* 'eval_vander_bivar_cmf:53' ts = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar_cmf:53' ts = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   npnts = ts->size[0];
   ts->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)ts, npnts, (int32_T)sizeof(real_T));
@@ -9897,7 +10354,10 @@ static int32_T eval_vander_bivar_cmf(const emxArray_real_T *us, emxArray_real_T 
   rescale_matrix(V, ncols, ts);
 
   /* % Perform Householder QR factorization */
-  /* 'eval_vander_bivar_cmf:57' D = coder.nullcopy(zeros(ncols,1)); */
+  /* 'eval_vander_bivar_cmf:57' D = nullcopy(zeros(ncols,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   npnts = D->size[0];
   D->size[0] = ncols;
   emxEnsureCapacity((emxArray__common *)D, npnts, (int32_T)sizeof(real_T));
@@ -9987,6 +10447,291 @@ static boolean_T f_eml_strcmp(const char_T a[3])
   } while (exitg1 == 0U);
 
   return b_bool;
+}
+
+/*
+ * function loc = fe2_encode_location( nvpe, nc, tol)
+ */
+static int8_T fe2_encode_location(real_T nvpe, const real_T nc[2])
+{
+  int8_T loc;
+  real_T nc3;
+
+  /*  Encode the location of a point within a triangle or quadrilateral element */
+  /*  */
+  /*  At input, nc is 1x2 or 2-by-1 and stores the natural coordinates of PNT. */
+  /*  The output loc encodes the region as follows: */
+  /*  */
+  /*                \  6 / */
+  /*                 \  /                    8  |    3       |  7 */
+  /*                  v3                        |            | */
+  /*                  /\                   ----v4------------v3---- */
+  /*                 /  \                       |            | */
+  /*             3  /    \  2                   |            | */
+  /*               /      \                  4  |     0      |  2 */
+  /*              /   0    \                    |            | */
+  /*             /          \                   |            | */
+  /*        ----v1-----------v2------        ---v1----------v2------ */
+  /*        4  /              \ 5               |            | */
+  /*          /       1        \             5  |     1      |  6 */
+  /*  */
+  /*  */
+  /*  On the boundary of different regions, the higher value takes precedence. */
+  /*  */
+  /*  See also fe2_shapefunc, fe2_project_point, fe2_benc */
+  /* 'fe2_encode_location:25' if nargin<3 */
+  /* 'fe2_encode_location:25' tol = 0; */
+  /* 'fe2_encode_location:27' if nvpe==3 || nvpe==6 */
+  if ((nvpe == 3.0) || (nvpe == 6.0)) {
+    /*  Assign location for triangle */
+    /* 'fe2_encode_location:29' nc3 = 1-nc(1)-nc(2); */
+    nc3 = (1.0 - nc[0]) - nc[1];
+
+    /* 'fe2_encode_location:30' if nc(1)>tol && nc(2)>tol && nc3>tol */
+    if ((nc[0] > 0.0) && (nc[1] > 0.0) && (nc3 > 0.0)) {
+      /* 'fe2_encode_location:31' loc = int8(0); */
+      loc = 0;
+
+      /*  Face */
+    } else if (nc[0] > 0.0) {
+      /* 'fe2_encode_location:32' elseif nc(1)>tol */
+      /* 'fe2_encode_location:33' if nc3>tol */
+      if (nc3 > 0.0) {
+        /* 'fe2_encode_location:34' loc = int8(1); */
+        loc = 1;
+
+        /*  Edge 1 */
+      } else if (nc[1] > 0.0) {
+        /* 'fe2_encode_location:35' elseif nc(2)>tol */
+        /* 'fe2_encode_location:36' loc = int8(2); */
+        loc = 2;
+
+        /*  Edge 2 */
+      } else {
+        /* 'fe2_encode_location:37' else */
+        /* 'fe2_encode_location:38' loc = int8(5); */
+        loc = 5;
+
+        /*  Vertex 2 */
+      }
+    } else if (nc[1] <= 0.0) {
+      /* 'fe2_encode_location:40' elseif nc(2)<=tol */
+      /* 'fe2_encode_location:41' loc = int8(4); */
+      loc = 4;
+
+      /*  Vertex 1 */
+    } else if (nc3 <= 0.0) {
+      /* 'fe2_encode_location:42' elseif nc3<=tol */
+      /* 'fe2_encode_location:43' loc = int8(6); */
+      loc = 6;
+
+      /*  Vertex 3 */
+    } else {
+      /* 'fe2_encode_location:44' else */
+      /* 'fe2_encode_location:45' loc = int8(3); */
+      loc = 3;
+
+      /*  Edge 3 */
+    }
+  } else {
+    /* 'fe2_encode_location:47' else */
+    /*  Assign location for quadrilateral */
+    /* 'fe2_encode_location:49' utol = 1-tol; */
+    /* 'fe2_encode_location:51' if (nc(1)>tol && nc(1)<utol) && (nc(2)>tol && nc(2)<utol) */
+    if ((nc[0] > 0.0) && (nc[0] < 1.0) && (nc[1] > 0.0) && (nc[1] < 1.0)) {
+      /* 'fe2_encode_location:52' loc = int8(0); */
+      loc = 0;
+
+      /*  Face */
+    } else if (nc[0] <= 0.0) {
+      /* 'fe2_encode_location:53' elseif nc(1)<=tol */
+      /* 'fe2_encode_location:54' if nc(2)>tol && nc(2)<utol */
+      if ((nc[1] > 0.0) && (nc[1] < 1.0)) {
+        /* 'fe2_encode_location:55' loc = int8(4); */
+        loc = 4;
+
+        /*  Edge 4; */
+      } else if (nc[1] <= 0.0) {
+        /* 'fe2_encode_location:56' elseif nc(2)<=tol */
+        /* 'fe2_encode_location:57' loc = int8(5); */
+        loc = 5;
+
+        /*  Vertex 1; */
+      } else {
+        /* 'fe2_encode_location:58' else */
+        /* 'fe2_encode_location:59' loc = int8(8); */
+        loc = 8;
+
+        /*  Vertex 4; */
+      }
+    } else if (nc[0] >= 1.0) {
+      /* 'fe2_encode_location:61' elseif nc(1)>=utol */
+      /* 'fe2_encode_location:62' if nc(2)>tol && nc(2)<utol */
+      if ((nc[1] > 0.0) && (nc[1] < 1.0)) {
+        /* 'fe2_encode_location:63' loc = int8(2); */
+        loc = 2;
+
+        /*  Edge 2 */
+      } else if (nc[1] <= 0.0) {
+        /* 'fe2_encode_location:64' elseif nc(2)<=tol */
+        /* 'fe2_encode_location:65' loc = int8(6); */
+        loc = 6;
+
+        /*  Vertex 2 */
+      } else {
+        /* 'fe2_encode_location:66' else */
+        /* 'fe2_encode_location:67' loc = int8(7); */
+        loc = 7;
+
+        /*  Vertex 3 */
+      }
+    } else if (nc[1] <= 0.0) {
+      /* 'fe2_encode_location:69' elseif nc(2)<=tol */
+      /* 'fe2_encode_location:70' loc = int8(1); */
+      loc = 1;
+
+      /*  Edge 1 */
+    } else {
+      /* 'fe2_encode_location:71' else */
+      /* 'fe2_encode_location:72' loc = int8(3); */
+      loc = 3;
+
+      /*  Edge 3 */
+    }
+  }
+
+  return loc;
+}
+
+/*
+ * function [flag,nc,d,inverted] = fe2_project_point_new( pnt, pnts_elem, nrms_elem, flag, tol)
+ */
+static void fe2_project_point_new(const real_T pnt[3], const real_T pnts_elem[9],
+  const real_T nrms_elem[9], int32_T *flag, real_T nc[2])
+{
+  real_T d;
+  int32_T i;
+  boolean_T exitg1;
+  real_T N[3];
+  int32_T ix;
+  real_T pn[9];
+  real_T J[9];
+  int32_T iy;
+  real_T err;
+  int32_T k;
+  real_T s[3];
+
+  /*  Project a given point onto a given triangle or quadrilateral element. */
+  /*  */
+  /*     [nc, d,inverted] = fe2_project_point( pnt, pnts_elem, nrms_elem, tol) */
+  /*  */
+  /*  Input arguments */
+  /*     pnt: the point to be projected */
+  /*     pnts_elem: the points (n-by-3) of the vertices of the element */
+  /*     nrms_elem: the normals (n-by-3) at the vertices of the element */
+  /*     tol: the stopping criteria for Gauss-Newton iteration for  */
+  /*          nonlinear elements. */
+  /*  Output arguments */
+  /*     nc:  the natural coordinates of the projection of the point */
+  /*          within the element */
+  /*     inverted: it is true if the prism composed of pnts_elem and  */
+  /*          pnts_elem+d*nrms_elems is inverted. It indicates the point is */
+  /*          too far from the triangle. */
+  /*  */
+  /*  The function solves the nonlinear equation */
+  /*   pnts_elem'*shapefunc(xi,eta)+d*(nrms_elem'*shapefunc(xi,eta)') = pnt */
+  /*  using Newton's method to find xi, eta, and d. */
+  /*  */
+  /*  See also fe2_natcoor, fe2_shapefunc */
+  /* 'fe2_project_point_new:25' if nargin<5 */
+  /* 'fe2_project_point_new:25' tol=1e-12; */
+  /* 'fe2_project_point_new:27' nvpe = size( pnts_elem,1); */
+  /* 'fe2_project_point_new:28' tol2 = tol*tol; */
+  /* 'fe2_project_point_new:30' d = 0; */
+  d = 0.0;
+
+  /* 'fe2_project_point_new:31' if nvpe==3 */
+  /* 'fe2_project_point_new:32' nc = [0.;0.]; */
+  for (i = 0; i < 2; i++) {
+    nc[i] = 0.0;
+  }
+
+  /* 'fe2_project_point_new:33' for i=1:5 */
+  i = 1;
+  exitg1 = 0U;
+  while ((exitg1 == 0U) && (i <= 5)) {
+    /* 'fe2_project_point_new:34' [J,N] = Jac(3, nc, d, pnts_elem, nrms_elem); */
+    /*  Compute Jacobian matrix with w.r.t. xi, eta, and d. */
+    /*  3 columns of J contain partial derivatives w.r.t. xi, eta, and d, respectively */
+    /* 'fe2_project_point_new:76' J = coder.nullcopy(zeros(3,3)); */
+    /* 'fe2_project_point_new:77' if nvpe==3 */
+    /* 'fe2_project_point_new:78' N = [1-nc(1)-nc(2); nc(1); nc(2)]; */
+    N[0] = (1.0 - nc[0]) - nc[1];
+    N[1] = nc[0];
+    N[2] = nc[1];
+
+    /* 'fe2_project_point_new:79' pn = pnts_elem(1:3,:)+d*nrms_elem(1:3,:); */
+    for (ix = 0; ix < 9; ix++) {
+      pn[ix] = pnts_elem[ix] + d * nrms_elem[ix];
+    }
+
+    /* 'fe2_project_point_new:80' J(:,1) = pn(2,:)-pn(1,:); */
+    /* 'fe2_project_point_new:82' J(:,3) = N(1)*nrms_elem(1,:)+N(2)*nrms_elem(2,:)+N(3)*nrms_elem(3,:); */
+    for (ix = 0; ix < 3; ix++) {
+      J[ix] = pn[1 + 3 * ix] - pn[3 * ix];
+
+      /* 'fe2_project_point_new:81' J(:,2) = pn(3,:)-pn(1,:); */
+      J[3 + ix] = pn[2 + 3 * ix] - pn[3 * ix];
+      J[6 + ix] = (N[0] * nrms_elem[3 * ix] + N[1] * nrms_elem[1 + 3 * ix]) + N
+        [2] * nrms_elem[2 + 3 * ix];
+    }
+
+    /* 'fe2_project_point_new:36' r_neg = (pnts_elem' * N + d*J(:,3) - pnt); */
+    /* 'fe2_project_point_new:37' [flag,s] = solve3x3(J, r_neg, flag); */
+    iy = *flag;
+    for (ix = 0; ix < 3; ix++) {
+      err = 0.0;
+      for (k = 0; k < 3; k++) {
+        err += pnts_elem[k + 3 * ix] * N[k];
+      }
+
+      s[ix] = (err + d * J[6 + ix]) - pnt[ix];
+    }
+
+    solve3x3(J, s, &iy);
+    *flag = iy;
+
+    /* 'fe2_project_point_new:38' nc = nc-s(1:2); */
+    for (ix = 0; ix < 2; ix++) {
+      nc[ix] -= s[ix];
+    }
+
+    /* 'fe2_project_point_new:39' d = d-s(3); */
+    d -= s[2];
+
+    /* 'fe2_project_point_new:41' err = s'*s; */
+    err = 0.0;
+    ix = 0;
+    iy = 0;
+    for (k = 0; k < 3; k++) {
+      err += s[ix] * s[iy];
+      ix++;
+      iy++;
+    }
+
+    /* 'fe2_project_point_new:42' if err < tol2 */
+    if (err < 1.0E-24) {
+      exitg1 = 1U;
+    } else {
+      i++;
+    }
+  }
+
+  /* 'fe2_project_point_new:59' if nargout>1 */
+  /* 'fe2_project_point_new:60' if nvpe==3 || nvpe==6 */
+  /*  Check whether prism composed of pnts_elem and pnts_elem+d*nrms_elems */
+  /*  is inverted */
+  /* 'fe2_project_point_new:63' inverted = check_prism( pnts_elem(1:3,:), d*nrms_elem(1:3,:))<1; */
 }
 
 /*
@@ -10158,9 +10903,9 @@ static void find_parent_triangle(const real_T pnt[3], int32_T heid, const
       /* 'obtain_nring_surf:81' if nargin>=10 && ~isempty(ngbfs) */
       /* 'obtain_nring_surf:83' else */
       /* 'obtain_nring_surf:84' maxnf = 2*MAXNPNTS; */
-      /* 'obtain_nring_surf:84' ngbfs = coder.nullcopy(zeros(maxnf,1, 'int32')); */
+      /* 'obtain_nring_surf:84' ngbfs = nullcopy(zeros(maxnf,1, 'int32')); */
       /* 'obtain_nring_surf:87' oneringonly = ring==1 && minpnts==0 && nargout<5; */
-      /* 'obtain_nring_surf:88' hebuf = coder.nullcopy(zeros(maxnv,1, 'int32')); */
+      /* 'obtain_nring_surf:88' hebuf = nullcopy(zeros(maxnv,1, 'int32')); */
       /*  Optimized version for collecting one-ring vertices */
       /* 'obtain_nring_surf:91' if opphes( fid, lid) */
       if (opphes->data[b_fid + opphes->size[0] * i] != 0) {
@@ -10524,7 +11269,10 @@ static void gen_vander_bivar(const emxArray_real_T *us, int32_T degree,
     /* 'gen_vander_bivar:54' nrows = npnts*nrpp; */
     /* 'gen_vander_bivar:56' if isempty(coder.target) && isequal(class(us),'sym') */
     /* 'gen_vander_bivar:58' else */
-    /* 'gen_vander_bivar:59' V = coder.nullcopy(zeros(nrows, ncols, class(us))); */
+    /* 'gen_vander_bivar:59' V = nullcopy(zeros(nrows, ncols, class(us))); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     i2 = V->size[0] * V->size[1];
     V->size[0] = npnts;
     V->size[1] = ncols;
@@ -10956,7 +11704,10 @@ static void linfit_lhf_grad_surf_point(const int32_T ngbvs[128], const
 
   /*  Computes principal curvatures and principal direction from normals. */
   /*  This function is invoked only if there are insufficient points in the stencil. */
-  /* 'polyfit_lhf_surf_point:109' bs = coder.nullcopy(zeros( size(us,1),2)); */
+  /* 'polyfit_lhf_surf_point:109' bs = nullcopy(zeros( size(us,1),2)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   loop_ub = bs->size[0] * bs->size[1];
   bs->size[0] = us->size[0];
   bs->size[1] = 2;
@@ -11080,7 +11831,7 @@ static void obtain_all_nring_surf(real_T ring, int32_T nv, const
   int32_T minpnts;
   int32_T avepnts;
   emxArray_boolean_T *vtags;
-  int32_T i7;
+  int32_T i8;
   int32_T loop_ub;
   emxArray_boolean_T *ftags;
   int32_T offset;
@@ -11089,8 +11840,8 @@ static void obtain_all_nring_surf(real_T ring, int32_T nv, const
   emxArray_int32_T *r8;
   int32_T ngbvs[128];
   int32_T nverts;
-  int32_T i8;
   int32_T i9;
+  int32_T i10;
   emxArray_int32_T *b_allv_ngbvs;
 
   /*  Obtain the nring-neighbors of all the vertices of a surface mesh */
@@ -11196,33 +11947,39 @@ static void obtain_all_nring_surf(real_T ring, int32_T nv, const
 
   emxInit_boolean_T(&vtags, 1);
 
-  /* 'obtain_all_nring_surf:47' ngbvs = coder.nullcopy(zeros(128,1,'int32')); */
+  /* 'obtain_all_nring_surf:47' ngbvs = nullcopy(zeros(128,1,'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   /* 'obtain_all_nring_surf:48' vtags = false(nv, 1); */
-  i7 = vtags->size[0];
+  i8 = vtags->size[0];
   vtags->size[0] = nv;
-  emxEnsureCapacity((emxArray__common *)vtags, i7, (int32_T)sizeof(boolean_T));
+  emxEnsureCapacity((emxArray__common *)vtags, i8, (int32_T)sizeof(boolean_T));
   loop_ub = nv - 1;
-  for (i7 = 0; i7 <= loop_ub; i7++) {
-    vtags->data[i7] = FALSE;
+  for (i8 = 0; i8 <= loop_ub; i8++) {
+    vtags->data[i8] = FALSE;
   }
 
   emxInit_boolean_T(&ftags, 1);
 
   /* 'obtain_all_nring_surf:49' ftags = false(size(elems,1), 1); */
-  i7 = ftags->size[0];
+  i8 = ftags->size[0];
   ftags->size[0] = elems->size[0];
-  emxEnsureCapacity((emxArray__common *)ftags, i7, (int32_T)sizeof(boolean_T));
+  emxEnsureCapacity((emxArray__common *)ftags, i8, (int32_T)sizeof(boolean_T));
   loop_ub = elems->size[0] - 1;
-  for (i7 = 0; i7 <= loop_ub; i7++) {
-    ftags->data[i7] = FALSE;
+  for (i8 = 0; i8 <= loop_ub; i8++) {
+    ftags->data[i8] = FALSE;
   }
 
-  /* 'obtain_all_nring_surf:51' allv_ngbvs = coder.nullcopy(zeros( fix(nv*avepnts*1.1),1,'int32')); */
-  i7 = allv_ngbvs->size[0];
+  /* 'obtain_all_nring_surf:51' allv_ngbvs = nullcopy(zeros( fix(nv*avepnts*1.1),1,'int32')); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  i8 = allv_ngbvs->size[0];
   d2 = (real_T)(nv * avepnts) * 1.1;
   d2 = d2 < 0.0 ? ceil(d2 - 0.5) : floor(d2 + 0.5);
   allv_ngbvs->size[0] = (int32_T)d2;
-  emxEnsureCapacity((emxArray__common *)allv_ngbvs, i7, (int32_T)sizeof(int32_T));
+  emxEnsureCapacity((emxArray__common *)allv_ngbvs, i8, (int32_T)sizeof(int32_T));
 
   /* 'obtain_all_nring_surf:53' offset = int32(1); */
   offset = 0;
@@ -11243,37 +12000,37 @@ static void obtain_all_nring_surf(real_T ring, int32_T nv, const
 
     /* 'obtain_all_nring_surf:60' allv_ngbvs(offset+1:offset+nverts) = ngbvs(1:nverts); */
     if (1 > nverts) {
-      i7 = 0;
+      i8 = 0;
     } else {
-      i7 = nverts;
+      i8 = nverts;
     }
 
-    i8 = offset + 2;
-    i9 = (offset + nverts) + 1;
-    if (i8 > i9) {
-      i8 = 1;
-      i9 = 0;
+    i9 = offset + 2;
+    i10 = (offset + nverts) + 1;
+    if (i9 > i10) {
+      i9 = 1;
+      i10 = 0;
     }
 
     avepnts = r7->size[0];
-    r7->size[0] = (i9 - i8) + 1;
+    r7->size[0] = (i10 - i9) + 1;
     emxEnsureCapacity((emxArray__common *)r7, avepnts, (int32_T)sizeof(int32_T));
-    loop_ub = i9 - i8;
-    for (i9 = 0; i9 <= loop_ub; i9++) {
-      r7->data[i9] = i8 + i9;
+    loop_ub = i10 - i9;
+    for (i10 = 0; i10 <= loop_ub; i10++) {
+      r7->data[i10] = i9 + i10;
     }
 
-    i8 = r8->size[0];
-    r8->size[0] = i7;
-    emxEnsureCapacity((emxArray__common *)r8, i8, (int32_T)sizeof(int32_T));
-    loop_ub = i7 - 1;
-    for (i7 = 0; i7 <= loop_ub; i7++) {
-      r8->data[i7] = 1 + i7;
+    i9 = r8->size[0];
+    r8->size[0] = i8;
+    emxEnsureCapacity((emxArray__common *)r8, i9, (int32_T)sizeof(int32_T));
+    loop_ub = i8 - 1;
+    for (i8 = 0; i8 <= loop_ub; i8++) {
+      r8->data[i8] = 1 + i8;
     }
 
     loop_ub = r8->size[0] - 1;
-    for (i7 = 0; i7 <= loop_ub; i7++) {
-      allv_ngbvs->data[r7->data[i7] - 1] = ngbvs[r8->data[i7] - 1];
+    for (i8 = 0; i8 <= loop_ub; i8++) {
+      allv_ngbvs->data[r7->data[i8] - 1] = ngbvs[r8->data[i8] - 1];
     }
 
     /* 'obtain_all_nring_surf:62' offset = offset +nverts + 1; */
@@ -11292,21 +12049,21 @@ static void obtain_all_nring_surf(real_T ring, int32_T nv, const
   }
 
   emxInit_int32_T(&b_allv_ngbvs, 1);
-  i7 = b_allv_ngbvs->size[0];
+  i8 = b_allv_ngbvs->size[0];
   b_allv_ngbvs->size[0] = offset;
-  emxEnsureCapacity((emxArray__common *)b_allv_ngbvs, i7, (int32_T)sizeof
+  emxEnsureCapacity((emxArray__common *)b_allv_ngbvs, i8, (int32_T)sizeof
                     (int32_T));
   loop_ub = offset - 1;
-  for (i7 = 0; i7 <= loop_ub; i7++) {
-    b_allv_ngbvs->data[i7] = allv_ngbvs->data[i7];
+  for (i8 = 0; i8 <= loop_ub; i8++) {
+    b_allv_ngbvs->data[i8] = allv_ngbvs->data[i8];
   }
 
-  i7 = allv_ngbvs->size[0];
+  i8 = allv_ngbvs->size[0];
   allv_ngbvs->size[0] = b_allv_ngbvs->size[0];
-  emxEnsureCapacity((emxArray__common *)allv_ngbvs, i7, (int32_T)sizeof(int32_T));
+  emxEnsureCapacity((emxArray__common *)allv_ngbvs, i8, (int32_T)sizeof(int32_T));
   loop_ub = b_allv_ngbvs->size[0] - 1;
-  for (i7 = 0; i7 <= loop_ub; i7++) {
-    allv_ngbvs->data[i7] = b_allv_ngbvs->data[i7];
+  for (i8 = 0; i8 <= loop_ub; i8++) {
+    allv_ngbvs->data[i8] = b_allv_ngbvs->data[i8];
   }
 
   emxFree_int32_T(&b_allv_ngbvs);
@@ -11431,7 +12188,10 @@ static int32_T obtain_nring_quad(int32_T vid, real_T ring, int32_T minpnts,
     /* 'obtain_nring_quad:71' if nargin>=10 && ~isempty(ngbfs) */
     /* 'obtain_nring_quad:73' else */
     /* 'obtain_nring_quad:74' maxnf = 2*MAXNPNTS; */
-    /* 'obtain_nring_quad:74' ngbfs = coder.nullcopy(zeros(maxnf,1, 'int32')); */
+    /* 'obtain_nring_quad:74' ngbfs = nullcopy(zeros(maxnf,1, 'int32')); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     /* 'obtain_nring_quad:77' oneringonly = ring==1 && minpnts==0; */
     if ((ring == 1.0) && (minpnts == 0)) {
       b7 = TRUE;
@@ -11439,7 +12199,10 @@ static int32_T obtain_nring_quad(int32_T vid, real_T ring, int32_T minpnts,
       b7 = FALSE;
     }
 
-    /* 'obtain_nring_quad:78' hebuf = coder.nullcopy(zeros(maxnv,1, 'int32')); */
+    /* 'obtain_nring_quad:78' hebuf = nullcopy(zeros(maxnv,1, 'int32')); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     /*  Optimized version for collecting one-ring vertices */
     /* 'obtain_nring_quad:81' if opphes( fid, lid) */
     if (opphes->data[(fid + opphes->size[0] * lid) - 1] != 0) {
@@ -12066,7 +12829,10 @@ static int32_T c_obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts,
       b3 = FALSE;
     }
 
-    /* 'obtain_nring_surf:88' hebuf = coder.nullcopy(zeros(maxnv,1, 'int32')); */
+    /* 'obtain_nring_surf:88' hebuf = nullcopy(zeros(maxnv,1, 'int32')); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     /*  Optimized version for collecting one-ring vertices */
     /* 'obtain_nring_surf:91' if opphes( fid, lid) */
     if (opphes->data[fid + opphes->size[0] * lid] != 0) {
@@ -12555,19 +13321,20 @@ static void polyfit3d_cmf_edge(const emxArray_real_T *ngbpnts1, const
   static const int8_T iv23[3] = { 1, 0, 0 };
 
   emxArray_real_T *us;
-  emxArray_real_T *bs;
-  emxArray_real_T *ws;
+  emxArray_real_T *r17;
   real_T t2[3];
   int32_T np1;
   int32_T np2;
+  emxArray_real_T *bs;
+  emxArray_real_T *b_bs;
+  emxArray_real_T *ws;
   int32_T j;
   emxArray_real_T *buf;
   boolean_T tc1;
-  emxArray_int32_T *r13;
-  emxArray_int32_T *r14;
+  emxArray_int32_T *r18;
+  emxArray_int32_T *r19;
   boolean_T tc2;
-  emxArray_int32_T *r15;
-  emxArray_real_T *b_bs;
+  emxArray_int32_T *r20;
 
   /*  Compute the position of a point along an edge using polynomial */
   /*          fitting with continuous moving frames.     */
@@ -12678,8 +13445,7 @@ static void polyfit3d_cmf_edge(const emxArray_real_T *ngbpnts1, const
   }
 
   emxInit_real_T(&us, 2);
-  b_emxInit_real_T(&bs, 1);
-  b_emxInit_real_T(&ws, 1);
+  emxInit_real_T(&r17, 2);
 
   /* 'polyfit3d_cmf_edge:42' t2 = cross_col( nrm, t1); */
   /* CROSS_COL Efficient routine for computing cross product of two  */
@@ -12697,21 +13463,58 @@ static void polyfit3d_cmf_edge(const emxArray_real_T *ngbpnts1, const
   /* 'polyfit3d_cmf_edge:44' np2 = int32(size(ngbpnts2,1)); */
   np2 = ngbpnts2->size[0];
 
-  /* 'polyfit3d_cmf_edge:45' us = coder.nullcopy(zeros(np1+np2,2)); */
+  /* 'polyfit3d_cmf_edge:45' us = nullcopy(zeros(np1+np2,2)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  k = r17->size[0] * r17->size[1];
+  r17->size[0] = np1 + np2;
+  r17->size[1] = 2;
+  emxEnsureCapacity((emxArray__common *)r17, k, (int32_T)sizeof(real_T));
   k = us->size[0] * us->size[1];
-  us->size[0] = np1 + np2;
+  us->size[0] = r17->size[0];
   us->size[1] = 2;
   emxEnsureCapacity((emxArray__common *)us, k, (int32_T)sizeof(real_T));
+  ix = r17->size[0] * r17->size[1] - 1;
+  for (k = 0; k <= ix; k++) {
+    us->data[k] = r17->data[k];
+  }
 
-  /* 'polyfit3d_cmf_edge:46' bs = coder.nullcopy(zeros(np1+np2,1)); */
+  emxFree_real_T(&r17);
+  b_emxInit_real_T(&bs, 1);
+  b_emxInit_real_T(&b_bs, 1);
+
+  /* 'polyfit3d_cmf_edge:46' bs = nullcopy(zeros(np1+np2,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  k = b_bs->size[0];
+  b_bs->size[0] = np1 + np2;
+  emxEnsureCapacity((emxArray__common *)b_bs, k, (int32_T)sizeof(real_T));
   k = bs->size[0];
-  bs->size[0] = np1 + np2;
+  bs->size[0] = b_bs->size[0];
   emxEnsureCapacity((emxArray__common *)bs, k, (int32_T)sizeof(real_T));
+  ix = b_bs->size[0] - 1;
+  for (k = 0; k <= ix; k++) {
+    bs->data[k] = b_bs->data[k];
+  }
 
-  /* 'polyfit3d_cmf_edge:47' ws = coder.nullcopy(zeros(np1+np2,1)); */
+  b_emxInit_real_T(&ws, 1);
+
+  /* 'polyfit3d_cmf_edge:47' ws = nullcopy(zeros(np1+np2,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  k = b_bs->size[0];
+  b_bs->size[0] = np1 + np2;
+  emxEnsureCapacity((emxArray__common *)b_bs, k, (int32_T)sizeof(real_T));
   k = ws->size[0];
-  ws->size[0] = np1 + np2;
+  ws->size[0] = b_bs->size[0];
   emxEnsureCapacity((emxArray__common *)ws, k, (int32_T)sizeof(real_T));
+  ix = b_bs->size[0] - 1;
+  for (k = 0; k <= ix; k++) {
+    ws->data[k] = b_bs->data[k];
+  }
 
   /* % compute right hand side */
   /* 'polyfit3d_cmf_edge:50' for j = 1:np1 */
@@ -12817,32 +13620,32 @@ static void polyfit3d_cmf_edge(const emxArray_real_T *ngbpnts1, const
     k = np1;
   }
 
-  emxInit_int32_T(&r13, 1);
-  iy = r13->size[0];
-  r13->size[0] = k;
-  emxEnsureCapacity((emxArray__common *)r13, iy, (int32_T)sizeof(int32_T));
+  emxInit_int32_T(&r18, 1);
+  iy = r18->size[0];
+  r18->size[0] = k;
+  emxEnsureCapacity((emxArray__common *)r18, iy, (int32_T)sizeof(int32_T));
   ix = k - 1;
   for (k = 0; k <= ix; k++) {
-    r13->data[k] = 1 + k;
+    r18->data[k] = 1 + k;
   }
 
-  b_emxInit_int32_T(&r14, 2);
-  k = r14->size[0] * r14->size[1];
-  r14->size[0] = 1;
-  emxEnsureCapacity((emxArray__common *)r14, k, (int32_T)sizeof(int32_T));
-  ix = r13->size[0];
-  k = r14->size[0] * r14->size[1];
-  r14->size[1] = ix;
-  emxEnsureCapacity((emxArray__common *)r14, k, (int32_T)sizeof(int32_T));
-  ix = r13->size[0] - 1;
+  b_emxInit_int32_T(&r19, 2);
+  k = r19->size[0] * r19->size[1];
+  r19->size[0] = 1;
+  emxEnsureCapacity((emxArray__common *)r19, k, (int32_T)sizeof(int32_T));
+  ix = r18->size[0];
+  k = r19->size[0] * r19->size[1];
+  r19->size[1] = ix;
+  emxEnsureCapacity((emxArray__common *)r19, k, (int32_T)sizeof(int32_T));
+  ix = r18->size[0] - 1;
   for (k = 0; k <= ix; k++) {
-    r14->data[k] = r13->data[k];
+    r19->data[k] = r18->data[k];
   }
 
-  emxFree_int32_T(&r13);
-  ix = r14->size[0] * r14->size[1] - 1;
+  emxFree_int32_T(&r18);
+  ix = r19->size[0] * r19->size[1] - 1;
   for (k = 0; k <= ix; k++) {
-    ws->data[r14->data[k] - 1] = s1 * buf->data[k];
+    ws->data[r19->data[k] - 1] = s1 * buf->data[k];
   }
 
   /* if nargin<8; h2 = compute_resolution( ngbpnts2); end */
@@ -12857,35 +13660,35 @@ static void polyfit3d_cmf_edge(const emxArray_real_T *ngbpnts1, const
     iy = 0;
   }
 
-  emxInit_int32_T(&r15, 1);
-  ix = r15->size[0];
-  r15->size[0] = (iy - k) + 1;
-  emxEnsureCapacity((emxArray__common *)r15, ix, (int32_T)sizeof(int32_T));
+  emxInit_int32_T(&r20, 1);
+  ix = r20->size[0];
+  r20->size[0] = (iy - k) + 1;
+  emxEnsureCapacity((emxArray__common *)r20, ix, (int32_T)sizeof(int32_T));
   ix = iy - k;
   for (iy = 0; iy <= ix; iy++) {
-    r15->data[iy] = k + iy;
+    r20->data[iy] = k + iy;
   }
 
-  k = r14->size[0] * r14->size[1];
-  r14->size[0] = 1;
-  emxEnsureCapacity((emxArray__common *)r14, k, (int32_T)sizeof(int32_T));
-  ix = r15->size[0];
-  k = r14->size[0] * r14->size[1];
-  r14->size[1] = ix;
-  emxEnsureCapacity((emxArray__common *)r14, k, (int32_T)sizeof(int32_T));
-  ix = r15->size[0] - 1;
+  k = r19->size[0] * r19->size[1];
+  r19->size[0] = 1;
+  emxEnsureCapacity((emxArray__common *)r19, k, (int32_T)sizeof(int32_T));
+  ix = r20->size[0];
+  k = r19->size[0] * r19->size[1];
+  r19->size[1] = ix;
+  emxEnsureCapacity((emxArray__common *)r19, k, (int32_T)sizeof(int32_T));
+  ix = r20->size[0] - 1;
   for (k = 0; k <= ix; k++) {
-    r14->data[k] = r15->data[k];
+    r19->data[k] = r20->data[k];
   }
 
-  emxFree_int32_T(&r15);
-  ix = r14->size[0] * r14->size[1] - 1;
+  emxFree_int32_T(&r20);
+  ix = r19->size[0] * r19->size[1] - 1;
   for (k = 0; k <= ix; k++) {
-    ws->data[r14->data[k] - 1] = xi * buf->data[k];
+    ws->data[r19->data[k] - 1] = xi * buf->data[k];
   }
 
   emxFree_real_T(&buf);
-  emxFree_int32_T(&r14);
+  emxFree_int32_T(&r19);
 
   /* % Solve linear system */
   /*  Use no more than quadratic fitting for too coarse meshes. */
@@ -12894,8 +13697,6 @@ static void polyfit3d_cmf_edge(const emxArray_real_T *ngbpnts1, const
     /* 'polyfit3d_cmf_edge:74' deg = min(deg,2); */
     deg = 2;
   }
-
-  b_emxInit_real_T(&b_bs, 1);
 
   /* 'polyfit3d_cmf_edge:75' [bs, deg_out] = eval_vander_bivar_cmf(us, bs, deg, ws); */
   k = b_bs->size[0];
@@ -12942,23 +13743,24 @@ static void polyfit3d_cmf_tri(const emxArray_real_T *ngbpnts1, const
   static const int8_T iv19[3] = { 1, 0, 0 };
 
   emxArray_real_T *us;
-  emxArray_real_T *bs;
-  emxArray_real_T *ws;
+  emxArray_real_T *r9;
   real_T t2[3];
   int32_T np1;
   int32_T np2;
   int32_T np3;
+  emxArray_real_T *bs;
+  emxArray_real_T *b_bs;
+  emxArray_real_T *ws;
   int32_T j;
   int32_T j2;
   emxArray_real_T *buf;
   boolean_T tc1;
-  emxArray_int32_T *r9;
   emxArray_int32_T *r10;
-  boolean_T tc2;
   emxArray_int32_T *r11;
-  boolean_T tc3;
+  boolean_T tc2;
   emxArray_int32_T *r12;
-  emxArray_real_T *b_bs;
+  boolean_T tc3;
+  emxArray_int32_T *r13;
 
   /*  Compute the position of a point within a triangle using polynomial  */
   /*          fitting with continuous moving frames. */
@@ -13069,8 +13871,7 @@ static void polyfit3d_cmf_tri(const emxArray_real_T *ngbpnts1, const
   }
 
   emxInit_real_T(&us, 2);
-  b_emxInit_real_T(&bs, 1);
-  b_emxInit_real_T(&ws, 1);
+  emxInit_real_T(&r9, 2);
 
   /* 'polyfit3d_cmf_tri:42' t2 = cross_col( nrm, t1); */
   /* CROSS_COL Efficient routine for computing cross product of two  */
@@ -13091,21 +13892,58 @@ static void polyfit3d_cmf_tri(const emxArray_real_T *ngbpnts1, const
   /* 'polyfit3d_cmf_tri:44' np3 = int32(size(ngbpnts3,1)); */
   np3 = ngbpnts3->size[0];
 
-  /* 'polyfit3d_cmf_tri:45' us = coder.nullcopy(zeros(np1+np2+np3,2)); */
+  /* 'polyfit3d_cmf_tri:45' us = nullcopy(zeros(np1+np2+np3,2)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  k = r9->size[0] * r9->size[1];
+  r9->size[0] = (np1 + np2) + np3;
+  r9->size[1] = 2;
+  emxEnsureCapacity((emxArray__common *)r9, k, (int32_T)sizeof(real_T));
   k = us->size[0] * us->size[1];
-  us->size[0] = (np1 + np2) + np3;
+  us->size[0] = r9->size[0];
   us->size[1] = 2;
   emxEnsureCapacity((emxArray__common *)us, k, (int32_T)sizeof(real_T));
+  ix = r9->size[0] * r9->size[1] - 1;
+  for (k = 0; k <= ix; k++) {
+    us->data[k] = r9->data[k];
+  }
 
-  /* 'polyfit3d_cmf_tri:46' bs = coder.nullcopy(zeros(np1+np2+np3,1)); */
+  emxFree_real_T(&r9);
+  b_emxInit_real_T(&bs, 1);
+  b_emxInit_real_T(&b_bs, 1);
+
+  /* 'polyfit3d_cmf_tri:46' bs = nullcopy(zeros(np1+np2+np3,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  k = b_bs->size[0];
+  b_bs->size[0] = (np1 + np2) + np3;
+  emxEnsureCapacity((emxArray__common *)b_bs, k, (int32_T)sizeof(real_T));
   k = bs->size[0];
-  bs->size[0] = (np1 + np2) + np3;
+  bs->size[0] = b_bs->size[0];
   emxEnsureCapacity((emxArray__common *)bs, k, (int32_T)sizeof(real_T));
+  ix = b_bs->size[0] - 1;
+  for (k = 0; k <= ix; k++) {
+    bs->data[k] = b_bs->data[k];
+  }
 
-  /* 'polyfit3d_cmf_tri:47' ws = coder.nullcopy(zeros(np1+np2+np3,1)); */
+  b_emxInit_real_T(&ws, 1);
+
+  /* 'polyfit3d_cmf_tri:47' ws = nullcopy(zeros(np1+np2+np3,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  k = b_bs->size[0];
+  b_bs->size[0] = (np1 + np2) + np3;
+  emxEnsureCapacity((emxArray__common *)b_bs, k, (int32_T)sizeof(real_T));
   k = ws->size[0];
-  ws->size[0] = (np1 + np2) + np3;
+  ws->size[0] = b_bs->size[0];
   emxEnsureCapacity((emxArray__common *)ws, k, (int32_T)sizeof(real_T));
+  ix = b_bs->size[0] - 1;
+  for (k = 0; k <= ix; k++) {
+    ws->data[k] = b_bs->data[k];
+  }
 
   /* % compute right hand side */
   /* 'polyfit3d_cmf_tri:50' for j = 1:np1 */
@@ -13257,32 +14095,32 @@ static void polyfit3d_cmf_tri(const emxArray_real_T *ngbpnts1, const
     k = np1;
   }
 
-  emxInit_int32_T(&r9, 1);
-  iy = r9->size[0];
-  r9->size[0] = k;
-  emxEnsureCapacity((emxArray__common *)r9, iy, (int32_T)sizeof(int32_T));
+  emxInit_int32_T(&r10, 1);
+  iy = r10->size[0];
+  r10->size[0] = k;
+  emxEnsureCapacity((emxArray__common *)r10, iy, (int32_T)sizeof(int32_T));
   ix = k - 1;
   for (k = 0; k <= ix; k++) {
-    r9->data[k] = 1 + k;
+    r10->data[k] = 1 + k;
   }
 
-  b_emxInit_int32_T(&r10, 2);
-  k = r10->size[0] * r10->size[1];
-  r10->size[0] = 1;
-  emxEnsureCapacity((emxArray__common *)r10, k, (int32_T)sizeof(int32_T));
-  ix = r9->size[0];
-  k = r10->size[0] * r10->size[1];
-  r10->size[1] = ix;
-  emxEnsureCapacity((emxArray__common *)r10, k, (int32_T)sizeof(int32_T));
-  ix = r9->size[0] - 1;
+  b_emxInit_int32_T(&r11, 2);
+  k = r11->size[0] * r11->size[1];
+  r11->size[0] = 1;
+  emxEnsureCapacity((emxArray__common *)r11, k, (int32_T)sizeof(int32_T));
+  ix = r10->size[0];
+  k = r11->size[0] * r11->size[1];
+  r11->size[1] = ix;
+  emxEnsureCapacity((emxArray__common *)r11, k, (int32_T)sizeof(int32_T));
+  ix = r10->size[0] - 1;
   for (k = 0; k <= ix; k++) {
-    r10->data[k] = r9->data[k];
+    r11->data[k] = r10->data[k];
   }
 
-  emxFree_int32_T(&r9);
-  ix = r10->size[0] * r10->size[1] - 1;
+  emxFree_int32_T(&r10);
+  ix = r11->size[0] * r11->size[1] - 1;
   for (k = 0; k <= ix; k++) {
-    ws->data[r10->data[k] - 1] = s1 * buf->data[k];
+    ws->data[r11->data[k] - 1] = s1 * buf->data[k];
   }
 
   /* 'polyfit3d_cmf_tri:74' [buf,tc2] = compute_cmf_weights( pos, ngbpnts2, nrms2, deg, false, tol); */
@@ -13291,44 +14129,6 @@ static void polyfit3d_cmf_tri(const emxArray_real_T *ngbpnts1, const
   /* 'polyfit3d_cmf_tri:75' ws(np1+1: np1+np2) = s2*buf; */
   k = np1 + 1;
   iy = np1 + np2;
-  if (k > iy) {
-    k = 1;
-    iy = 0;
-  }
-
-  emxInit_int32_T(&r11, 1);
-  ix = r11->size[0];
-  r11->size[0] = (iy - k) + 1;
-  emxEnsureCapacity((emxArray__common *)r11, ix, (int32_T)sizeof(int32_T));
-  ix = iy - k;
-  for (iy = 0; iy <= ix; iy++) {
-    r11->data[iy] = k + iy;
-  }
-
-  k = r10->size[0] * r10->size[1];
-  r10->size[0] = 1;
-  emxEnsureCapacity((emxArray__common *)r10, k, (int32_T)sizeof(int32_T));
-  ix = r11->size[0];
-  k = r10->size[0] * r10->size[1];
-  r10->size[1] = ix;
-  emxEnsureCapacity((emxArray__common *)r10, k, (int32_T)sizeof(int32_T));
-  ix = r11->size[0] - 1;
-  for (k = 0; k <= ix; k++) {
-    r10->data[k] = r11->data[k];
-  }
-
-  emxFree_int32_T(&r11);
-  ix = r10->size[0] * r10->size[1] - 1;
-  for (k = 0; k <= ix; k++) {
-    ws->data[r10->data[k] - 1] = xi * buf->data[k];
-  }
-
-  /* 'polyfit3d_cmf_tri:77' [buf,tc3] = compute_cmf_weights( pos, ngbpnts3, nrms3, deg, false, tol); */
-  tc3 = compute_cmf_weights(pos, ngbpnts3, nrms3, deg, buf);
-
-  /* 'polyfit3d_cmf_tri:78' ws(np1+np2+1: np1+np2+np3) = s3*buf; */
-  k = (np1 + np2) + 1;
-  iy = (np1 + np2) + np3;
   if (k > iy) {
     k = 1;
     iy = 0;
@@ -13343,26 +14143,64 @@ static void polyfit3d_cmf_tri(const emxArray_real_T *ngbpnts1, const
     r12->data[iy] = k + iy;
   }
 
-  k = r10->size[0] * r10->size[1];
-  r10->size[0] = 1;
-  emxEnsureCapacity((emxArray__common *)r10, k, (int32_T)sizeof(int32_T));
+  k = r11->size[0] * r11->size[1];
+  r11->size[0] = 1;
+  emxEnsureCapacity((emxArray__common *)r11, k, (int32_T)sizeof(int32_T));
   ix = r12->size[0];
-  k = r10->size[0] * r10->size[1];
-  r10->size[1] = ix;
-  emxEnsureCapacity((emxArray__common *)r10, k, (int32_T)sizeof(int32_T));
+  k = r11->size[0] * r11->size[1];
+  r11->size[1] = ix;
+  emxEnsureCapacity((emxArray__common *)r11, k, (int32_T)sizeof(int32_T));
   ix = r12->size[0] - 1;
   for (k = 0; k <= ix; k++) {
-    r10->data[k] = r12->data[k];
+    r11->data[k] = r12->data[k];
   }
 
   emxFree_int32_T(&r12);
-  ix = r10->size[0] * r10->size[1] - 1;
+  ix = r11->size[0] * r11->size[1] - 1;
   for (k = 0; k <= ix; k++) {
-    ws->data[r10->data[k] - 1] = eta * buf->data[k];
+    ws->data[r11->data[k] - 1] = xi * buf->data[k];
+  }
+
+  /* 'polyfit3d_cmf_tri:77' [buf,tc3] = compute_cmf_weights( pos, ngbpnts3, nrms3, deg, false, tol); */
+  tc3 = compute_cmf_weights(pos, ngbpnts3, nrms3, deg, buf);
+
+  /* 'polyfit3d_cmf_tri:78' ws(np1+np2+1: np1+np2+np3) = s3*buf; */
+  k = (np1 + np2) + 1;
+  iy = (np1 + np2) + np3;
+  if (k > iy) {
+    k = 1;
+    iy = 0;
+  }
+
+  emxInit_int32_T(&r13, 1);
+  ix = r13->size[0];
+  r13->size[0] = (iy - k) + 1;
+  emxEnsureCapacity((emxArray__common *)r13, ix, (int32_T)sizeof(int32_T));
+  ix = iy - k;
+  for (iy = 0; iy <= ix; iy++) {
+    r13->data[iy] = k + iy;
+  }
+
+  k = r11->size[0] * r11->size[1];
+  r11->size[0] = 1;
+  emxEnsureCapacity((emxArray__common *)r11, k, (int32_T)sizeof(int32_T));
+  ix = r13->size[0];
+  k = r11->size[0] * r11->size[1];
+  r11->size[1] = ix;
+  emxEnsureCapacity((emxArray__common *)r11, k, (int32_T)sizeof(int32_T));
+  ix = r13->size[0] - 1;
+  for (k = 0; k <= ix; k++) {
+    r11->data[k] = r13->data[k];
+  }
+
+  emxFree_int32_T(&r13);
+  ix = r11->size[0] * r11->size[1] - 1;
+  for (k = 0; k <= ix; k++) {
+    ws->data[r11->data[k] - 1] = eta * buf->data[k];
   }
 
   emxFree_real_T(&buf);
-  emxFree_int32_T(&r10);
+  emxFree_int32_T(&r11);
 
   /* % Solve linear system */
   /* 'polyfit3d_cmf_tri:81' if tc1 || tc2 || tc3 */
@@ -13370,8 +14208,6 @@ static void polyfit3d_cmf_tri(const emxArray_real_T *ngbpnts1, const
     /* 'polyfit3d_cmf_tri:81' deg = min(deg,2); */
     deg = 2;
   }
-
-  b_emxInit_real_T(&b_bs, 1);
 
   /* 'polyfit3d_cmf_tri:82' [bs, deg_out] = eval_vander_bivar_cmf(us, bs, deg, ws); */
   k = b_bs->size[0];
@@ -13415,21 +14251,22 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
   int32_T ix;
   int32_T k;
   emxArray_real_T *us;
-  emxArray_real_T *bs;
+  emxArray_real_T *r15;
   real_T t2[3];
   int32_T nverts;
+  emxArray_real_T *bs;
+  emxArray_real_T *b_bs;
   emxArray_real_T *ws_row;
   emxArray_real_T *b_ws_row;
   boolean_T toocoarse;
   emxArray_real_T *us1;
   emxArray_real_T *ws_row1;
   int32_T c_ws_row[2];
-  int32_T b_bs[2];
+  int32_T c_bs[2];
   emxArray_real_T d_ws_row;
-  emxArray_real_T c_bs;
+  emxArray_real_T d_bs;
   int32_T b_iy;
   int32_T e_ws_row[2];
-  emxArray_real_T *d_bs;
   real_T v;
   real_T V[28];
   real_T height;
@@ -13509,7 +14346,7 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
   }
 
   emxInit_real_T(&us, 2);
-  b_emxInit_real_T(&bs, 1);
+  emxInit_real_T(&r15, 2);
 
   /* 'polyfit3d_walf_vertex:37' t2 = cross_col( nrm, t1); */
   /* CROSS_COL Efficient routine for computing cross product of two  */
@@ -13525,16 +14362,40 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
   /* 'polyfit3d_walf_vertex:40' nverts = int32( size(pnts,1)); */
   nverts = pnts->size[0];
 
-  /* 'polyfit3d_walf_vertex:41' us = coder.nullcopy(zeros(nverts-int32(interp),2)); */
+  /* 'polyfit3d_walf_vertex:41' us = nullcopy(zeros(nverts-int32(interp),2)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  iy = r15->size[0] * r15->size[1];
+  r15->size[0] = nverts;
+  r15->size[1] = 2;
+  emxEnsureCapacity((emxArray__common *)r15, iy, (int32_T)sizeof(real_T));
   iy = us->size[0] * us->size[1];
-  us->size[0] = nverts;
+  us->size[0] = r15->size[0];
   us->size[1] = 2;
   emxEnsureCapacity((emxArray__common *)us, iy, (int32_T)sizeof(real_T));
+  ix = r15->size[0] * r15->size[1] - 1;
+  for (iy = 0; iy <= ix; iy++) {
+    us->data[iy] = r15->data[iy];
+  }
 
-  /* 'polyfit3d_walf_vertex:42' bs = coder.nullcopy(zeros(nverts-int32(interp),1)); */
+  b_emxInit_real_T(&bs, 1);
+  b_emxInit_real_T(&b_bs, 1);
+
+  /* 'polyfit3d_walf_vertex:42' bs = nullcopy(zeros(nverts-int32(interp),1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
+  iy = b_bs->size[0];
+  b_bs->size[0] = nverts;
+  emxEnsureCapacity((emxArray__common *)b_bs, iy, (int32_T)sizeof(real_T));
   iy = bs->size[0];
-  bs->size[0] = nverts;
+  bs->size[0] = b_bs->size[0];
   emxEnsureCapacity((emxArray__common *)bs, iy, (int32_T)sizeof(real_T));
+  ix = b_bs->size[0] - 1;
+  for (iy = 0; iy <= ix; iy++) {
+    bs->data[iy] = b_bs->data[iy];
+  }
 
   /* 'polyfit3d_walf_vertex:44' us(1,:)=0; */
   for (iy = 0; iy < 2; iy++) {
@@ -13604,23 +14465,55 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
   /* 'polyfit3d_walf_vertex:55' if toocoarse */
   if (toocoarse) {
     emxInit_real_T(&us1, 2);
-    b_emxInit_real_T(&ws_row1, 1);
 
-    /* 'polyfit3d_walf_vertex:56' us1 = coder.nullcopy(zeros(nverts-int32(interp),2)); */
+    /* 'polyfit3d_walf_vertex:56' us1 = nullcopy(zeros(nverts-int32(interp),2)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
+    iy = r15->size[0] * r15->size[1];
+    r15->size[0] = nverts;
+    r15->size[1] = 2;
+    emxEnsureCapacity((emxArray__common *)r15, iy, (int32_T)sizeof(real_T));
     iy = us1->size[0] * us1->size[1];
-    us1->size[0] = nverts;
+    us1->size[0] = r15->size[0];
     us1->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)us1, iy, (int32_T)sizeof(real_T));
+    ix = r15->size[0] * r15->size[1] - 1;
+    for (iy = 0; iy <= ix; iy++) {
+      us1->data[iy] = r15->data[iy];
+    }
 
-    /* 'polyfit3d_walf_vertex:57' bs1 = coder.nullcopy(zeros(nverts-int32(interp),1)); */
+    /* 'polyfit3d_walf_vertex:57' bs1 = nullcopy(zeros(nverts-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
+    iy = b_bs->size[0];
+    b_bs->size[0] = nverts;
+    emxEnsureCapacity((emxArray__common *)b_bs, iy, (int32_T)sizeof(real_T));
     iy = ws_row->size[0];
-    ws_row->size[0] = nverts;
+    ws_row->size[0] = b_bs->size[0];
     emxEnsureCapacity((emxArray__common *)ws_row, iy, (int32_T)sizeof(real_T));
+    ix = b_bs->size[0] - 1;
+    for (iy = 0; iy <= ix; iy++) {
+      ws_row->data[iy] = b_bs->data[iy];
+    }
 
-    /* 'polyfit3d_walf_vertex:58' ws_row1 = coder.nullcopy(zeros(nverts-int32(interp),1)); */
+    b_emxInit_real_T(&ws_row1, 1);
+
+    /* 'polyfit3d_walf_vertex:58' ws_row1 = nullcopy(zeros(nverts-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
+    iy = b_bs->size[0];
+    b_bs->size[0] = nverts;
+    emxEnsureCapacity((emxArray__common *)b_bs, iy, (int32_T)sizeof(real_T));
     iy = ws_row1->size[0];
-    ws_row1->size[0] = nverts;
+    ws_row1->size[0] = b_bs->size[0];
     emxEnsureCapacity((emxArray__common *)ws_row1, iy, (int32_T)sizeof(real_T));
+    ix = b_bs->size[0] - 1;
+    for (iy = 0; iy <= ix; iy++) {
+      ws_row1->data[iy] = b_bs->data[iy];
+    }
 
     /* 'polyfit3d_walf_vertex:59' index = int32(0); */
     nverts = 0;
@@ -13641,15 +14534,15 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
         /* 'polyfit3d_walf_vertex:64' bs1(index,:) = bs(i,:); */
         c_ws_row[0] = ws_row->size[0];
         c_ws_row[1] = 1;
-        b_bs[0] = bs->size[0];
-        b_bs[1] = 1;
+        c_bs[0] = bs->size[0];
+        c_bs[1] = 1;
         d_ws_row = *ws_row;
         d_ws_row.size = (int32_T *)&c_ws_row;
         d_ws_row.numDimensions = 1;
-        c_bs = *bs;
-        c_bs.size = (int32_T *)&b_bs;
-        c_bs.numDimensions = 1;
-        d_ws_row.data[nverts - 1] = c_bs.data[i];
+        d_bs = *bs;
+        d_bs.size = (int32_T *)&c_bs;
+        d_bs.numDimensions = 1;
+        d_ws_row.data[nverts - 1] = d_bs.data[i];
 
         /* 'polyfit3d_walf_vertex:65' ws_row1(index)  = ws_row(i); */
         ws_row1->data[nverts - 1] = b_ws_row->data[i];
@@ -13713,19 +14606,19 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
   }
 
   emxFree_real_T(&b_ws_row);
-  b_emxInit_real_T(&d_bs, 1);
+  emxFree_real_T(&r15);
 
   /* 'polyfit3d_walf_vertex:73' [bs,deg_out] = eval_vander_bivar_cmf( us, bs, deg, ws_row, interp, true); */
-  iy = d_bs->size[0];
-  d_bs->size[0] = bs->size[0];
-  emxEnsureCapacity((emxArray__common *)d_bs, iy, (int32_T)sizeof(real_T));
+  iy = b_bs->size[0];
+  b_bs->size[0] = bs->size[0];
+  emxEnsureCapacity((emxArray__common *)b_bs, iy, (int32_T)sizeof(real_T));
   ix = bs->size[0] - 1;
   for (iy = 0; iy <= ix; iy++) {
-    d_bs->data[iy] = bs->data[iy];
+    b_bs->data[iy] = bs->data[iy];
   }
 
   emxFree_real_T(&bs);
-  nverts = b_eval_vander_bivar_cmf(us, d_bs, deg, ws_row);
+  nverts = b_eval_vander_bivar_cmf(us, b_bs, deg, ws_row);
 
   /* % project the point into u-v plane and evaluate its value */
   /* 'polyfit3d_walf_vertex:76' vec = (pos - pnts(1,1:3)).'; */
@@ -13754,7 +14647,10 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
   }
 
   /*  Evaluate the polynomial */
-  /* 'polyfit3d_walf_vertex:82' V = coder.nullcopy(zeros(28,1)); */
+  /* 'polyfit3d_walf_vertex:82' V = nullcopy(zeros(28,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   /* 'polyfit3d_walf_vertex:83' V(1) = u; */
   V[0] = u;
 
@@ -13785,15 +14681,15 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
   /* 'polyfit3d_walf_vertex:94' if interp */
   /* 'polyfit3d_walf_vertex:94' else */
   /* 'polyfit3d_walf_vertex:94' height = bs(1); */
-  height = d_bs->data[0];
+  height = b_bs->data[0];
 
   /* 'polyfit3d_walf_vertex:95' for kk=1:jj */
   for (b_iy = 1; b_iy <= i + 1; b_iy++) {
     /* 'polyfit3d_walf_vertex:96' height = height + bs(kk+1-int32(interp)) * V(kk); */
-    height += d_bs->data[b_iy] * V[b_iy - 1];
+    height += b_bs->data[b_iy] * V[b_iy - 1];
   }
 
-  emxFree_real_T(&d_bs);
+  emxFree_real_T(&b_bs);
 
   /* % Change back to global coordinate system. */
   /* 'polyfit3d_walf_vertex:101' pnt = pnts(1,1:3)' + u*t1 + v*t2 + height*nrm; */
@@ -13801,31 +14697,6 @@ static void polyfit3d_walf_vertex(const emxArray_real_T *pnts, const
     pnt[iy] = ((pnts->data[pnts->size[0] * iy] + u * t1[iy]) + v * t2[iy]) +
       height * nrm[iy];
   }
-
-  /* % Uncomment this part for generating C code of this function */
-  /*  np = int32(size(pos,1)); */
-  /*  pnt = coder.nullcopy(zeros(np,3)); */
-  /*  for i = 1:np */
-  /*      vec = (pos(i,:) - pnts(1,:)).'; */
-  /*      u = vec.' * t1; */
-  /*      v = vec.' * t2;     */
-  /*       */
-  /*      %Evaluating the polynomial for height function */
-  /*      V = coder.nullcopy(zeros(28,1)); */
-  /*      V(1) = u; V(2) = v; */
-  /*      jj = int32(2); */
-  /*      for kk=2:deg_out */
-  /*          jj = jj + 1; V(jj) = V(jj-kk)*u; */
-  /*          for kk2=1:kk */
-  /*              jj = jj + 1; V(jj) = V(jj-kk-1)*v; */
-  /*          end */
-  /*      end */
-  /*      if interp; height = 0; else height = bs(1); end */
-  /*      for kk=1:jj */
-  /*          height = height + bs(kk+1-int32(interp)) * V(kk);         */
-  /*      end         */
-  /*      pnt(i,:) = pnts(1,:)' + u*t1 + v*t2 + height*nrm;     */
-  /*  end */
 }
 
 /*
@@ -14467,18 +15338,27 @@ static void polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128], int32_T
     t2[2] = nrm[0] * absnrm[1] - nrm[1] * absnrm[0];
 
     /*  Project onto local coordinate system */
-    /* 'polyfit_lhf_surf_point:41' us = coder.nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'polyfit_lhf_surf_point:41' us = nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = us->size[0] * us->size[1];
     us->size[0] = nverts;
     us->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)us, ix, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhf_surf_point:42' bs = coder.nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'polyfit_lhf_surf_point:42' bs = nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = bs->size[0];
     bs->size[0] = nverts;
     emxEnsureCapacity((emxArray__common *)bs, ix, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhf_surf_point:43' ws_row = coder.nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'polyfit_lhf_surf_point:43' ws_row = nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = ws_row->size[0];
     ws_row->size[0] = nverts;
     emxEnsureCapacity((emxArray__common *)ws_row, ix, (int32_T)sizeof(real_T));
@@ -14637,7 +15517,10 @@ static void polyfit_lhf_surf_point(int32_T v, const int32_T ngbvs[128], int32_T
     if ((*deg > 1) || (!(nverts >= 2))) {
       /* 'polyfit_lhf_surf_point:78' H = [2*cs(3) cs(4); cs(4) 2*cs(5)]; */
       /* 'polyfit_lhf_surf_point:88' else */
-      /* 'polyfit_lhf_surf_point:89' H = coder.nullcopy(zeros(2,2)); */
+      /* 'polyfit_lhf_surf_point:89' H = nullcopy(zeros(2,2)); */
+      /* 'nullcopy:3' if isempty(coder.target) */
+      /* 'nullcopy:12' else */
+      /* 'nullcopy:13' B = coder.nullcopy(A); */
     } else {
       /* 'polyfit_lhf_surf_point:79' elseif deg<=1 && nverts>=2 */
       /* 'polyfit_lhf_surf_point:80' if deg==0 && nverts>=2 */
@@ -14823,19 +15706,28 @@ static void polyfit_lhfgrad_surf_point(int32_T v, const int32_T ngbvs[128],
     t2[2] = nrm[0] * absnrm[1] - nrm[1] * absnrm[0];
 
     /*  Evaluate local coordinate system and weights */
-    /* 'polyfit_lhfgrad_surf_point:36' us = coder.nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'polyfit_lhfgrad_surf_point:36' us = nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = us->size[0] * us->size[1];
     us->size[0] = nverts + 1;
     us->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)us, ix, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhfgrad_surf_point:37' bs = coder.nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'polyfit_lhfgrad_surf_point:37' bs = nullcopy(zeros( nverts+1-int32(interp),2)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = bs->size[0] * bs->size[1];
     bs->size[0] = nverts + 1;
     bs->size[1] = 2;
     emxEnsureCapacity((emxArray__common *)bs, ix, (int32_T)sizeof(real_T));
 
-    /* 'polyfit_lhfgrad_surf_point:38' ws_row = coder.nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'polyfit_lhfgrad_surf_point:38' ws_row = nullcopy(zeros( nverts+1-int32(interp),1)); */
+    /* 'nullcopy:3' if isempty(coder.target) */
+    /* 'nullcopy:12' else */
+    /* 'nullcopy:13' B = coder.nullcopy(A); */
     ix = ws_row->size[0];
     ws_row->size[0] = nverts + 1;
     emxEnsureCapacity((emxArray__common *)ws_row, ix, (int32_T)sizeof(real_T));
@@ -15103,27 +15995,16 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
   int32_T fid_start;
   int8_T loc_best;
   int32_T exitg1;
-  real_T d;
-  boolean_T exitg2;
-  real_T s[3];
-  int32_T b_i;
-  int32_T ix;
-  int32_T iy;
-  int32_T i15;
-  real_T pn[9];
-  real_T J[9];
+  int32_T b_fid;
+  int32_T i20;
+  int32_T i21;
+  real_T b_ps[9];
   real_T b_nrms[9];
-  real_T c_nrms[9];
-  real_T d_nrms[9];
-  real_T T;
-  real_T r_neg[3];
-  real_T S[3];
-  real_T pivot;
-  real_T b_S[2];
+  real_T nc3;
   boolean_T guard1 = FALSE;
-  static const int8_T iv32[3] = { 2, 3, 1 };
+  static const int8_T iv33[3] = { 2, 3, 1 };
 
-  /* 'find_parent_triangle:50' coder.extrinsic('warning'); */
+  /* 'find_parent_triangle:50' coder.extrinsic('warning','fprintf'); */
   /* 'find_parent_triangle:52' next = int32([2 3 1]); */
   /* 'find_parent_triangle:53' tol_dist = 1.e-6; */
   /* 'find_parent_triangle:55' dist_best=realmax; */
@@ -15152,314 +16033,29 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
 
     /* 'find_parent_triangle:63' pnts_elem = ps(tris(fid,1:3),1:3); */
     /* 'find_parent_triangle:64' nrms_elem = nrms(tris(fid,1:3),1:3); */
-    /* 'find_parent_triangle:66' nc = fe2_project_point( pnt, pnts_elem, nrms_elem); */
-    /*  Project a given point onto a given triangle or quadrilateral element. */
-    /*  */
-    /*     [nc, d,inverted] = fe2_project_point( pnt, pnts_elem, nrms_elem, tol) */
-    /*  */
-    /*  Input arguments */
-    /*     pnt: the point to be projected */
-    /*     pnts_elem: the points (n-by-3) of the vertices of the element */
-    /*     nrms_elem: the normals (n-by-3) at the vertices of the element */
-    /*     tol: the stopping criteria for Gauss-Newton iteration for  */
-    /*          nonlinear elements. */
-    /*  Output arguments */
-    /*     nc:  the natural coordinates of the projection of the point */
-    /*          within the element */
-    /*     inverted: it is true if the prism composed of pnts_elem and  */
-    /*          pnts_elem+d*nrms_elems is inverted. It indicates the point is */
-    /*          too far from the triangle. */
-    /*  */
-    /*  The function solves the nonlinear equation */
-    /*   pnts_elem'*shapefunc(xi,eta)+d*(nrms_elem'*shapefunc(xi,eta)') = pnt */
-    /*  using Newton's method to find xi, eta, and d. */
-    /*  */
-    /*  See also fe2_natcoor, fe2_shapefunc */
-    /* 'fe2_project_point:25' if nargin<4 */
-    /* 'fe2_project_point:25' tol=1e-12; */
-    /* 'fe2_project_point:27' nvpe = size( pnts_elem,1); */
-    /* 'fe2_project_point:28' tol2 = tol*tol; */
-    /* 'fe2_project_point:30' d = 0; */
-    d = 0.0;
-
-    /* 'fe2_project_point:31' if nvpe==3 */
-    /* 'fe2_project_point:32' nc = [0.;0.]; */
-    for (i = 0; i < 2; i++) {
-      nc[i] = 0.0;
-    }
-
-    /* 'fe2_project_point:33' for i=1:5 */
-    i = 1;
-    exitg2 = 0U;
-    while ((exitg2 == 0U) && (i <= 5)) {
-      /* 'fe2_project_point:34' [J,N] = Jac(3, nc, d, pnts_elem, nrms_elem); */
-      /*  Compute Jacobian matrix with w.r.t. xi, eta, and d. */
-      /*  3 columns of J contain partial derivatives w.r.t. xi, eta, and d, respectively */
-      /* 'fe2_project_point:76' J = coder.nullcopy(zeros(3,3)); */
-      /* 'fe2_project_point:77' if nvpe==3 */
-      /* 'fe2_project_point:78' N = [1-nc(1)-nc(2); nc(1); nc(2)]; */
-      s[0] = (1.0 - nc[0]) - nc[1];
-      s[1] = nc[0];
-      s[2] = nc[1];
-
-      /* 'fe2_project_point:79' pn = pnts_elem(1:3,:)+d*nrms_elem(1:3,:); */
-      b_i = *fid;
-      ix = *fid;
-      for (iy = 0; iy < 3; iy++) {
-        for (i15 = 0; i15 < 3; i15++) {
-          pn[i15 + 3 * iy] = ps->data[(tris->data[(b_i + tris->size[0] * i15) -
-            1] + ps->size[0] * iy) - 1] + d * nrms->data[(tris->data[(ix +
-            tris->size[0] * i15) - 1] + nrms->size[0] * iy) - 1];
-        }
-      }
-
-      /* 'fe2_project_point:80' J(:,1) = pn(2,:)-pn(1,:); */
-      for (iy = 0; iy < 3; iy++) {
-        J[iy] = pn[1 + 3 * iy] - pn[3 * iy];
-
-        /* 'fe2_project_point:81' J(:,2) = pn(3,:)-pn(1,:); */
-        J[3 + iy] = pn[2 + 3 * iy] - pn[3 * iy];
-      }
-
-      /* 'fe2_project_point:82' J(:,3) = N(1)*nrms_elem(1,:)+N(2)*nrms_elem(2,:)+N(3)*nrms_elem(3,:); */
-      b_i = *fid;
-      for (iy = 0; iy < 3; iy++) {
-        for (i15 = 0; i15 < 3; i15++) {
-          b_nrms[i15 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
-            i15) - 1] + nrms->size[0] * iy) - 1];
-        }
-      }
-
-      b_i = *fid;
-      for (iy = 0; iy < 3; iy++) {
-        for (i15 = 0; i15 < 3; i15++) {
-          c_nrms[i15 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
-            i15) - 1] + nrms->size[0] * iy) - 1];
-        }
-      }
-
-      b_i = *fid;
-      for (iy = 0; iy < 3; iy++) {
-        for (i15 = 0; i15 < 3; i15++) {
-          d_nrms[i15 + 3 * iy] = nrms->data[(tris->data[(b_i + tris->size[0] *
-            i15) - 1] + nrms->size[0] * iy) - 1];
-        }
-      }
-
-      for (iy = 0; iy < 3; iy++) {
-        J[6 + iy] = (s[0] * b_nrms[3 * iy] + s[1] * c_nrms[1 + 3 * iy]) + s[2] *
-          d_nrms[2 + 3 * iy];
-      }
-
-      /* 'fe2_project_point:36' r_neg = (pnts_elem' * N + d*J(:,3) - pnt); */
-      b_i = *fid;
-      for (iy = 0; iy < 3; iy++) {
-        for (i15 = 0; i15 < 3; i15++) {
-          b_nrms[i15 + 3 * iy] = ps->data[(tris->data[(b_i + tris->size[0] * iy)
-            - 1] + ps->size[0] * i15) - 1];
-        }
-      }
-
-      for (iy = 0; iy < 3; iy++) {
-        T = 0.0;
-        for (i15 = 0; i15 < 3; i15++) {
-          T += b_nrms[iy + 3 * i15] * s[i15];
-        }
-
-        r_neg[iy] = (T + d * J[6 + iy]) - pnt[iy];
-      }
-
-      /* 'fe2_project_point:37' s = solve3x3(J, r_neg); */
-      memcpy((void *)&pn[0], (void *)&J[0], 9U * sizeof(real_T));
-
-      /*  Solves a 3x3 linear system with multiple right-hand side vectors */
-      /*  using Gaussian elimination with partial pivoting. */
-      /*      xs=solve3x3(A,bs) */
-      /*      [xs,det]=solve3x3(A,bs) */
-      /*      [xs,det,A,P]=solve3x3(A,bs) */
-      /*  A is a 3-by-3 matrix of coefficients, and B is 3-by-k. */
-      /*  If xs and bs use the same variable, then bs is passed by reference. */
-      /*  If det is specified for output, it also returns the determinant of the matrix. */
-      /*  If A is specified for output, then A is passed by reference, and it */
-      /*  stores the L and U factors at output, with P storing the permutation vector. */
-      /*  */
-      /*  See also solve2x2 */
-      /* 'solve3x3:15' coder.extrinsic('warning'); */
-      /* 'solve3x3:16' if nargout>3 */
-      /* 'solve3x3:18' S = abs(A(1:3,1)); */
-      for (b_i = 0; b_i < 3; b_i++) {
-        s[b_i] = r_neg[b_i];
-        S[b_i] = fabs(J[b_i]);
-      }
-
-      /* 'solve3x3:19' if S(1)>=S(2) && S(1)>=S(3) */
-      if ((S[0] >= S[1]) && (S[0] >= S[2])) {
-        /* 'solve3x3:20' pivot = A(1,1); */
-        pivot = J[0];
-
-        /* 'solve3x3:21' det = pivot; */
-        /* 'solve3x3:22' if (pivot==0) */
-      } else if (S[1] >= S[2]) {
-        /* 'solve3x3:23' elseif S(2)>=S(3) */
-        /* 'solve3x3:24' pivot = A(2,1); */
-        pivot = J[1];
-
-        /* 'solve3x3:25' det = -pivot; */
-        /* 'solve3x3:26' T = A(2,:); */
-        /* 'solve3x3:26' A(2,:)=A(1,:); */
-        for (iy = 0; iy < 3; iy++) {
-          pn[1 + 3 * iy] = J[3 * iy];
-
-          /* 'solve3x3:26' A(1,:)=T; */
-          pn[3 * iy] = J[1 + 3 * iy];
-        }
-
-        /* 'solve3x3:27' T = bs(2,:); */
-        /* 'solve3x3:27' bs(2,:)=bs(1,:); */
-        s[1] = r_neg[0];
-
-        /* 'solve3x3:27' bs(1,:)=T; */
-        s[0] = r_neg[1];
-
-        /* 'solve3x3:28' if nargout>3 */
-      } else {
-        /* 'solve3x3:29' else */
-        /* 'solve3x3:30' if nargout>3 */
-        /* 'solve3x3:31' pivot = A(3,1); */
-        pivot = J[2];
-
-        /* 'solve3x3:32' det = -pivot; */
-        /* 'solve3x3:33' T = A(3,:); */
-        /* 'solve3x3:33' A(3,:)=A(1,:); */
-        for (iy = 0; iy < 3; iy++) {
-          pn[2 + 3 * iy] = J[3 * iy];
-
-          /* 'solve3x3:33' A(1,:)=T; */
-          pn[3 * iy] = J[2 + 3 * iy];
-        }
-
-        /* 'solve3x3:34' T = bs(3,:); */
-        /* 'solve3x3:34' bs(3,:)=bs(1,:); */
-        s[2] = r_neg[0];
-
-        /* 'solve3x3:34' bs(1,:)=T; */
-        s[0] = r_neg[2];
-
-        /* 'solve3x3:35' if nargout>3 */
-      }
-
-      /* 'solve3x3:38' A(2,1) = A(2,1)/pivot; */
-      pn[1] /= pivot;
-
-      /* 'solve3x3:39' A(2,2:end) = A(2,2:end) - A(2,1)*A(1,2:end); */
-      T = pn[1];
-      for (iy = 0; iy < 2; iy++) {
-        pn[1 + 3 * (1 + iy)] -= T * pn[3 * (1 + iy)];
-      }
-
-      /* 'solve3x3:40' bs(2,:) = bs(2,:) - A(2,1)*bs(1,:); */
-      s[1] -= pn[1] * s[0];
-
-      /* 'solve3x3:42' A(3,1) = A(3,1)/pivot; */
-      pn[2] /= pivot;
-
-      /* 'solve3x3:43' A(3,2:end) = A(3,2:end) - A(3,1)*A(1,2:end); */
-      T = pn[2];
-      for (iy = 0; iy < 2; iy++) {
-        pn[2 + 3 * (1 + iy)] -= T * pn[3 * (1 + iy)];
-      }
-
-      /* 'solve3x3:44' bs(3,:) = bs(3,:) - A(3,1)*bs(1,:); */
-      s[2] -= pn[2] * s[0];
-
-      /* 'solve3x3:46' S = abs(A(2:3,2)); */
-      for (b_i = 0; b_i < 2; b_i++) {
-        b_S[b_i] = fabs(pn[b_i + 4]);
-      }
-
-      /* 'solve3x3:47' if S(1) >= S(2) */
-      if (b_S[0] >= b_S[1]) {
-        /* 'solve3x3:48' pivot = A(2,2); */
-        pivot = pn[4];
-
-        /* 'solve3x3:49' det = det*pivot; */
-        /* 'solve3x3:50' if (pivot==0) */
-      } else {
-        /* 'solve3x3:51' else */
-        /* 'solve3x3:52' pivot = A(3,2); */
-        pivot = pn[5];
-
-        /* 'solve3x3:53' det = -det*pivot; */
-        /* 'solve3x3:54' T = A(3,:); */
-        /* 'solve3x3:54' A(3,:)=A(2,:); */
-        for (iy = 0; iy < 3; iy++) {
-          T = pn[2 + 3 * iy];
-          pn[2 + 3 * iy] = pn[1 + 3 * iy];
-
-          /* 'solve3x3:54' A(2,:)=T; */
-          pn[1 + 3 * iy] = T;
-        }
-
-        /* 'solve3x3:55' T = bs(3,:); */
-        T = s[2];
-
-        /* 'solve3x3:55' bs(3,:)=bs(2,:); */
-        s[2] = s[1];
-
-        /* 'solve3x3:55' bs(2,:)=T; */
-        s[1] = T;
-
-        /* 'solve3x3:56' if nargout>3 */
-      }
-
-      /* 'solve3x3:59' A(3,2) = A(3,2)/pivot; */
-      pn[5] /= pivot;
-
-      /* 'solve3x3:60' A(3,3) = A(3,3) - A(3,2)*A(2,3); */
-      pn[8] -= pn[5] * pn[7];
-
-      /* 'solve3x3:61' bs(3,:) = bs(3,:) - A(3,2)*bs(2,:); */
-      s[2] -= pn[5] * s[1];
-
-      /* 'solve3x3:62' if (A(3,3)== 0) */
-      /* 'solve3x3:63' det = det*A(3,3); */
-      /* 'solve3x3:65' bs(3,:) = bs(3,:) / A(3,3); */
-      s[2] /= pn[8];
-
-      /* 'solve3x3:66' bs(2,:) = (bs(2,:) - A(2,3)*bs(3,:)) / A(2,2); */
-      s[1] = (s[1] - pn[7] * s[2]) / pn[4];
-
-      /* 'solve3x3:67' bs(1,:) = (bs(1,:) - A(1,3)*bs(3,:) - A(1,2)*bs(2,:)) / A(1,1); */
-      s[0] = ((s[0] - pn[6] * s[2]) - pn[3] * s[1]) / pn[0];
-
-      /* 'fe2_project_point:38' nc = nc-s(1:2); */
-      for (iy = 0; iy < 2; iy++) {
-        nc[iy] -= s[iy];
-      }
-
-      /* 'fe2_project_point:39' d = d-s(3); */
-      d -= s[2];
-
-      /* 'fe2_project_point:41' err = s'*s; */
-      T = 0.0;
-      ix = 0;
-      iy = 0;
-      for (b_i = 0; b_i < 3; b_i++) {
-        T += s[ix] * s[iy];
-        ix++;
-        iy++;
-      }
-
-      /* 'fe2_project_point:42' if err < tol2 */
-      if (T < 1.0E-24) {
-        exitg2 = 1U;
-      } else {
-        i++;
+    /* 'find_parent_triangle:65' flag = int32(0); */
+    /* 'find_parent_triangle:66' [flag,nc] = fe2_project_point_new( pnt, pnts_elem, nrms_elem, flag); */
+    i = 0;
+    b_fid = *fid;
+    for (i20 = 0; i20 < 3; i20++) {
+      for (i21 = 0; i21 < 3; i21++) {
+        b_ps[i21 + 3 * i20] = ps->data[(tris->data[(b_fid + tris->size[0] * i21)
+          - 1] + ps->size[0] * i20) - 1];
       }
     }
 
-    /* 'fe2_project_point:59' if nargout>1 */
-    /* 'find_parent_triangle:67' loc = fe2_encode_location( 3, nc, tol_dist ); */
+    b_fid = *fid;
+    for (i20 = 0; i20 < 3; i20++) {
+      for (i21 = 0; i21 < 3; i21++) {
+        b_nrms[i21 + 3 * i20] = nrms->data[(tris->data[(b_fid + tris->size[0] *
+          i21) - 1] + nrms->size[0] * i20) - 1];
+      }
+    }
+
+    fe2_project_point_new(pnt, b_ps, b_nrms, &i, nc);
+
+    /* 'find_parent_triangle:67' if (flag ~= 0) */
+    /* 'find_parent_triangle:70' loc = fe2_encode_location( 3, nc, tol_dist ); */
     /*  Encode the location of a point within a triangle or quadrilateral element */
     /*  */
     /*  At input, nc is 1x2 or 2-by-1 and stores the natural coordinates of PNT. */
@@ -15486,10 +16082,10 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
     /* 'fe2_encode_location:27' if nvpe==3 || nvpe==6 */
     /*  Assign location for triangle */
     /* 'fe2_encode_location:29' nc3 = 1-nc(1)-nc(2); */
-    T = (1.0 - nc[0]) - nc[1];
+    nc3 = (1.0 - nc[0]) - nc[1];
 
     /* 'fe2_encode_location:30' if nc(1)>tol && nc(2)>tol && nc3>tol */
-    if ((nc[0] > 1.0E-6) && (nc[1] > 1.0E-6) && (T > 1.0E-6)) {
+    if ((nc[0] > 1.0E-6) && (nc[1] > 1.0E-6) && (nc3 > 1.0E-6)) {
       /* 'fe2_encode_location:31' loc = int8(0); */
       *loc = 0;
 
@@ -15497,7 +16093,7 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
     } else if (nc[0] > 1.0E-6) {
       /* 'fe2_encode_location:32' elseif nc(1)>tol */
       /* 'fe2_encode_location:33' if nc3>tol */
-      if (T > 1.0E-6) {
+      if (nc3 > 1.0E-6) {
         /* 'fe2_encode_location:34' loc = int8(1); */
         *loc = 1;
 
@@ -15521,7 +16117,7 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
       *loc = 4;
 
       /*  Vertex 1 */
-    } else if (T <= 1.0E-6) {
+    } else if (nc3 <= 1.0E-6) {
       /* 'fe2_encode_location:42' elseif nc3<=tol */
       /* 'fe2_encode_location:43' loc = int8(6); */
       *loc = 6;
@@ -15536,125 +16132,125 @@ static void project_onto_one_ring(const real_T pnt[3], int32_T *fid, int32_T lid
     }
 
     /*  compute shortest distance to boundary */
-    /* 'find_parent_triangle:70' switch loc */
+    /* 'find_parent_triangle:73' switch loc */
     guard1 = FALSE;
     switch (*loc) {
      case 0:
-      /* 'find_parent_triangle:71' case 0 */
-      /* 'find_parent_triangle:72' dist = 0; */
+      /* 'find_parent_triangle:74' case 0 */
+      /* 'find_parent_triangle:75' dist = 0; */
       *dist = 0.0;
       exitg1 = 1U;
       break;
 
      case 1:
-      /* 'find_parent_triangle:73' case 1 */
-      /* 'find_parent_triangle:74' dist = -nc(2); */
+      /* 'find_parent_triangle:76' case 1 */
+      /* 'find_parent_triangle:77' dist = -nc(2); */
       *dist = -nc[1];
       guard1 = TRUE;
       break;
 
      case 2:
-      /* 'find_parent_triangle:75' case 2 */
-      /* 'find_parent_triangle:76' dist = nc(1)+nc(2)-1; */
+      /* 'find_parent_triangle:78' case 2 */
+      /* 'find_parent_triangle:79' dist = nc(1)+nc(2)-1; */
       *dist = (nc[0] + nc[1]) - 1.0;
       guard1 = TRUE;
       break;
 
      case 3:
-      /* 'find_parent_triangle:77' case 3 */
-      /* 'find_parent_triangle:78' dist = -nc(1); */
+      /* 'find_parent_triangle:80' case 3 */
+      /* 'find_parent_triangle:81' dist = -nc(1); */
       *dist = -nc[0];
       guard1 = TRUE;
       break;
 
      case 4:
-      /* 'find_parent_triangle:79' case 4 */
-      /* 'find_parent_triangle:80' dist = sqrt(nc(1)*nc(1)+nc(2)*nc(2)); */
+      /* 'find_parent_triangle:82' case 4 */
+      /* 'find_parent_triangle:83' dist = sqrt(nc(1)*nc(1)+nc(2)*nc(2)); */
       *dist = sqrt(nc[0] * nc[0] + nc[1] * nc[1]);
       guard1 = TRUE;
       break;
 
      case 5:
-      /* 'find_parent_triangle:81' case 5 */
-      /* 'find_parent_triangle:82' dist = sqrt((1-nc(1))*(1-nc(1))+nc(2)*nc(2)); */
+      /* 'find_parent_triangle:84' case 5 */
+      /* 'find_parent_triangle:85' dist = sqrt((1-nc(1))*(1-nc(1))+nc(2)*nc(2)); */
       *dist = sqrt((1.0 - nc[0]) * (1.0 - nc[0]) + nc[1] * nc[1]);
       guard1 = TRUE;
       break;
 
      case 6:
-      /* 'find_parent_triangle:83' case 6 */
-      /* 'find_parent_triangle:84' dist = sqrt(nc(1)*nc(1)+(1-nc(2))*(1-nc(2))); */
+      /* 'find_parent_triangle:86' case 6 */
+      /* 'find_parent_triangle:87' dist = sqrt(nc(1)*nc(1)+(1-nc(2))*(1-nc(2))); */
       *dist = sqrt(nc[0] * nc[0] + (1.0 - nc[1]) * (1.0 - nc[1]));
       guard1 = TRUE;
       break;
 
      default:
-      /* 'find_parent_triangle:85' otherwise */
-      /* 'find_parent_triangle:86' dist = realmax; */
+      /* 'find_parent_triangle:88' otherwise */
+      /* 'find_parent_triangle:89' dist = realmax; */
       *dist = 1.7976931348623157E+308;
       guard1 = TRUE;
       break;
     }
 
     if (guard1 == TRUE) {
-      /* 'find_parent_triangle:88' if dist<tol_dist */
+      /* 'find_parent_triangle:91' if dist<tol_dist */
       if (*dist < 1.0E-6) {
         exitg1 = 1U;
       } else {
-        /* 'find_parent_triangle:90' if dist<dist_best */
+        /* 'find_parent_triangle:93' if dist<dist_best */
         if (*dist < dist_best) {
-          /* 'find_parent_triangle:91' dist_best = dist; */
+          /* 'find_parent_triangle:94' dist_best = dist; */
           dist_best = *dist;
 
-          /* 'find_parent_triangle:91' nc_best = nc; */
+          /* 'find_parent_triangle:94' nc_best = nc; */
           for (i = 0; i < 2; i++) {
             nc_best[i] = nc[i];
           }
 
-          /* 'find_parent_triangle:91' fid_best = fid; */
+          /* 'find_parent_triangle:94' fid_best = fid; */
           fid_best = *fid;
 
-          /* 'find_parent_triangle:91' loc_best = loc; */
+          /* 'find_parent_triangle:94' loc_best = loc; */
           loc_best = *loc;
         }
 
-        /* 'find_parent_triangle:94' fid_next = heid2fid( opphes( fid, lid)); */
+        /* 'find_parent_triangle:97' fid_next = heid2fid( opphes( fid, lid)); */
         /*  HEID2FID   Obtains face ID from half-edge ID. */
         /* 'heid2fid:3' coder.inline('always'); */
         /* 'heid2fid:4' fid = int32(bitshift(uint32(heid), -2)); */
-        b_i = (int32_T)((uint32_T)opphes->data[(*fid + opphes->size[0] * (lid -
-          1)) - 1] >> 2U);
+        i = (int32_T)((uint32_T)opphes->data[(*fid + opphes->size[0] * (lid - 1))
+                      - 1] >> 2U);
 
-        /* 'find_parent_triangle:95' if fid_next ==0 || fid_next == fid_start */
-        if ((b_i == 0) || (b_i == fid_start)) {
-          /* 'find_parent_triangle:107' fid=fid_best; */
+        /* 'find_parent_triangle:98' if fid_next ==0 || fid_next == fid_start */
+        if ((i == 0) || (i == fid_start)) {
+          /* 'find_parent_triangle:110' fid=fid_best; */
           *fid = fid_best;
 
-          /* 'find_parent_triangle:107' nc=nc_best; */
+          /* 'find_parent_triangle:110' nc=nc_best; */
           for (i = 0; i < 2; i++) {
             nc[i] = nc_best[i];
           }
 
-          /* 'find_parent_triangle:107' loc=loc_best; */
+          /* 'find_parent_triangle:110' loc=loc_best; */
           *loc = loc_best;
 
-          /* 'find_parent_triangle:107' dist=dist_best; */
+          /* 'find_parent_triangle:110' dist=dist_best; */
           *dist = dist_best;
           exitg1 = 1U;
         } else {
-          /* 'find_parent_triangle:98' lid_next = next(heid2leid( opphes( fid, lid))); */
+          /* 'find_parent_triangle:101' lid_next = next(heid2leid( opphes( fid, lid))); */
           /*  HEID2LEID   Obtains local edge ID within a face from half-edge ID. */
           /* 'heid2leid:3' coder.inline('always'); */
           /* 'heid2leid:4' leid = int32(bitand(uint32(heid),3))+1; */
-          lid = (int32_T)iv32[(int32_T)((uint32_T)opphes->data[(*fid +
+          lid = (int32_T)iv33[(int32_T)((uint32_T)opphes->data[(*fid +
             opphes->size[0] * (lid - 1)) - 1] & 3U)];
 
-          /* 'find_parent_triangle:100' fid = fid_next; */
-          *fid = b_i;
+          /* 'find_parent_triangle:103' fid = fid_next; */
+          *fid = i;
 
-          /* 'find_parent_triangle:100' lid = lid_next; */
-          /* 'find_parent_triangle:101' count = count + 1; */
-          /* 'find_parent_triangle:102' if (count>100) */
+          /* 'find_parent_triangle:103' lid = lid_next; */
+          /* 'find_parent_triangle:104' count = count + 1; */
+          /* 'find_parent_triangle:105' if (count>100) */
         }
       }
     }
@@ -15697,7 +16293,10 @@ static int32_T qr_safeguarded(emxArray_real_T *A, int32_T ncols, emxArray_real_T
   /* 'qr_safeguarded:16' nrows = int32(size(A,1)); */
   nrows = A->size[0];
 
-  /* 'qr_safeguarded:17' v = coder.nullcopy(zeros(nrows,1)); */
+  /* 'qr_safeguarded:17' v = nullcopy(zeros(nrows,1)); */
+  /* 'nullcopy:3' if isempty(coder.target) */
+  /* 'nullcopy:12' else */
+  /* 'nullcopy:13' B = coder.nullcopy(A); */
   jj = v->size[0];
   v->size[0] = nrows;
   emxEnsureCapacity((emxArray__common *)v, jj, (int32_T)sizeof(real_T));
@@ -15806,14 +16405,14 @@ static int32_T qr_safeguarded(emxArray_real_T *A, int32_T ncols, emxArray_real_T
 static void rdivide(const emxArray_real_T *x, const emxArray_real_T *y,
                     emxArray_real_T *z)
 {
-  int32_T i5;
+  int32_T i7;
   int32_T loop_ub;
-  i5 = z->size[0];
+  i7 = z->size[0];
   z->size[0] = x->size[0];
-  emxEnsureCapacity((emxArray__common *)z, i5, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)z, i7, (int32_T)sizeof(real_T));
   loop_ub = x->size[0] - 1;
-  for (i5 = 0; i5 <= loop_ub; i5++) {
-    z->data[i5] = x->data[i5] / y->data[i5];
+  for (i7 = 0; i7 <= loop_ub; i7++) {
+    z->data[i7] = x->data[i7] / y->data[i7];
   }
 }
 
@@ -15824,7 +16423,7 @@ static void repmat(real_T m, emxArray_real_T *b)
 {
   real_T d1;
   int32_T b_m[2];
-  int32_T i4;
+  int32_T i6;
   int32_T outsize[2];
   int32_T loop_ub;
   d1 = m;
@@ -15834,16 +16433,16 @@ static void repmat(real_T m, emxArray_real_T *b)
 
   b_m[0] = (int32_T)d1;
   b_m[1] = 1;
-  for (i4 = 0; i4 < 2; i4++) {
-    outsize[i4] = b_m[i4];
+  for (i6 = 0; i6 < 2; i6++) {
+    outsize[i6] = b_m[i6];
   }
 
-  i4 = b->size[0];
+  i6 = b->size[0];
   b->size[0] = outsize[0];
-  emxEnsureCapacity((emxArray__common *)b, i4, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)b, i6, (int32_T)sizeof(real_T));
   loop_ub = outsize[0] - 1;
-  for (i4 = 0; i4 <= loop_ub; i4++) {
-    b->data[i4] = 1.0E-100;
+  for (i6 = 0; i6 <= loop_ub; i6++) {
+    b->data[i6] = 1.0E-100;
   }
 }
 
@@ -15855,7 +16454,7 @@ static void rescale_displacements(const emxArray_real_T *xs, const
 {
   int32_T nv;
   int32_T ntri;
-  int32_T i17;
+  int32_T i16;
   int32_T ii;
   real_T b_us[9];
   boolean_T x[9];
@@ -15869,37 +16468,37 @@ static void rescale_displacements(const emxArray_real_T *xs, const
   /* RESCALE_DISPLACEMENTS */
   /*  Given layers of surfaces and the displacement of a particular layer, */
   /*  scale the vertex displacements to avoid folding */
-  /* 'async_scale_disps_tri_cleanmesh:40' coder.inline('never') */
-  /* 'async_scale_disps_tri_cleanmesh:41' nv   = int32(size(xs,1)); */
+  /* 'async_scale_disps_tri_cleanmesh:39' coder.inline('never') */
+  /* 'async_scale_disps_tri_cleanmesh:40' nv   = int32(size(xs,1)); */
   nv = xs->size[0];
 
-  /* 'async_scale_disps_tri_cleanmesh:42' ntri = int32(size(tris,1)); */
+  /* 'async_scale_disps_tri_cleanmesh:41' ntri = int32(size(tris,1)); */
   ntri = tris->size[0];
 
-  /* 'async_scale_disps_tri_cleanmesh:43' alpha_vs = ones(nv,1); */
-  i17 = alpha_vs->size[0];
+  /* 'async_scale_disps_tri_cleanmesh:42' alpha_vs = ones(nv,1); */
+  i16 = alpha_vs->size[0];
   alpha_vs->size[0] = nv;
-  emxEnsureCapacity((emxArray__common *)alpha_vs, i17, (int32_T)sizeof(real_T));
+  emxEnsureCapacity((emxArray__common *)alpha_vs, i16, (int32_T)sizeof(real_T));
   nv--;
-  for (i17 = 0; i17 <= nv; i17++) {
-    alpha_vs->data[i17] = 1.0;
+  for (i16 = 0; i16 <= nv; i16++) {
+    alpha_vs->data[i16] = 1.0;
   }
 
-  /* 'async_scale_disps_tri_cleanmesh:45' for ii=1:ntri */
+  /* 'async_scale_disps_tri_cleanmesh:44' for ii=1:ntri */
   for (ii = 0; ii + 1 <= ntri; ii++) {
-    /* 'async_scale_disps_tri_cleanmesh:46' vs = tris(ii,1:3); */
-    /* 'async_scale_disps_tri_cleanmesh:47' if nargin>6 && all(alpha_in(vs)==1) */
-    /* 'async_scale_disps_tri_cleanmesh:52' us_tri = us(vs,1:3); */
-    /* 'async_scale_disps_tri_cleanmesh:53' if all(us_tri(:)==0) */
-    for (i17 = 0; i17 < 3; i17++) {
+    /* 'async_scale_disps_tri_cleanmesh:45' vs = tris(ii,1:3); */
+    /* 'async_scale_disps_tri_cleanmesh:46' if nargin>6 && all(alpha_in(vs)==1) */
+    /* 'async_scale_disps_tri_cleanmesh:51' us_tri = us(vs,1:3); */
+    /* 'async_scale_disps_tri_cleanmesh:52' if all(us_tri(:)==0) */
+    for (i16 = 0; i16 < 3; i16++) {
       for (nv = 0; nv < 3; nv++) {
-        b_us[nv + 3 * i17] = us->data[(tris->data[ii + tris->size[0] * nv] +
-          us->size[0] * i17) - 1];
+        b_us[nv + 3 * i16] = us->data[(tris->data[ii + tris->size[0] * nv] +
+          us->size[0] * i16) - 1];
       }
     }
 
-    for (i17 = 0; i17 < 9; i17++) {
-      x[i17] = (b_us[i17] == 0.0);
+    for (i16 = 0; i16 < 9; i16++) {
+      x[i16] = (b_us[i16] == 0.0);
     }
 
     y = TRUE;
@@ -15916,40 +16515,40 @@ static void rescale_displacements(const emxArray_real_T *xs, const
 
     if (y) {
     } else {
-      /* 'async_scale_disps_tri_cleanmesh:55' alpha_tri = check_prism( xs(vs,1:3), us_tri); */
-      for (i17 = 0; i17 < 3; i17++) {
+      /* 'async_scale_disps_tri_cleanmesh:54' alpha_tri = check_prism( xs(vs,1:3), us_tri); */
+      for (i16 = 0; i16 < 3; i16++) {
         for (nv = 0; nv < 3; nv++) {
-          b_xs[nv + 3 * i17] = xs->data[(tris->data[ii + tris->size[0] * nv] +
-            xs->size[0] * i17) - 1];
+          b_xs[nv + 3 * i16] = xs->data[(tris->data[ii + tris->size[0] * nv] +
+            xs->size[0] * i16) - 1];
         }
       }
 
-      for (i17 = 0; i17 < 3; i17++) {
+      for (i16 = 0; i16 < 3; i16++) {
         for (nv = 0; nv < 3; nv++) {
-          b_us[nv + 3 * i17] = us->data[(tris->data[ii + tris->size[0] * nv] +
-            us->size[0] * i17) - 1];
+          b_us[nv + 3 * i16] = us->data[(tris->data[ii + tris->size[0] * nv] +
+            us->size[0] * i16) - 1];
         }
       }
 
       alpha_tri = check_prism(b_xs, b_us);
 
-      /* 'async_scale_disps_tri_cleanmesh:57' if alpha_tri < tol */
+      /* 'async_scale_disps_tri_cleanmesh:56' if alpha_tri < tol */
       if (alpha_tri < 0.1) {
-        /* 'async_scale_disps_tri_cleanmesh:57' alpha_tri = 0.5*alpha_tri; */
+        /* 'async_scale_disps_tri_cleanmesh:56' alpha_tri = 0.5*alpha_tri; */
         alpha_tri *= 0.5;
       }
 
-      /* 'async_scale_disps_tri_cleanmesh:59' if alpha_tri<1 */
+      /* 'async_scale_disps_tri_cleanmesh:58' if alpha_tri<1 */
       if (alpha_tri < 1.0) {
-        /* 'async_scale_disps_tri_cleanmesh:60' alpha_vs(vs) = min( alpha_vs(vs), alpha_tri); */
+        /* 'async_scale_disps_tri_cleanmesh:59' alpha_vs(vs) = min( alpha_vs(vs), alpha_tri); */
         for (nv = 0; nv < 3; nv++) {
           u0 = alpha_vs->data[tris->data[ii + tris->size[0] * nv] - 1];
           u0 = u0 <= alpha_tri ? u0 : alpha_tri;
           minval[nv] = u0;
         }
 
-        for (i17 = 0; i17 < 3; i17++) {
-          alpha_vs->data[tris->data[ii + tris->size[0] * i17] - 1] = minval[i17];
+        for (i16 = 0; i16 < 3; i16++) {
+          alpha_vs->data[tris->data[ii + tris->size[0] * i16] - 1] = minval[i16];
         }
       }
     }
@@ -16009,97 +16608,632 @@ static void rescale_matrix(emxArray_real_T *V, int32_T ncols, emxArray_real_T
 }
 
 /*
- * function [us_smooth,scaled] = smoothing_single_iteration(nv_clean, xs, tris,...
- *     nrms, opphes, isridge, ridgeedge, flabel, scaled, min_angle, angletol_min,...
- *     refareas2, mu, check_trank, hisurf_args, verbose)
+ * function [us_smooth]= scale_one_ring_cleanmesh(nv_clean, xs, tris, nrms, us_smooth, opphes)
  */
-static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
-  *xs, const emxArray_int32_T *tris, const emxArray_real_T *nrms, const
-  emxArray_int32_T *opphes, const emxArray_boolean_T *isridge, const
-  emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, boolean_T
-  *scaled, real_T min_angle, boolean_T check_trank, const char_T
-  hisurf_args_method[3], int32_T hisurf_args_degree, int32_T verbose,
-  emxArray_real_T *us_smooth, hiPropMesh *pmesh)
+static void scale_one_ring_cleanmesh(int32_T nv_clean, const emxArray_real_T *xs,
+  const emxArray_int32_T *tris, const emxArray_real_T *nrms, emxArray_real_T
+  *us_smooth, const emxArray_int32_T *opphes)
 {
+  emxArray_int32_T *v2he;
+  int32_T ii;
   int32_T count;
-  boolean_T exitg1;
-  boolean_T b_scaled;
+  int32_T fid;
+  int32_T ix;
+  real_T pnt[3];
+  int32_T lid_next;
+  int32_T b_fid;
+  real_T dist_best;
+  int32_T fid_best;
+  int8_T loc_best;
+  int32_T exitg2;
+  int32_T flag;
+  real_T d;
+  int32_T i;
+  real_T nc[2];
+  boolean_T exitg3;
+  real_T N[3];
+  int32_T iy;
+  real_T pn[9];
+  real_T J[9];
+  real_T b_nrms[9];
+  real_T c_nrms[9];
+  real_T err;
+  real_T s[3];
+  int32_T k;
+  int8_T loc;
+  boolean_T guard1 = FALSE;
+  static const int8_T iv32[3] = { 2, 3, 1 };
 
-  /* 'smoothing_single_iteration:4' coder.extrinsic('warning') */
-  /* 'smoothing_single_iteration:5' coder.inline('never') */
-  /* % Smoothing iteration */
-  /* 'smoothing_single_iteration:7' tol = 0.1; */
-  /* 'smoothing_single_iteration:8' if scaled || min_angle < angletol_min */
-  if ((*scaled) || (min_angle < 5.0)) {
-    /*  Step 1: Weighted Laplacian Smoothing */
-    /* 'smoothing_single_iteration:10' us_smooth = weighted_Laplacian_tri_cleanmesh(nv_clean,xs, tris, isridge, ridgeedge, flabel,check_trank); */
-    c_weighted_Laplacian_tri_cleanm(nv_clean, xs, tris, isridge, ridgeedge,
-      flabel, check_trank, us_smooth);
+  int32_T exitg1;
+  emxInit_int32_T(&v2he, 1);
 
-    /*  Step 2: */
-    /* 'smoothing_single_iteration:13' us_smooth = adjust_disps_onto_hisurf_cleanmesh(nv_clean, xs, us_smooth, nrms, ... */
-    /* 'smoothing_single_iteration:14'         tris, opphes, isridge, ridgeedge, flabel, hisurf_args); */
-    c_adjust_disps_onto_hisurf_clea(nv_clean, xs, us_smooth, nrms, tris, opphes,
-      hisurf_args_method, hisurf_args_degree);
+  /*  This function scales the displacements of "nv_clean" points so that the */
+  /*  new point positions do not lie outside the 1-ring neighborhood of the old */
+  /*  */
+  /* 'scale_one_ring_cleanmesh:5' coder.extrinsic('fprintf') */
+  /* 'scale_one_ring_cleanmesh:6' coder.inline('never') */
+  /* % */
+  /* 'scale_one_ring_cleanmesh:8' v2he = determine_incident_halfedges(tris, opphes); */
+  c_determine_incident_halfedges(tris, opphes, v2he);
 
-    /*  Step 3:(a) Update variable "us_smooth" of "nv_clean" pnts */
-    /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
-    hpUpdateGhostPointData_real_T(pmesh, us_smooth);
-  } else {
-    /* 'smoothing_single_iteration:18' else */
-    /*  Step 4: Isometric Smoothing */
-    /* 'smoothing_single_iteration:20' us_smooth = ismooth_trimesh_cleanmesh(nv_clean,xs, tris, isridge, flabel, refareas2, mu, check_trank); */
-    ismooth_trimesh_cleanmesh(nv_clean, xs, tris, isridge, flabel, check_trank,
-      us_smooth);
+  /* 'scale_one_ring_cleanmesh:9' tol_dist = 1.e-6; */
+  /* 'scale_one_ring_cleanmesh:10' alpha = 0.7; */
+  /* 'scale_one_ring_cleanmesh:11' for ii=1:nv_clean */
+  for (ii = 0; ii + 1 <= nv_clean; ii++) {
+    /* 'scale_one_ring_cleanmesh:12' count = int32(1); */
+    count = 1;
 
-    /* us_smooth = onering_scale_disps_tri_cleanmesh(nv_clean, xs, tris, nrms, us_smooth, opphes); */
-    /*  Step 5:(a) Update variable "us_smooth" of "nv_clean" pnts */
-    /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
-    hpUpdateGhostPointData_real_T(pmesh, us_smooth);
-    /*  Step 6: Asynchronously rescale tangential displacements. */
-    /* 'smoothing_single_iteration:27' [us_smooth,escaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
-    async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, pmesh);
+    /* 'scale_one_ring_cleanmesh:13' heid = v2he(ii); */
+    /* 'scale_one_ring_cleanmesh:14' fid = heid2fid(heid); */
+    /*  HEID2FID   Obtains face ID from half-edge ID. */
+    /* 'heid2fid:3' coder.inline('always'); */
+    /* 'heid2fid:4' fid = int32(bitshift(uint32(heid), -2)); */
+    fid = (int32_T)((uint32_T)v2he->data[ii] >> 2U);
 
-    /*  Adjust the displacements onto the high order surface */
-    /* 'smoothing_single_iteration:30' scaled = true; */
-    *scaled = TRUE;
+    /* 'scale_one_ring_cleanmesh:14' lid = heid2leid(heid); */
+    /*  HEID2LEID   Obtains local edge ID within a face from half-edge ID. */
+    /* 'heid2leid:3' coder.inline('always'); */
+    /* 'heid2leid:4' leid = int32(bitand(uint32(heid),3))+1; */
+    /* 'scale_one_ring_cleanmesh:15' pnt = (xs(ii,1:3)+us_smooth(ii,1:3))'; */
+    for (ix = 0; ix < 3; ix++) {
+      pnt[ix] = xs->data[ii + xs->size[0] * ix] + us_smooth->data[ii +
+        us_smooth->size[0] * ix];
+    }
 
-    /* 'smoothing_single_iteration:30' count=int32(0); */
-    count = 0;
+    /* 'scale_one_ring_cleanmesh:16' [fid, ~, ~, loc, dist] = project_onto_one_ring(pnt, fid, lid, xs, nrms, tris, opphes); */
+    lid_next = (int32_T)((uint32_T)v2he->data[ii] & 3U);
+    b_fid = fid - 1;
 
-    /* 'smoothing_single_iteration:31' while scaled */
-    exitg1 = 0U;
-    while ((exitg1 == 0U) && (*scaled)) {
-      /*  Step 7: Adjusting displacements onto the high order surface */
-      /* 'smoothing_single_iteration:33' us_smooth = adjust_disps_onto_hisurf_cleanmesh(nv_clean, xs, us_smooth, nrms, ... */
-      /* 'smoothing_single_iteration:34'             tris, opphes, isridge, ridgeedge, flabel, hisurf_args); */
-      c_adjust_disps_onto_hisurf_clea(nv_clean, xs, us_smooth, nrms, tris,
-        opphes, hisurf_args_method, hisurf_args_degree);
+    /* % */
+    /* 'scale_one_ring_cleanmesh:55' coder.extrinsic('warning','fprintf'); */
+    /* 'scale_one_ring_cleanmesh:57' next = int32([2 3 1]); */
+    /* 'scale_one_ring_cleanmesh:58' tol_dist = 1.e-6; */
+    /* 'scale_one_ring_cleanmesh:60' dist_best=realmax; */
+    dist_best = 1.7976931348623157E+308;
 
-      /*  Step 8:(a) Update variable "us_smooth" of "nv_clean" pnts */
-      /*  (b) Communicate variable "us_smooth" of ghost pnts (>nv_clean) */
-      hpUpdateGhostPointData_real_T(pmesh, us_smooth);
-      /*  Step 9: Asynchronously rescale tangential displacements. */
-      /* 'smoothing_single_iteration:40' [us_smooth,scaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
-      b_scaled = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, pmesh);
-      *scaled = b_scaled;
+    /* 'scale_one_ring_cleanmesh:60' fid_best=int32(0); */
+    fid_best = -1;
 
-      /* 'smoothing_single_iteration:41' if ~scaled */
-      if (!b_scaled) {
-        exitg1 = 1U;
-      } else {
-        /* 'smoothing_single_iteration:43' else */
-        /* 'smoothing_single_iteration:44' count = count+1; */
-        count++;
+    /* 'scale_one_ring_cleanmesh:61' nc_best = [realmax;realmax]; */
+    /* 'scale_one_ring_cleanmesh:61' loc_best = int8(0); */
+    loc_best = 0;
 
-        /* 'smoothing_single_iteration:45' if count>4 */
-        if (count > 4) {
-          /* 'smoothing_single_iteration:46' if verbose>1 */
-          exitg1 = 1U;
+    /*  Loop through the one-ring around the origin vertex of heid */
+    /*  in counterclockwise order, and choose the "best" projection. */
+    /* 'scale_one_ring_cleanmesh:65' fid_start = fid; */
+    /* 'scale_one_ring_cleanmesh:66' count = int32(1); */
+    /* 'scale_one_ring_cleanmesh:68' while true */
+    do {
+      exitg2 = 0U;
+
+      /* 'scale_one_ring_cleanmesh:69' pnts_elem = ps(tris(fid,1:3),1:3); */
+      /* 'scale_one_ring_cleanmesh:70' nrms_elem = nrms(tris(fid,1:3),1:3); */
+      /* 'scale_one_ring_cleanmesh:71' flag = int32(0); */
+      /* 'scale_one_ring_cleanmesh:72' [flag,nc,d] = fe2_project_point_new( pnt, pnts_elem, nrms_elem, flag); */
+      flag = 0;
+
+      /*  Project a given point onto a given triangle or quadrilateral element. */
+      /*  */
+      /*     [nc, d,inverted] = fe2_project_point( pnt, pnts_elem, nrms_elem, tol) */
+      /*  */
+      /*  Input arguments */
+      /*     pnt: the point to be projected */
+      /*     pnts_elem: the points (n-by-3) of the vertices of the element */
+      /*     nrms_elem: the normals (n-by-3) at the vertices of the element */
+      /*     tol: the stopping criteria for Gauss-Newton iteration for  */
+      /*          nonlinear elements. */
+      /*  Output arguments */
+      /*     nc:  the natural coordinates of the projection of the point */
+      /*          within the element */
+      /*     inverted: it is true if the prism composed of pnts_elem and  */
+      /*          pnts_elem+d*nrms_elems is inverted. It indicates the point is */
+      /*          too far from the triangle. */
+      /*  */
+      /*  The function solves the nonlinear equation */
+      /*   pnts_elem'*shapefunc(xi,eta)+d*(nrms_elem'*shapefunc(xi,eta)') = pnt */
+      /*  using Newton's method to find xi, eta, and d. */
+      /*  */
+      /*  See also fe2_natcoor, fe2_shapefunc */
+      /* 'fe2_project_point_new:25' if nargin<5 */
+      /* 'fe2_project_point_new:25' tol=1e-12; */
+      /* 'fe2_project_point_new:27' nvpe = size( pnts_elem,1); */
+      /* 'fe2_project_point_new:28' tol2 = tol*tol; */
+      /* 'fe2_project_point_new:30' d = 0; */
+      d = 0.0;
+
+      /* 'fe2_project_point_new:31' if nvpe==3 */
+      /* 'fe2_project_point_new:32' nc = [0.;0.]; */
+      for (i = 0; i < 2; i++) {
+        nc[i] = 0.0;
+      }
+
+      /* 'fe2_project_point_new:33' for i=1:5 */
+      i = 1;
+      exitg3 = 0U;
+      while ((exitg3 == 0U) && (i <= 5)) {
+        /* 'fe2_project_point_new:34' [J,N] = Jac(3, nc, d, pnts_elem, nrms_elem); */
+        /*  Compute Jacobian matrix with w.r.t. xi, eta, and d. */
+        /*  3 columns of J contain partial derivatives w.r.t. xi, eta, and d, respectively */
+        /* 'fe2_project_point_new:76' J = coder.nullcopy(zeros(3,3)); */
+        /* 'fe2_project_point_new:77' if nvpe==3 */
+        /* 'fe2_project_point_new:78' N = [1-nc(1)-nc(2); nc(1); nc(2)]; */
+        N[0] = (1.0 - nc[0]) - nc[1];
+        N[1] = nc[0];
+        N[2] = nc[1];
+
+        /* 'fe2_project_point_new:79' pn = pnts_elem(1:3,:)+d*nrms_elem(1:3,:); */
+        for (ix = 0; ix < 3; ix++) {
+          for (iy = 0; iy < 3; iy++) {
+            pn[iy + 3 * ix] = xs->data[(tris->data[b_fid + tris->size[0] * iy] +
+              xs->size[0] * ix) - 1] + d * nrms->data[(tris->data[b_fid +
+              tris->size[0] * iy] + nrms->size[0] * ix) - 1];
+          }
+        }
+
+        /* 'fe2_project_point_new:80' J(:,1) = pn(2,:)-pn(1,:); */
+        for (ix = 0; ix < 3; ix++) {
+          J[ix] = pn[1 + 3 * ix] - pn[3 * ix];
+
+          /* 'fe2_project_point_new:81' J(:,2) = pn(3,:)-pn(1,:); */
+          J[3 + ix] = pn[2 + 3 * ix] - pn[3 * ix];
+        }
+
+        /* 'fe2_project_point_new:82' J(:,3) = N(1)*nrms_elem(1,:)+N(2)*nrms_elem(2,:)+N(3)*nrms_elem(3,:); */
+        for (ix = 0; ix < 3; ix++) {
+          for (iy = 0; iy < 3; iy++) {
+            b_nrms[iy + 3 * ix] = nrms->data[(tris->data[b_fid + tris->size[0] *
+              iy] + nrms->size[0] * ix) - 1];
+          }
+        }
+
+        for (ix = 0; ix < 3; ix++) {
+          for (iy = 0; iy < 3; iy++) {
+            pn[iy + 3 * ix] = nrms->data[(tris->data[b_fid + tris->size[0] * iy]
+              + nrms->size[0] * ix) - 1];
+          }
+        }
+
+        for (ix = 0; ix < 3; ix++) {
+          for (iy = 0; iy < 3; iy++) {
+            c_nrms[iy + 3 * ix] = nrms->data[(tris->data[b_fid + tris->size[0] *
+              iy] + nrms->size[0] * ix) - 1];
+          }
+        }
+
+        for (ix = 0; ix < 3; ix++) {
+          J[6 + ix] = (N[0] * b_nrms[3 * ix] + N[1] * pn[1 + 3 * ix]) + N[2] *
+            c_nrms[2 + 3 * ix];
+        }
+
+        /* 'fe2_project_point_new:36' r_neg = (pnts_elem' * N + d*J(:,3) - pnt); */
+        /* 'fe2_project_point_new:37' [flag,s] = solve3x3(J, r_neg, flag); */
+        for (ix = 0; ix < 3; ix++) {
+          for (iy = 0; iy < 3; iy++) {
+            pn[iy + 3 * ix] = xs->data[(tris->data[b_fid + tris->size[0] * ix] +
+              xs->size[0] * iy) - 1];
+          }
+        }
+
+        for (ix = 0; ix < 3; ix++) {
+          err = 0.0;
+          for (iy = 0; iy < 3; iy++) {
+            err += pn[ix + 3 * iy] * N[iy];
+          }
+
+          s[ix] = (err + d * J[6 + ix]) - pnt[ix];
+        }
+
+        solve3x3(J, s, &flag);
+
+        /* 'fe2_project_point_new:38' nc = nc-s(1:2); */
+        for (ix = 0; ix < 2; ix++) {
+          nc[ix] -= s[ix];
+        }
+
+        /* 'fe2_project_point_new:39' d = d-s(3); */
+        d -= s[2];
+
+        /* 'fe2_project_point_new:41' err = s'*s; */
+        err = 0.0;
+        ix = 0;
+        iy = 0;
+        for (k = 0; k < 3; k++) {
+          err += s[ix] * s[iy];
+          ix++;
+          iy++;
+        }
+
+        /* 'fe2_project_point_new:42' if err < tol2 */
+        if (err < 1.0E-24) {
+          exitg3 = 1U;
+        } else {
+          i++;
         }
       }
+
+      /* 'fe2_project_point_new:59' if nargout>1 */
+      /* 'fe2_project_point_new:60' if nvpe==3 || nvpe==6 */
+      /*  Check whether prism composed of pnts_elem and pnts_elem+d*nrms_elems */
+      /*  is inverted */
+      /* 'fe2_project_point_new:63' inverted = check_prism( pnts_elem(1:3,:), d*nrms_elem(1:3,:))<1; */
+      /* 'scale_one_ring_cleanmesh:73' if (flag ~= 0) */
+      /* 'scale_one_ring_cleanmesh:76' loc = fe2_encode_location( 3, nc); */
+      loc = fe2_encode_location(3.0, nc);
+
+      /*  compute shortest distance to boundary */
+      /* 'scale_one_ring_cleanmesh:79' switch loc */
+      guard1 = FALSE;
+      switch (loc) {
+       case 0:
+        /* 'scale_one_ring_cleanmesh:80' case 0 */
+        /* 'scale_one_ring_cleanmesh:81' dist = 0; */
+        err = 0.0;
+        exitg2 = 1U;
+        break;
+
+       case 1:
+        /* 'scale_one_ring_cleanmesh:82' case 1 */
+        /* 'scale_one_ring_cleanmesh:83' dist = -nc(2); */
+        err = -nc[1];
+        guard1 = TRUE;
+        break;
+
+       case 2:
+        /* 'scale_one_ring_cleanmesh:84' case 2 */
+        /* 'scale_one_ring_cleanmesh:85' dist = nc(1)+nc(2)-1; */
+        err = (nc[0] + nc[1]) - 1.0;
+        guard1 = TRUE;
+        break;
+
+       case 3:
+        /* 'scale_one_ring_cleanmesh:86' case 3 */
+        /* 'scale_one_ring_cleanmesh:87' dist = -nc(1); */
+        err = -nc[0];
+        guard1 = TRUE;
+        break;
+
+       case 4:
+        /* 'scale_one_ring_cleanmesh:88' case 4 */
+        /* 'scale_one_ring_cleanmesh:89' dist = sqrt(nc(1)*nc(1)+nc(2)*nc(2)); */
+        err = sqrt(nc[0] * nc[0] + nc[1] * nc[1]);
+        guard1 = TRUE;
+        break;
+
+       case 5:
+        /* 'scale_one_ring_cleanmesh:90' case 5 */
+        /* 'scale_one_ring_cleanmesh:91' dist = sqrt((1-nc(1))*(1-nc(1))+nc(2)*nc(2)); */
+        err = sqrt((1.0 - nc[0]) * (1.0 - nc[0]) + nc[1] * nc[1]);
+        guard1 = TRUE;
+        break;
+
+       case 6:
+        /* 'scale_one_ring_cleanmesh:92' case 6 */
+        /* 'scale_one_ring_cleanmesh:93' dist = sqrt(nc(1)*nc(1)+(1-nc(2))*(1-nc(2))); */
+        err = sqrt(nc[0] * nc[0] + (1.0 - nc[1]) * (1.0 - nc[1]));
+        guard1 = TRUE;
+        break;
+
+       default:
+        /* 'scale_one_ring_cleanmesh:94' otherwise */
+        /* 'scale_one_ring_cleanmesh:95' dist = realmax; */
+        err = 1.7976931348623157E+308;
+        guard1 = TRUE;
+        break;
+      }
+
+      if (guard1 == TRUE) {
+        /* 'scale_one_ring_cleanmesh:97' if dist<tol_dist */
+        if (err < 1.0E-6) {
+          exitg2 = 1U;
+        } else {
+          /* 'scale_one_ring_cleanmesh:99' if dist<dist_best */
+          if (err < dist_best) {
+            /* 'scale_one_ring_cleanmesh:100' dist_best = dist; */
+            dist_best = err;
+
+            /* 'scale_one_ring_cleanmesh:100' nc_best = nc; */
+            /* 'scale_one_ring_cleanmesh:100' fid_best = fid; */
+            fid_best = b_fid;
+
+            /* 'scale_one_ring_cleanmesh:100' loc_best = loc; */
+            loc_best = loc;
+          }
+
+          /* 'scale_one_ring_cleanmesh:103' fid_next = heid2fid( opphes( fid, lid)); */
+          /*  HEID2FID   Obtains face ID from half-edge ID. */
+          /* 'heid2fid:3' coder.inline('always'); */
+          /* 'heid2fid:4' fid = int32(bitshift(uint32(heid), -2)); */
+          ix = (int32_T)((uint32_T)opphes->data[b_fid + opphes->size[0] *
+                         lid_next] >> 2U);
+
+          /* 'scale_one_ring_cleanmesh:104' if fid_next ==0 || fid_next == fid_start */
+          if ((ix == 0) || (ix == fid)) {
+            /* 'scale_one_ring_cleanmesh:116' fid=fid_best; */
+            b_fid = fid_best;
+
+            /* 'scale_one_ring_cleanmesh:116' nc=nc_best; */
+            /* 'scale_one_ring_cleanmesh:116' loc=loc_best; */
+            loc = loc_best;
+
+            /* 'scale_one_ring_cleanmesh:116' dist=dist_best; */
+            err = dist_best;
+            exitg2 = 1U;
+          } else {
+            /* 'scale_one_ring_cleanmesh:107' lid_next = next(heid2leid( opphes( fid, lid))); */
+            /*  HEID2LEID   Obtains local edge ID within a face from half-edge ID. */
+            /* 'heid2leid:3' coder.inline('always'); */
+            /* 'heid2leid:4' leid = int32(bitand(uint32(heid),3))+1; */
+            lid_next = iv32[(int32_T)((uint32_T)opphes->data[b_fid +
+              opphes->size[0] * lid_next] & 3U)] - 1;
+
+            /* 'scale_one_ring_cleanmesh:109' fid = fid_next; */
+            b_fid = ix - 1;
+
+            /* 'scale_one_ring_cleanmesh:109' lid = lid_next; */
+            /* 'scale_one_ring_cleanmesh:110' count = count + 1; */
+            /* 'scale_one_ring_cleanmesh:111' if (count>100) */
+          }
+        }
+      }
+    } while (exitg2 == 0U);
+
+    /* 'scale_one_ring_cleanmesh:17' if (loc ==0 || dist <= tol_dist) */
+    if ((loc == 0) || (err <= 1.0E-6)) {
+    } else {
+      /*  Old prism info */
+      /* 'scale_one_ring_cleanmesh:21' pnts_elem = xs(tris(fid,1:3),1:3); */
+      /* 'scale_one_ring_cleanmesh:22' nrms_elem = nrms(tris(fid,1:3),1:3); */
+      /* 'scale_one_ring_cleanmesh:23' while 1 */
+      do {
+        exitg1 = 0U;
+
+        /*  Scale the old displacement by a factor 'alpha' */
+        /* 'scale_one_ring_cleanmesh:25' disp = alpha*us_smooth(ii,1:3); */
+        /*  New point */
+        /* 'scale_one_ring_cleanmesh:28' pnt = (xs(ii,1:3)+ disp)'; */
+        for (ix = 0; ix < 3; ix++) {
+          pnt[ix] = xs->data[ii + xs->size[0] * ix] + 0.7 * us_smooth->data[ii +
+            us_smooth->size[0] * ix];
+        }
+
+        /*  Find projection */
+        /* 'scale_one_ring_cleanmesh:31' flag = int32(0); */
+        /* 'scale_one_ring_cleanmesh:32' [flag,nc] = fe2_project_point_new( pnt, pnts_elem, nrms_elem, flag); */
+        flag = 0;
+        for (ix = 0; ix < 3; ix++) {
+          for (iy = 0; iy < 3; iy++) {
+            pn[iy + 3 * ix] = xs->data[(tris->data[b_fid + tris->size[0] * iy] +
+              xs->size[0] * ix) - 1];
+          }
+        }
+
+        for (ix = 0; ix < 3; ix++) {
+          for (iy = 0; iy < 3; iy++) {
+            b_nrms[iy + 3 * ix] = nrms->data[(tris->data[b_fid + tris->size[0] *
+              iy] + nrms->size[0] * ix) - 1];
+          }
+        }
+
+        fe2_project_point_new(pnt, pn, b_nrms, &flag, nc);
+
+        /* 'scale_one_ring_cleanmesh:33' if (flag ~= 0) */
+        /* 'scale_one_ring_cleanmesh:36' loc = fe2_encode_location( 3, nc); */
+        /* 'scale_one_ring_cleanmesh:38' if (loc ==0 || dist <= tol_dist) */
+        if ((fe2_encode_location(3.0, nc) == 0) || (err <= 1.0E-6)) {
+          exitg1 = 1U;
+        } else {
+          /*  Increase count */
+          /* 'scale_one_ring_cleanmesh:43' count = count + 1; */
+          count++;
+
+          /* 'scale_one_ring_cleanmesh:44' if (count > 10) */
+          if (count > 10) {
+            /* 'scale_one_ring_cleanmesh:45' us_smooth(ii,:) = 0; */
+            for (ix = 0; ix < 3; ix++) {
+              us_smooth->data[ii + us_smooth->size[0] * ix] = 0.0;
+            }
+
+            exitg1 = 1U;
+          }
+        }
+      } while (exitg1 == 0U);
     }
   }
+
+  emxFree_int32_T(&v2he);
+}
+
+/*
+ * function [flag,bs,det,A,P] = solve3x3( A, bs, flag)
+ */
+static void solve3x3(const real_T A[9], real_T bs[3], int32_T *flag)
+{
+  real_T b_A[9];
+  int32_T k;
+  real_T S[3];
+  real_T pivot;
+  real_T T;
+  real_T b_S[2];
+  memcpy((void *)&b_A[0], (void *)&A[0], 9U * sizeof(real_T));
+
+  /*  Solves a 3x3 linear system with multiple right-hand side vectors */
+  /*  using Gaussian elimination with partial pivoting. */
+  /*      xs=solve3x3(A,bs) */
+  /*      [xs,det]=solve3x3(A,bs) */
+  /*      [xs,det,A,P]=solve3x3(A,bs) */
+  /*  A is a 3-by-3 matrix of coefficients, and B is 3-by-k. */
+  /*  If xs and bs use the same variable, then bs is passed by reference. */
+  /*  If det is specified for output, it also returns the determinant of the matrix. */
+  /*  If A is specified for output, then A is passed by reference, and it */
+  /*  stores the L and U factors at output, with P storing the permutation vector. */
+  /*  */
+  /*  See also solve2x2 */
+  /* 'solve3x3:15' coder.extrinsic('warning'); */
+  /* 'solve3x3:16' if nargout>3 */
+  /* 'solve3x3:18' S = abs(A(1:3,1)); */
+  for (k = 0; k < 3; k++) {
+    S[k] = fabs(A[k]);
+  }
+
+  /* 'solve3x3:19' if S(1)>=S(2) && S(1)>=S(3) */
+  if ((S[0] >= S[1]) && (S[0] >= S[2])) {
+    /* 'solve3x3:20' pivot = A(1,1); */
+    pivot = A[0];
+
+    /* 'solve3x3:21' det = pivot; */
+    /* 'solve3x3:22' if (pivot==0) */
+    if (A[0] == 0.0) {
+      /* 'solve3x3:22' warning('Matrix is singular to working precision.'); */
+      /* 'solve3x3:22' flag = int32(1); */
+      *flag = 1;
+    }
+  } else if (S[1] >= S[2]) {
+    /* 'solve3x3:23' elseif S(2)>=S(3) */
+    /* 'solve3x3:24' pivot = A(2,1); */
+    pivot = A[1];
+
+    /* 'solve3x3:25' det = -pivot; */
+    /* 'solve3x3:26' T = A(2,:); */
+    /* 'solve3x3:26' A(2,:)=A(1,:); */
+    for (k = 0; k < 3; k++) {
+      b_A[1 + 3 * k] = A[3 * k];
+
+      /* 'solve3x3:26' A(1,:)=T; */
+      b_A[3 * k] = A[1 + 3 * k];
+    }
+
+    /* 'solve3x3:27' T = bs(2,:); */
+    T = bs[1];
+
+    /* 'solve3x3:27' bs(2,:)=bs(1,:); */
+    bs[1] = bs[0];
+
+    /* 'solve3x3:27' bs(1,:)=T; */
+    bs[0] = T;
+
+    /* 'solve3x3:28' if nargout>3 */
+  } else {
+    /* 'solve3x3:29' else */
+    /* 'solve3x3:30' if nargout>3 */
+    /* 'solve3x3:31' pivot = A(3,1); */
+    pivot = A[2];
+
+    /* 'solve3x3:32' det = -pivot; */
+    /* 'solve3x3:33' T = A(3,:); */
+    /* 'solve3x3:33' A(3,:)=A(1,:); */
+    for (k = 0; k < 3; k++) {
+      b_A[2 + 3 * k] = A[3 * k];
+
+      /* 'solve3x3:33' A(1,:)=T; */
+      b_A[3 * k] = A[2 + 3 * k];
+    }
+
+    /* 'solve3x3:34' T = bs(3,:); */
+    T = bs[2];
+
+    /* 'solve3x3:34' bs(3,:)=bs(1,:); */
+    bs[2] = bs[0];
+
+    /* 'solve3x3:34' bs(1,:)=T; */
+    bs[0] = T;
+
+    /* 'solve3x3:35' if nargout>3 */
+  }
+
+  /* 'solve3x3:38' A(2,1) = A(2,1)/pivot; */
+  b_A[1] /= pivot;
+
+  /* 'solve3x3:39' A(2,2:end) = A(2,2:end) - A(2,1)*A(1,2:end); */
+  T = b_A[1];
+  for (k = 0; k < 2; k++) {
+    b_A[1 + 3 * (1 + k)] -= T * b_A[3 * (1 + k)];
+  }
+
+  /* 'solve3x3:40' bs(2,:) = bs(2,:) - A(2,1)*bs(1,:); */
+  bs[1] -= b_A[1] * bs[0];
+
+  /* 'solve3x3:42' A(3,1) = A(3,1)/pivot; */
+  b_A[2] /= pivot;
+
+  /* 'solve3x3:43' A(3,2:end) = A(3,2:end) - A(3,1)*A(1,2:end); */
+  T = b_A[2];
+  for (k = 0; k < 2; k++) {
+    b_A[2 + 3 * (1 + k)] -= T * b_A[3 * (1 + k)];
+  }
+
+  /* 'solve3x3:44' bs(3,:) = bs(3,:) - A(3,1)*bs(1,:); */
+  bs[2] -= b_A[2] * bs[0];
+
+  /* 'solve3x3:46' S = abs(A(2:3,2)); */
+  for (k = 0; k < 2; k++) {
+    b_S[k] = fabs(b_A[k + 4]);
+  }
+
+  /* 'solve3x3:47' if S(1) >= S(2) */
+  if (b_S[0] >= b_S[1]) {
+    /* 'solve3x3:48' pivot = A(2,2); */
+    pivot = b_A[4];
+
+    /* 'solve3x3:49' det = det*pivot; */
+    /* 'solve3x3:50' if (pivot==0) */
+    if (b_A[4] == 0.0) {
+      /* 'solve3x3:50' warning('Matrix is singular to working precision.'); */
+      /* 'solve3x3:50' flag = int32(2); */
+      *flag = 2;
+    }
+  } else {
+    /* 'solve3x3:51' else */
+    /* 'solve3x3:52' pivot = A(3,2); */
+    pivot = b_A[5];
+
+    /* 'solve3x3:53' det = -det*pivot; */
+    /* 'solve3x3:54' T = A(3,:); */
+    /* 'solve3x3:54' A(3,:)=A(2,:); */
+    for (k = 0; k < 3; k++) {
+      T = b_A[2 + 3 * k];
+      b_A[2 + 3 * k] = b_A[1 + 3 * k];
+
+      /* 'solve3x3:54' A(2,:)=T; */
+      b_A[1 + 3 * k] = T;
+    }
+
+    /* 'solve3x3:55' T = bs(3,:); */
+    T = bs[2];
+
+    /* 'solve3x3:55' bs(3,:)=bs(2,:); */
+    bs[2] = bs[1];
+
+    /* 'solve3x3:55' bs(2,:)=T; */
+    bs[1] = T;
+
+    /* 'solve3x3:56' if nargout>3 */
+  }
+
+  /* 'solve3x3:59' A(3,2) = A(3,2)/pivot; */
+  b_A[5] /= pivot;
+
+  /* 'solve3x3:60' A(3,3) = A(3,3) - A(3,2)*A(2,3); */
+  b_A[8] -= b_A[5] * b_A[7];
+
+  /* 'solve3x3:61' bs(3,:) = bs(3,:) - A(3,2)*bs(2,:); */
+  bs[2] -= b_A[5] * bs[1];
+
+  /* 'solve3x3:62' if (A(3,3)== 0) */
+  if (b_A[8] == 0.0) {
+    /* 'solve3x3:62' warning('Matrix is singular to working precision.'); */
+    /* 'solve3x3:62' flag = int32(3); */
+    *flag = 3;
+  }
+
+  /* 'solve3x3:63' det = det*A(3,3); */
+  /* 'solve3x3:65' bs(3,:) = bs(3,:) / A(3,3); */
+  bs[2] /= b_A[8];
+
+  /* 'solve3x3:66' bs(2,:) = (bs(2,:) - A(2,3)*bs(3,:)) / A(2,2); */
+  bs[1] = (bs[1] - b_A[7] * bs[2]) / b_A[4];
+
+  /* 'solve3x3:67' bs(1,:) = (bs(1,:) - A(1,3)*bs(3,:) - A(1,2)*bs(2,:)) / A(1,1); */
+  bs[0] = ((bs[0] - b_A[6] * bs[2]) - b_A[3] * bs[1]) / b_A[0];
 }
 
 /*
@@ -16125,15 +17259,15 @@ static real_T sum(const emxArray_real_T *x)
 
 /*
  * function [xs, tris] = smooth_mesh_hisurf_cleanmesh( nv_clean, nt_clean, xs, ...
- * tris, degree, isridge, ridgeedge, flabel, niter, verbose, check_trank)
+ *     tris, degree, isridge, ridgeedge, flabel, niter, verbose, check_trank)
  */
 void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
   emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, const
   emxArray_boolean_T *isridge, const emxArray_boolean_T *ridgeedge, const
   emxArray_int32_T *flabel, int32_T niter, int32_T verbose, boolean_T
-  check_trank, hiPropMesh *pmesh)
+  check_trank)
 {
-  int32_T step;
+  int32_T nfolded;
   static const char_T cv8[3] = { 'C', 'M', 'F' };
 
   char_T hisurf_args_method[3];
@@ -16143,9 +17277,12 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
   real_T min_area;
   real_T max_angle;
   real_T min_angle;
-  boolean_T scaled;
+  boolean_T change_scheme;
+  real_T scheme;
+  int32_T step;
   emxArray_real_T *us_smooth;
   boolean_T exitg1;
+  boolean_T scaled;
   boolean_T guard1 = FALSE;
 
   /* % */
@@ -16157,80 +17294,108 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
   /* 'smooth_mesh_hisurf_cleanmesh:12' if nargin<10 */
   /* 'smooth_mesh_hisurf_cleanmesh:13' if nargin<11 */
   /* 'smooth_mesh_hisurf_cleanmesh:15' hisurf_args.method = 'CMF'; */
-  for (step = 0; step < 3; step++) {
-    hisurf_args_method[step] = cv8[step];
+  for (nfolded = 0; nfolded < 3; nfolded++) {
+    hisurf_args_method[nfolded] = cv8[nfolded];
   }
 
   emxInit_real_T(&nrms, 2);
   b_emxInit_int32_T(&opphes, 2);
 
-  /* 'smooth_mesh_hisurf_cleanmesh:16' hisurf_args.degree = degree; */
-  /* 'smooth_mesh_hisurf_cleanmesh:17' refareas2 = zeros(0,1); */
-  /* 'smooth_mesh_hisurf_cleanmesh:18' mu = 0; */
-  /* 'smooth_mesh_hisurf_cleanmesh:19' angletol_min = 5; */
-  /* 'smooth_mesh_hisurf_cleanmesh:20' angletol_max = 27; */
+  /* hisurf_args.method = 'WALF'; */
+  /* 'smooth_mesh_hisurf_cleanmesh:17' hisurf_args.degree = degree; */
+  /* 'smooth_mesh_hisurf_cleanmesh:18' refareas2 = zeros(0,1); */
+  /* 'smooth_mesh_hisurf_cleanmesh:19' mu = 0; */
+  /* 'smooth_mesh_hisurf_cleanmesh:20' angletol_min = 5; */
+  /* angletol_min = 15; */
+  /* 'smooth_mesh_hisurf_cleanmesh:22' angletol_max = 27; */
+  /* 'smooth_mesh_hisurf_cleanmesh:23' nfoldedtol_min = int32(0); */
+  /* 'smooth_mesh_hisurf_cleanmesh:24' ISO = 1; */
+  /* 'smooth_mesh_hisurf_cleanmesh:25' WL = 2; */
   /* % Compute the following for the input clean mesh : 1. Normals, 2. Opposite half edges, 3. Quality */
-  /* 'smooth_mesh_hisurf_cleanmesh:23' nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
-  compute_hisurf_normals(nv_clean, xs, tris, degree, nrms, pmesh);
+  /*  Normals */
+  /*  nrms = zeros(size(tris)); */
+  /*  if strcmp(geom_type,'open') */
+  /*      nrms = compute_hisurf_normals(int32(size(xs,1)), xs, tris, degree); */
+  /*  elseif strcmp(geom_type,'closed') */
+  /*      nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
+  /*  end */
+  /* 'smooth_mesh_hisurf_cleanmesh:34' nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
+  compute_hisurf_normals(nv_clean, xs, tris, degree, nrms);
 
-  /* 'smooth_mesh_hisurf_cleanmesh:24' opphes = determine_opposite_halfedge( int32(size(xs,1)), tris); */
+  /*  Opposite Halfedges */
+  /* 'smooth_mesh_hisurf_cleanmesh:37' opphes = determine_opposite_halfedge( int32(size(xs,1)), tris); */
   determine_opposite_halfedge(xs->size[0], tris, opphes);
 
-  /* 'smooth_mesh_hisurf_cleanmesh:25' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
+  /*  Quality */
+  /* 'smooth_mesh_hisurf_cleanmesh:40' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
   compute_statistics_tris_global(nt_clean, xs, tris, &min_angle, &max_angle,
     &min_area, &max_area);
 
-  /* 'smooth_mesh_hisurf_cleanmesh:26' if verbose */
-  /* 'smooth_mesh_hisurf_cleanmesh:30' min_angle_pre = min_angle; */
-  /* 'smooth_mesh_hisurf_cleanmesh:31' scaled = false; */
-  scaled = FALSE;
+  /* 'smooth_mesh_hisurf_cleanmesh:41' nfolded = count_folded_tris_global(nt_clean, xs, tris, nrms); */
+  nfolded = count_folded_tris_global(nt_clean, xs, tris, nrms);
+
+  /* 'smooth_mesh_hisurf_cleanmesh:42' if verbose>1 */
+  /*  Set up other parameters */
+  /* 'smooth_mesh_hisurf_cleanmesh:48' min_angle_pre = min_angle; */
+  /* scaled = false; */
+  /* 'smooth_mesh_hisurf_cleanmesh:50' change_scheme = false; */
+  change_scheme = FALSE;
+
+  /* 'smooth_mesh_hisurf_cleanmesh:51' scheme = ISO; */
+  scheme = 1.0;
 
   /* % Smooth mesh */
-  /* 'smooth_mesh_hisurf_cleanmesh:34' for step=1:niter */
+  /* 'smooth_mesh_hisurf_cleanmesh:53' for step=1:niter */
   step = 1;
   emxInit_real_T(&us_smooth, 2);
   exitg1 = 0U;
   while ((exitg1 == 0U) && (step <= niter)) {
-    /* 'smooth_mesh_hisurf_cleanmesh:35' if verbose>1 */
-    /* 'smooth_mesh_hisurf_cleanmesh:39' [us_smooth,scaled] = smoothing_single_iteration(nv_clean, xs, tris,... */
-    /* 'smooth_mesh_hisurf_cleanmesh:40'         nrms, opphes, isridge, ridgeedge, flabel, scaled, min_angle, angletol_min,... */
-    /* 'smooth_mesh_hisurf_cleanmesh:41'         refareas2, mu, check_trank, hisurf_args, verbose); */
-    smoothing_single_iteration(nv_clean, xs, tris, nrms, opphes, isridge,
-      ridgeedge, flabel, &scaled, min_angle, check_trank, hisurf_args_method,
-      degree, verbose, us_smooth, pmesh);
+    /* 'smooth_mesh_hisurf_cleanmesh:54' if verbose>1 */
+    /*  DEBUG 1 Print out: 'xs','nrms', 'min_angle', 'nfolded' */
+    
+    /* 'smooth_mesh_hisurf_cleanmesh:71' [us_smooth, scaled, change_scheme, scheme] = smoothing_single_iteration_new_try1(nv_clean, xs, tris,... */
+    /* 'smooth_mesh_hisurf_cleanmesh:72'         nrms, opphes, isridge, ridgeedge, flabel, nfolded, nfoldedtol_min, min_angle, angletol_min,... */
+    /* 'smooth_mesh_hisurf_cleanmesh:73'         refareas2, mu, check_trank, hisurf_args, change_scheme, scheme, verbose); */
+    scaled = c_smoothing_single_iteration_ne(nv_clean, xs, tris, nrms, opphes,
+      isridge, ridgeedge, flabel, nfolded, min_angle, check_trank,
+      hisurf_args_method, degree, &change_scheme, &scheme, verbose, us_smooth);
 
-    /* 'smooth_mesh_hisurf_cleanmesh:44' if scaled */
+    /*  DEBUG 5 Print out: 'us_smooth' */
+    
+    /* 'smooth_mesh_hisurf_cleanmesh:83' if scaled */
     guard1 = FALSE;
     if (scaled) {
       guard1 = TRUE;
     } else {
-      /* 'smooth_mesh_hisurf_cleanmesh:45' [pnt_added,xs] = add_disps_to_pntpositions(nv_clean, nt_clean, xs, tris, ... */
-      /* 'smooth_mesh_hisurf_cleanmesh:46'     us_smooth, min_angle_pre, angletol_max, scaled); */
-      scaled = add_disps_to_pntpositions(nv_clean, nt_clean, xs, tris, us_smooth,
-        min_angle, FALSE);
+      /* 'smooth_mesh_hisurf_cleanmesh:85' [pnt_added,xs] = add_disps_to_nodes(nv_clean, nt_clean, xs, tris, ... */
+      /* 'smooth_mesh_hisurf_cleanmesh:86'         us_smooth, min_angle_pre, angletol_max); */
+      scaled = add_disps_to_nodes(nv_clean, nt_clean, xs, tris, us_smooth,
+        min_angle);
 
-      /* 'smooth_mesh_hisurf_cleanmesh:48' if pnt_added */
+      /*  DEBUG 6 Print out: 'pnt_added' and 'xs' */
+      
+      /* 'smooth_mesh_hisurf_cleanmesh:96' if pnt_added */
       if (scaled) {
-        /*  Step 1: (a) Update position "xs" of "nv_clean" pnts */
-        /*  (b) Communicate position "xs" of ghost pnts (>nv_clean) */
-        /*  Step 2: Compute the normals for the new mesh */
+        /*  Step 1:  Communicate 'xs' for ghost points */
+          
+        /*  Step 2: Compute the normals for the new mesh */      
+        /* 'smooth_mesh_hisurf_cleanmesh:105' nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
+        compute_hisurf_normals(nv_clean, xs, tris, degree, nrms);
 
-	  hpUpdateGhostPointData_real_T(pmesh, xs);
-
-        /* 'smooth_mesh_hisurf_cleanmesh:53' nrms = compute_hisurf_normals(nv_clean,xs,tris, hisurf_args.degree); */
-        compute_hisurf_normals(nv_clean, xs, tris, degree, nrms, pmesh);
-
-        /* 'smooth_mesh_hisurf_cleanmesh:58' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
+        /* 'smooth_mesh_hisurf_cleanmesh:113' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
         compute_statistics_tris_global(nt_clean, xs, tris, &min_angle,
           &max_angle, &min_area, &max_area);
 
-        /* 'smooth_mesh_hisurf_cleanmesh:60' if verbose>1 */
-        /* 'smooth_mesh_hisurf_cleanmesh:64' min_angle_pre = min_angle; */
-        /* 'smooth_mesh_hisurf_cleanmesh:64' scaled = false; */
-        scaled = FALSE;
+        /* 'smooth_mesh_hisurf_cleanmesh:114' nfolded = count_folded_tris_global(nt_clean, xs, tris, nrms); */
+        nfolded = count_folded_tris_global(nt_clean, xs, tris, nrms);
+
+        /* 'smooth_mesh_hisurf_cleanmesh:116' if verbose>1 */
+        /* 'smooth_mesh_hisurf_cleanmesh:120' min_angle_pre = min_angle; */
+        /* scaled = false; */
         guard1 = TRUE;
       } else {
-        /* 'smooth_mesh_hisurf_cleanmesh:54' else */
+        /* 'smooth_mesh_hisurf_cleanmesh:106' else */
+        /* 'smooth_mesh_hisurf_cleanmesh:107' if verbose>1 */
         exitg1 = 1U;
       }
     }
