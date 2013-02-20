@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 
     char in_filename[200];
     sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
-    if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
+    if (!hpReadPolyMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
 	return 0;
@@ -48,8 +48,16 @@ int main(int argc, char* argv[])
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
-    hpBuildPInfoNoOverlappingTris(mesh);
+    hpBuildPInfoWithOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
+
+    hpCleanMeshByPinfo(mesh);
+    printf("\n After CleanMeshByPinfo\n");
+
+    char debug_filename[200];
+    sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
+    hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
+    printf("\n After WriteUnstrMeshWithPInfo\n");
 
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
@@ -65,7 +73,6 @@ int main(int argc, char* argv[])
 
     int num_old_ps = mesh->nps_clean;
     printf("num of old ps = %d\n", num_old_ps);
-
     
     char ptid_filename[200];
     sprintf(ptid_filename, "data/parallel/sphere_nonuni_psid-p%s.data", rank_str);
@@ -81,6 +88,7 @@ int main(int argc, char* argv[])
 
     printf("\n hpMeshSmoothing passed, proc %d \n", rank);
 
+    /*
     int num_all_pt = 0;
 
     for (i = 1; i <= mesh->ps->size[0]; i++)
@@ -136,6 +144,7 @@ int main(int argc, char* argv[])
     free(inps1); free(inps2); free(inps3);
     free(outps1); free(outps2); free(outps3);
 
+    */
     hpDeleteMesh(&mesh);
 
     printf("Success processor %d\n", rank);
