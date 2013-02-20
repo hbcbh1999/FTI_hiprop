@@ -4940,7 +4940,7 @@ void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree)
     smooth_mesh_hisurf_cleanmesh(mesh->nps_clean, mesh->ntris_clean,
 	    mesh->ps, mesh->tris, in_degree,
 	    in_isridge, in_ridgeedge, in_flabel, 
-	    10, 2, false);
+	    10, 2, false, mesh);
 
     emxFree_boolean_T(&in_isridge);
     emxFree_boolean_T(&in_ridgeedge);

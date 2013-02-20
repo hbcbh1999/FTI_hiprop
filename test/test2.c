@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 
     char in_filename[200];
     sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
-    if (!hpReadPolyMeshVtk3d(in_filename, mesh))
+    if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
 	return 0;
@@ -48,11 +48,8 @@ int main(int argc, char* argv[])
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
-    hpBuildPInfoWithOverlappingTris(mesh);
+    hpBuildPInfoNoOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
-
-    hpCleanMeshByPinfo(mesh);
-    printf("\n After CleanMeshByPinfo\n");
 
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
@@ -84,11 +81,10 @@ int main(int argc, char* argv[])
 	fscanf(ptinfile, "%d", &(ptid[i]));
     fclose(ptinfile);
 
-    hpMeshSmoothing(mesh, 3);
+    hpMeshSmoothing(mesh, 2);
 
     printf("\n hpMeshSmoothing passed, proc %d \n", rank);
 
-    /*
     int num_all_pt = 0;
 
     for (i = 1; i <= mesh->ps->size[0]; i++)
@@ -144,7 +140,6 @@ int main(int argc, char* argv[])
     free(inps1); free(inps2); free(inps3);
     free(outps1); free(outps2); free(outps3);
 
-    */
     hpDeleteMesh(&mesh);
 
     printf("Success processor %d\n", rank);

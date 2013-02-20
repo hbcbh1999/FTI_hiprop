@@ -8,7 +8,7 @@ static boolean_T add_disps_to_nodes(int32_T nv_clean, int32_T nt_clean,
   *us_smooth, real_T min_angle_pre);
 static boolean_T any(const boolean_T x[3]);
 static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
-  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris);
+  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris, hiPropMesh *pmesh);
 static void b_abs(const real_T x[3], real_T y[3]);
 static void b_backsolve(const emxArray_real_T *R, emxArray_real_T *bs, int32_T
   cend, const emxArray_real_T *ws);
@@ -83,7 +83,7 @@ static boolean_T c_smoothing_single_iteration_ne(int32_T nv_clean, const
   emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, int32_T nfolded,
   real_T min_angle, boolean_T check_trank, const char_T hisurf_args_method[3],
   int32_T hisurf_args_degree, boolean_T *change_scheme, real_T *scheme, int32_T
-  verbose, emxArray_real_T *us_smooth);
+  verbose, emxArray_real_T *us_smooth, hiPropMesh *pmesh);
 static void c_weighted_Laplacian_tri_cleanm(int32_T nv_clean, const
   emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_boolean_T
   *isridge, const emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel,
@@ -100,7 +100,7 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
 
 
 static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
-  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms);
+  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms, hiPropMesh *pmesh);
 static void compute_medial_quadric_tri(const emxArray_real_T *xs, const
   emxArray_int32_T *tris, const emxArray_int32_T *flabel, emxArray_real_T *As,
   emxArray_real_T *bs, emxArray_real_T *bs_lbl);
@@ -875,7 +875,7 @@ static boolean_T any(const boolean_T x[3])
  * function [us_smooth, scaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol)
  */
 static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
-  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris)
+  emxArray_real_T *xs, emxArray_real_T *us_smooth, const emxArray_int32_T *tris, hiPropMesh *pmesh)
 {
   boolean_T scaled;
   emxArray_real_T *alpha_tmp;
@@ -1042,6 +1042,8 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
         }
 
         /*  Step 2: Communicate 'us_smooth' and 'alpha_tmp' for ghost points     */
+	hpUpdateGhostPointData_real_T(pmesh, us_smooth);
+	hpUpdateGhostPointData_real_T(pmesh, alpha_tmp);
         /*  Step 3: Again check if any rescaling has to be performed or not. */
         /* 'async_scale_disps_tri_cleanmesh:32' [alpha_tmp,us_smooth] = rescale_displacements(xs, us_smooth, tris, tol, alpha_tmp); */
         b_rescale_displacements(xs, us_smooth, tris, alpha_tmp);
@@ -6546,7 +6548,7 @@ static boolean_T c_smoothing_single_iteration_ne(int32_T nv_clean, const
   emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, int32_T nfolded,
   real_T min_angle, boolean_T check_trank, const char_T hisurf_args_method[3],
   int32_T hisurf_args_degree, boolean_T *change_scheme, real_T *scheme, int32_T
-  verbose, emxArray_real_T *us_smooth)
+  verbose, emxArray_real_T *us_smooth, hiPropMesh *pmesh)
 {
   boolean_T scaled;
   int32_T count;
@@ -6614,6 +6616,7 @@ static boolean_T c_smoothing_single_iteration_ne(int32_T nv_clean, const
 
   /*  DEBUG 2 Print out: 'us_smooth' */
   /*  Step 2: Communicate 'us_smooth' for ghost points */
+  hpUpdateGhostPointData_real_T(pmesh, us_smooth);
   /*  Step 3: New Scaling */
   /* 'smoothing_single_iteration_new_try1:34' us_smooth = scale_one_ring_cleanmesh(nv_clean, xs, tris, nrms, us_smooth, opphes); */
   scale_one_ring_cleanmesh(nv_clean, xs, tris, nrms, us_smooth, opphes);
@@ -6621,9 +6624,10 @@ static boolean_T c_smoothing_single_iteration_ne(int32_T nv_clean, const
   /* 'smoothing_single_iteration_new_try1:35' fprintf('Scaled displacements withing 1-ring\n'); */
   /*  DEBUG 3 Print out: 'us_smooth' */
   /*  Step 4: Communicate 'us_smooth' for ghost points */
+  hpUpdateGhostPointData_real_T(pmesh, us_smooth);
   /*  Step 5: Asynchronously rescale tangential displacements. */
   /* 'smoothing_single_iteration_new_try1:41' [us_smooth,escaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
-  async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris);
+  async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, pmesh);
 
   /* 'smoothing_single_iteration_new_try1:42' fprintf('Finished asynchronous scaling of displacements\n'); */
   /*  DEBUG 4 Print out: 'us_smooth' */
@@ -6643,9 +6647,11 @@ static boolean_T c_smoothing_single_iteration_ne(int32_T nv_clean, const
       hisurf_args_method, hisurf_args_degree);
 
     /*  Step 6: Communicate 'us_smooth' for ghost points */
+    hpUpdateGhostPointData_real_T(pmesh, us_smooth);
+
     /*  Step 7: Asynchronously rescale tangential displacements. */
     /* 'smoothing_single_iteration_new_try1:55' [us_smooth,scaled] = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, tol); */
-    scaled = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris);
+    scaled = async_scale_disps_tri_cleanmesh(nv_clean, xs, us_smooth, tris, pmesh);
 
     /* 'smoothing_single_iteration_new_try1:56' if ~scaled */
     if (!scaled) {
@@ -7815,7 +7821,7 @@ static void b_compute_diffops_surf_cleanmesh(int32_T nv_clean, const
  * function nrms = compute_hisurf_normals(nv_clean,xs,tris, degree)
  */
 static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
-  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms)
+  const emxArray_int32_T *tris, int32_T degree, emxArray_real_T *nrms, hiPropMesh *pmesh)
 {
   emxArray_real_T *r0;
   int32_T nv;
@@ -7851,6 +7857,7 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
   c_average_vertex_normal_tri_cle(nv_clean, xs, tris, r0, nrms_proj);
 
   /* Step2: Communicate variable "nrms_proj" at the ghost points (>nv_clean) */
+  hpUpdateGhostPointData_real_T(pmesh, nrms_proj);
   /* Step3: Compute normals from polynomial fitting */
   /* 'compute_hisurf_normals:16' [nrms] = compute_diffops_surf_cleanmesh(nv_clean, xs, int32(tris), ... */
   /* 'compute_hisurf_normals:17'     nrms_proj, int32(degree), ring, iterfit, nrms, curs, prdirs); */
@@ -7891,6 +7898,7 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
 
   /* Step4: (a) Update variable "nrms" of "nv_clean" pnts */
   /*  (b) Communicate variable "nrms" of ghost pnts (>nv_clean) */
+  hpUpdateGhostPointData_real_T(pmesh, nrms);
   emxFree_real_T(&r2);
   emxFree_real_T(&r1);
   emxFree_real_T(&nrms_proj);
@@ -8294,6 +8302,20 @@ static void compute_statistics_tris_global(int32_T nt_clean, const
   /*  max_area . This step would require communicating the min_angle from other */
   /*  processor and performing a comparision among them to obtain the global */
   /*  minimum angle.  */
+
+  real_T out_min_angle, out_max_angle, out_min_area, out_max_area;
+
+  MPI_Allreduce(min_angle, &(out_min_angle), 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  MPI_Allreduce(min_area, &(out_min_area), 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+
+  MPI_Allreduce(max_angle, &(out_max_angle), 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(max_area, &(out_max_area), 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+  *min_angle = out_min_angle;
+  *max_angle = out_max_angle;
+
+  *min_area = out_min_area;
+  *max_area = out_max_area;
 }
 
 /*
@@ -8566,6 +8588,13 @@ static int32_T count_folded_tris_global(int32_T nt_clean, const emxArray_real_T 
 
   /* Step 2: Obtain a global count of no. of folded triangles by adding the no. */
   /* of folded triangles from other processors.  */
+
+  int out_nfolded;
+
+  MPI_Allreduce(&(nfolded), &(out_nfolded), 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  nfolded = out_nfolded;
+
   return nfolded;
 }
 
@@ -17265,7 +17294,7 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
   emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, const
   emxArray_boolean_T *isridge, const emxArray_boolean_T *ridgeedge, const
   emxArray_int32_T *flabel, int32_T niter, int32_T verbose, boolean_T
-  check_trank)
+  check_trank, hiPropMesh *pmesh)
 {
   int32_T nfolded;
   static const char_T cv8[3] = { 'C', 'M', 'F' };
@@ -17320,7 +17349,7 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
   /*      nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
   /*  end */
   /* 'smooth_mesh_hisurf_cleanmesh:34' nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
-  compute_hisurf_normals(nv_clean, xs, tris, degree, nrms);
+  compute_hisurf_normals(nv_clean, xs, tris, degree, nrms, pmesh);
 
   /*  Opposite Halfedges */
   /* 'smooth_mesh_hisurf_cleanmesh:37' opphes = determine_opposite_halfedge( int32(size(xs,1)), tris); */
@@ -17358,7 +17387,7 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
     /* 'smooth_mesh_hisurf_cleanmesh:73'         refareas2, mu, check_trank, hisurf_args, change_scheme, scheme, verbose); */
     scaled = c_smoothing_single_iteration_ne(nv_clean, xs, tris, nrms, opphes,
       isridge, ridgeedge, flabel, nfolded, min_angle, check_trank,
-      hisurf_args_method, degree, &change_scheme, &scheme, verbose, us_smooth);
+      hisurf_args_method, degree, &change_scheme, &scheme, verbose, us_smooth, pmesh);
 
     /*  DEBUG 5 Print out: 'us_smooth' */
     
@@ -17377,10 +17406,12 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
       /* 'smooth_mesh_hisurf_cleanmesh:96' if pnt_added */
       if (scaled) {
         /*  Step 1:  Communicate 'xs' for ghost points */
-          
+	  hpUpdateGhostPointData_real_T(pmesh, xs);
+
+
         /*  Step 2: Compute the normals for the new mesh */      
         /* 'smooth_mesh_hisurf_cleanmesh:105' nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
-        compute_hisurf_normals(nv_clean, xs, tris, degree, nrms);
+        compute_hisurf_normals(nv_clean, xs, tris, degree, nrms, pmesh);
 
         /* 'smooth_mesh_hisurf_cleanmesh:113' [min_angle, max_angle, min_area, max_area] = compute_statistics_tris_global(nt_clean, xs, tris); */
         compute_statistics_tris_global(nt_clean, xs, tris, &min_angle,

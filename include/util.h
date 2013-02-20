@@ -381,7 +381,7 @@ EXTERN_C void compute_statistics_tris_global(int32_T nt_clean,
 
 */
 
-EXTERN_C void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean, emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, const emxArray_boolean_T *isridge, const emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, int32_T niter, int32_T verbose, boolean_T check_trank);
+EXTERN_C void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean, emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, const emxArray_boolean_T *isridge, const emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, int32_T niter, int32_T verbose, boolean_T check_trank, hiPropMesh *pmesh);
 
 
 
