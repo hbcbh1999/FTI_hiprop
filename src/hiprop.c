@@ -1236,6 +1236,7 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     }
 
 
+
     MPI_Request* req_recv_num = (MPI_Request*) malloc(num_nb_proc*sizeof(MPI_Request));
     int recv_index;
     for (i = 0; i<num_nb_proc; i++)
@@ -1262,9 +1263,11 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     mesh->ps_pinfo = (hpPInfoList *)NULL;
     hpInitPInfo(mesh);
 
-    cur_pt = 1;
     int new_head, old_head, next_node;
     hpPInfoNode *old_node, *new_node;
+
+
+    cur_pt = 1;
     for(i = 1; i<=mesh->ps->size[0]; i++)
     {
 	while(pt_save_flag[I1dm(cur_pt)]!=1)
@@ -1295,9 +1298,11 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	    new_node->proc = old_node->proc;
 	    new_node->lindex = pt_index[new_node->proc][I1dm(old_node->lindex)];
 	    new_node->next = -1;
+	    mesh->ps_pinfo->tail[I1dm(i)] = mesh->ps_pinfo->allocated_len;
 	}
-	mesh->ps_pinfo->tail[I1dm(i)] = mesh->ps_pinfo->allocated_len;
+	cur_pt++;
     }
+
 
     hpDeletePInfoList(&old_ps_pinfo);
 
@@ -1342,7 +1347,17 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 
     for(j = 0; j<num_proc; j++)
 	nb_proc_size[0]+=nb_proc_bool[j];
-    nb_proc_size[0]--;		/* to exclude itself */
+
+
+    if (nb_proc_size[0]==0)
+	printf("Current processor has NO points.\n");
+    else if(nb_proc_size[0]==1)
+    {
+	printf("Current processor has NO overlapping points with other processors.\n");
+    	nb_proc_size[0]--;		/* to exclude itself */
+    }
+    else
+    	nb_proc_size[0]--;		/* to exclude itself */
     mesh->nb_proc = emxCreateND_int32_T(1,nb_proc_size);
 
     k=0;
@@ -1353,7 +1368,10 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     free(nb_proc_bool);
 
     /* 7. since no overlapping trianlges, free mesh->tris_pinfo 
-     * and then reinitialize it*/
+     * and then reinitialize it
+     * 
+     * seems to be no need, because have already done so in hpInitPInfo()*/
+/*    
     hpDeletePInfoList(&(mesh->tris_pinfo));
 
     int num_tris_tmp = mesh->tris->size[0];
@@ -1376,12 +1394,55 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 	mesh->tris_pinfo->tail[I1dm(i)] = i;
     }
     mesh->tris_pinfo->allocated_len = num_tris_tmp;
-
+*/
     mesh->nps_clean = mesh->ps->size[0];
     mesh->ntris_clean = mesh->tris->size[0];
     mesh->npspi_clean = mesh->ps_pinfo->allocated_len;
     mesh->is_clean = 1;
+
+    printf("Passed hpCleanMeshByPinfo\n");
 }
+
+void hpPrint_pinfo(hiPropMesh *mesh)
+{
+    printf("Getting into hpPrint_pinfo()\n");
+    fflush(stdout);
+
+    int i;
+    /* for printing the pinfo */
+    printf("\n\nps pinfo:\n");
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	printf("point %d: ", i);
+	int next = mesh->ps_pinfo->head[I1dm(i)];
+	while (next != -1)
+	{
+	    int cur_node = next;
+	    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
+	    next = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
+	}
+	printf("\n");
+	printf("Head = %d, Tail = %d\n", mesh->ps_pinfo->head[I1dm(i)], mesh->ps_pinfo->tail[I1dm(i)]);
+    }
+
+    printf("tris pinfo:\n");
+    for (i = 1; i <= mesh->tris->size[0]; i++)
+    {
+	printf("triangle %d: ", i);
+	int next = mesh->tris_pinfo->head[I1dm(i)];
+	while (next != -1)
+	{
+	    int cur_node = next;
+	    printf("%d/%d-->", mesh->tris_pinfo->pdata[I1dm(cur_node)].proc, mesh->tris_pinfo->pdata[I1dm(cur_node)].lindex);
+	    next = mesh->tris_pinfo->pdata[I1dm(cur_node)].next;
+	}
+	printf("\n");
+	printf("Head = %d, Tail = %d\n", mesh->tris_pinfo->head[I1dm(i)], mesh->tris_pinfo->tail[I1dm(i)]);
+    }
+    printf("Getting out of hpPrint_pinfo()\n");
+    fflush(stdout);
+}
+
 
 void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 {
