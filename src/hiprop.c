@@ -1405,12 +1405,17 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 
 void hpPrint_pinfo(hiPropMesh *mesh)
 {
-    printf("Getting into hpPrint_pinfo()\n");
+    printf("Getting into hpPrint_pinfo()\n\n");
     fflush(stdout);
 
     int i;
+    printf("nb_proc list:\n");
+    for (i=1; i<=mesh->nb_proc->size[0]; i++)
+	printf("%d -> ", mesh->nb_proc->data[I1dm(i)] );
+    printf("\n");
+
     /* for printing the pinfo */
-    printf("\n\nps pinfo:\n");
+    printf("\nps pinfo:\n");
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
 	printf("point %d: ", i);
