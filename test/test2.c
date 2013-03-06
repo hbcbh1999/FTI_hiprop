@@ -28,6 +28,7 @@ int main(int argc, char* argv[])
     if((runlog_stream = freopen(runlog_filename, "w", stdout)) == NULL)
 	exit(-1);
 
+
     printf("\n Welcome to the test of Hi-Prop Library from proc %d\n", rank);
 
     hiPropMesh *mesh;
@@ -50,6 +51,11 @@ int main(int argc, char* argv[])
     hpBuildPInfoNoOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
 
+    char debug_filename[200];
+    sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
+    hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
+    printf("\n After WriteUnstrMeshWithPInfo\n");
+
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
 
@@ -59,68 +65,80 @@ int main(int argc, char* argv[])
     hpBuildNRingGhost(mesh, 4);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
 
-    /*
-    hpBuildOppositeHalfEdge(mesh);
-    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
-
-    hpBuildIncidentHalfEdge(mesh);
-    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
-    */
-
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
-    hpMeshSmoothing(mesh, 3);
+    int num_old_ps = mesh->nps_clean;
+    printf("num of old ps = %d\n", num_old_ps);
+    
+    char ptid_filename[200];
+    sprintf(ptid_filename, "data/parallel/sphere_nonuni_psid-p%s.data", rank_str);
+    FILE *ptinfile = fopen(ptid_filename, "r");
+
+    int *ptid = (int *) calloc(num_old_ps, sizeof(int));
+
+    for (i = 0; i < num_old_ps; i++)
+	fscanf(ptinfile, "%d", &(ptid[i]));
+    fclose(ptinfile);
+
+    hpMeshSmoothing(mesh, 2);
 
     printf("\n hpMeshSmoothing passed, proc %d \n", rank);
 
-    /*
-    hpComputeDiffops(mesh, 3);
-
-    char norcurv_filename[200];
-    sprintf(norcurv_filename, "norcurv-p%s.out", rank_str);
-    FILE *norcurv_outfile = fopen(norcurv_filename, "w");
+    int num_all_pt = 0;
 
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
-	fprintf(norcurv_outfile, "%22.16g %22.16g %22.16g %22.16g %22.16g %22.16g %22.16g %22.16g\n", 
-		mesh->ps->data[I2dm(i,1,mesh->ps->size)], mesh->ps->data[I2dm(i,2,mesh->ps->size)], mesh->ps->data[I2dm(i,3,mesh->ps->size)],
-		mesh->nor->data[I2dm(i,1,mesh->nor->size)],
-		mesh->nor->data[I2dm(i,2,mesh->nor->size)], 
-		mesh->nor->data[I2dm(i,3,mesh->nor->size)],
-		mesh->curv->data[I2dm(i,1,mesh->curv->size)],
-		mesh->curv->data[I2dm(i,2,mesh->curv->size)]);
+	int head = mesh->ps_pinfo->head[I1dm(i)];
+	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
+	    num_all_pt++;
     }
-    */
 
-    /*
-    hpBuildOppositeHalfEdge(mesh);
-    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+    int out_num_all_pt = 0;
 
-    hpBuildIncidentHalfEdge(mesh);
-    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+    MPI_Allreduce(&num_all_pt, &out_num_all_pt, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-    hpBuildNRingGhost(mesh, 2);
-    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+    printf("\n Num of all pts = %d \n", out_num_all_pt);
 
-    char debug_filename[200];
-    sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
-    hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
+    double *inps1 = (double *) calloc(out_num_all_pt, sizeof(double));
+    double *inps2 = (double *) calloc(out_num_all_pt, sizeof(double));
+    double *inps3 = (double *) calloc(out_num_all_pt, sizeof(double));
 
-    hpBuildOppositeHalfEdge(mesh);
-    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+    double *outps1 = (double *) calloc(out_num_all_pt, sizeof(double));
+    double *outps2 = (double *) calloc(out_num_all_pt, sizeof(double));
+    double *outps3 = (double *) calloc(out_num_all_pt, sizeof(double));
 
-    hpBuildIncidentHalfEdge(mesh);
-    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
 
-    hpBuildNRingGhost(mesh, 2);
-    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	int head = mesh->ps_pinfo->head[I1dm(i)];
+	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
+	{
+	    inps1[ptid[i-1]-1] = mesh->ps->data[I2dm(i,1,mesh->ps->size)];
+	    inps2[ptid[i-1]-1] = mesh->ps->data[I2dm(i,2,mesh->ps->size)];
+	    inps3[ptid[i-1]-1] = mesh->ps->data[I2dm(i,3,mesh->ps->size)];
+	}
+    }
 
-    char debug_filename2[200];
-    sprintf(debug_filename2, "debugout2-p%s.vtk", rank_str);
-    hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
-    */
+    MPI_Allreduce(inps1, outps1, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(inps2, outps2, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(inps3, outps3, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
+
+    if (rank == 0)
+    {
+	char ncfilename[200];
+	sprintf(ncfilename, "debug_smooth.out");
+	FILE *diffout = fopen(ncfilename, "w");
+
+	for (i = 0; i < out_num_all_pt; i++)
+	    fprintf(diffout, "%22.16g %22.16g %22.16g \n",
+		    outps1[i], outps2[i], outps3[i]);
+    }
+
+    free(ptid);
+    free(inps1); free(inps2); free(inps3);
+    free(outps1); free(outps2); free(outps3);
 
     hpDeleteMesh(&mesh);
 
@@ -130,6 +148,7 @@ int main(int argc, char* argv[])
 
     return 1;
 
+}
 /*                      This part about testing obtain_nring 
     if (rank == 0)
     {
@@ -542,6 +561,5 @@ int main(int argc, char* argv[])
 */
 
 
-}
 
 
