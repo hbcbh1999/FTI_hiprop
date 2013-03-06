@@ -280,6 +280,8 @@ int hpWritePolyMeshVtk3d(const char* name,
     emxArray_int32_T* tris = mesh->tris;
 
     file = fopen(name, "w");
+    if (file == NULL)
+	printf("Cannot create the file %s\n", name);
 
     fprintf(file, "# vtk DataFile Version 3.0\n");
     fprintf(file, "Mesh output by hiProp\n");
@@ -1409,7 +1411,8 @@ void hpPrint_pinfo(hiPropMesh *mesh)
     fflush(stdout);
 
     int i;
-    printf("nb_proc list:\n");
+    printf("size of nb_proc list: %d\n", mesh->nb_proc->size[0] );
+    printf("nb_proc list: ");
     for (i=1; i<=mesh->nb_proc->size[0]; i++)
 	printf("%d -> ", mesh->nb_proc->data[I1dm(i)] );
     printf("\n");
