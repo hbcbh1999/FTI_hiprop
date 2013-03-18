@@ -1,0 +1,1162 @@
+Domain limit in 0-th dimension: 0.000000 0.247000
+Domain limit in 1-th dimension: 0.000000 0.628000
+Domain limit in 2-th dimension: 2.538000 3.166000
+Computational grid: 64 64 64 
+Regrid: 64 64 64 
+Repartition: 4 4 4 
+Type y to Restart the Regrid: 
+Lower boundary in 0-th dimension: PERIODIC_BOUNDARY
+Upper boundary in 0-th dimension: PERIODIC_BOUNDARY
+Lower boundary in 1-th dimension: PERIODIC_BOUNDARY
+Upper boundary in 1-th dimension: PERIODIC_BOUNDARY
+Lower boundary in 2-th dimension: REFLECTION_BOUNDARY
+Upper boundary in 2-th dimension: REFLECTION_BOUNDARY
+Enter yes for debugging: yes
+Enter the debugging string: trace
+Enter the debugging string: step_size
+Enter the debugging string: PETSc
+Enter the debugging string: CLOCK
+Passed FT_StartUp()
+Enter problem type: Enter projection type: BELL_COLELLA
+Type y to make movie of pressure: y
+Type y to make movie of vorticity: y
+Type y to make movie of velocity: y
+Type y to make yz cross section movie: Cannot find the string, using default
+Domain
+Type y to make xz cross section movie: Cannot find the string, using default
+Domain
+Type y to make xy cross section movie: Cannot find the string, using default
+Domain
+Type y to make movie of component: y
+Type y to make vector velocity field movie: Cannot find the string, using default
+Domain
+Type y to make movie of phase 1: y
+Type y to make movie of phase 2: y
+Type y to make movie of density: y
+Type y to make movie of pressure error: n
+Type y to make movie of divergence of velocity: n
+Type y to make movie of rho_t: n
+Type y to make movie of mass balance residual: n
+Type y to output connectivity information: n
+Type y to output droplet analysis: n
+Type y to output triangle diameter information: n
+Type y to output error with exact solution: n
+Passed read_iFparams()
+Enter mean position of fluid interface: 2.900000
+Enter the minimum mode numbers: 2
+Enter the maximum mode numbers: 4
+Enter the amplitude standard deviation: 0.030000
+Enter the average phase: 0.000000
+Enter the phase standard deviation: 90.000000
+Enter density and viscosity of fluid 1: 1.030000 0.000010
+Enter density and viscosity of fluid 2: 0.811000 0.000016
+Type y to use couette initial velocity: Enter constant initial velocoty: 0.199230 0.000000 0.000000 Enter inner velocoty: 0.398460 0.000000 0.000000 
+Enter outer velocoty: 0.000000 0.000000 0.000000 
+Enter gravity: 0.000000 0.000000 0.000000 
+Enter surface tension: 0.000010
+Enter factor of smoothing radius: 1.000000
+Passed setInitialIntfc()
+CLOCK           (make_tri_lists)
+CLOCK    0.00   (make_tri_lists)
+In first call to u_pp_send(), setting the buffer size to 32000000 bytes.
+communicate_default_comp
+Passed FT_InitIntfc()
+Passed read_iF_dirichlet_bdry_data()
+Passed FT_InitVeloFunc()
+CLOCK           (make_grid_intfc)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+  CLOCK           (insert_grid_intfc_crossings)
+  CLOCK    0.00   (insert_grid_intfc_crossings)
+  CLOCK           (set_grid_intfc_components)
+  CLOCK    0.02   (set_grid_intfc_components)
+CLOCK    0.02   (make_grid_intfc)
+Passed l_cartesian.initMesh()
+CLOCK           (make_grid_intfc)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+  CLOCK           (insert_grid_intfc_crossings)
+  CLOCK    0.00   (insert_grid_intfc_crossings)
+  CLOCK           (set_grid_intfc_components)
+  CLOCK    0.02   (set_grid_intfc_components)
+CLOCK    0.02   (make_grid_intfc)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+
+totalVolume for the processor itself is 0.003982511199874881
+
+The averagep is 0
+
+The totalVolume is 0.2778214424960019
+
+The average of p after adjusting is 0
+
+Total volume is 0.2778214424960019
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.01   (scatter_top_grid_float_array)
+In setAdvectionDt: 
+max_dt =    0.0193714551021432514 min_dt =  1.46027209712009759e-07
+Passed state initialization()
+
+node = 10, PID = 7292
+Max time: 1000000.000000
+Max step: 3
+Print interval: 0.500000
+Movie frame interval: 1.000000
+CFL factor: 0.450000
+Type y to use the Fast Merge Algorithm: Type y to turn on turbulence model: Redistribution interval: 3
+Type yes to turn off auto-redistribution: Cannot find the string, using default
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.02   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.07   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.12   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.06   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.12   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.12   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.13   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.14   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.10   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.13   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.06   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.09   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.12   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.10   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.10   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.17   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.09   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.04   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.08   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+communicate_default_comp
+CLOCK    0.04   (scatter_front)
+Zeroth step: Before FT_Propagate() front->dt = 0.000000,l_cartesian->max_dt = 0.019371
+CLOCK           (FrontAdvance)
+  CLOCK           (mixed_advance_front3d)
+    CLOCK           (preserve_front_advance_front3d)
+      CLOCK           (copy_interface)
+      CLOCK    0.00   (copy_interface)
+      CLOCK           (point_propagate)
+        CLOCK           (normal_propagate)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+          CLOCK           (init_propagate)
+          CLOCK    0.00   (init_propagate)
+          CLOCK           (propagate_surface_points)
+          CLOCK    0.00   (propagate_surface_points)
+        CLOCK    0.04   (normal_propagate)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.05   (scatter_front)
+      CLOCK    0.09   (point_propagate)
+      CLOCK           (redist_and_untangle)
+        CLOCK           (Mesh_Smoothing)
+        CLOCK    0.00   (Mesh_Smoothing)
+        CLOCK           (Mesh_Reparing)
+        CLOCK    0.00   (Mesh_Reparing)
+        CLOCK           (repair_front_at_grid_crossing)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+          CLOCK           (insert_grid_intfc_crossings)
+          CLOCK    0.00   (insert_grid_intfc_crossings)
+          CLOCK           (repair_intfc3d_in_box)
+          CLOCK    0.12   (repair_intfc3d_in_box)
+        CLOCK    0.12   (repair_front_at_grid_crossing)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.11   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.14   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.05   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.12   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.06   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.05   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.13   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.16   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.10   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.10   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.10   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.10   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.12   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.10   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.11   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+communicate_default_comp
+        CLOCK    0.12   (scatter_front)
+      CLOCK    1.81   (redist_and_untangle)
+    CLOCK    1.90   (preserve_front_advance_front3d)
+  CLOCK    1.90   (mixed_advance_front3d)
+CLOCK    1.90   (FrontAdvance)
+CLOCK           (make_grid_intfc)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+  CLOCK           (insert_grid_intfc_crossings)
+  CLOCK    0.00   (insert_grid_intfc_crossings)
+  CLOCK           (set_grid_intfc_components)
+  CLOCK    0.01   (set_grid_intfc_components)
+CLOCK    0.02   (make_grid_intfc)
+Zeroth step: Calling ifluid solve()
+
+Entering solve, the dt for this solve is : 0
+
+In solve, old time = 0, new time = 0, step = 0
+CLOCK           (SetCompAndIndex)
+Passed setComponent()
+Passed setCornerComp()
+Passed setGlobalIndex()
+CLOCK    0.05   (SetCompAndIndex)
+CLOCK           (setSmoothedProperties)
+  CLOCK           (SetRhoAndMu)
+    CLOCK           (make_tri_lists)
+    CLOCK    0.00   (make_tri_lists)
+  CLOCK    0.00   (SetRhoAndMu)
+  CLOCK           (SurfaceTension)
+
+Enter 3D_Cylindrical::surfaceTension_Peskin 
+  CLOCK    0.00   (SurfaceTension)
+  CLOCK           (ScatStates)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.06   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.07   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK    0.13   (ScatStates)
+CLOCK    0.13   (setSmoothedProperties)
+Passed setSmoothedProperties()
+CLOCK           (computeAdvection)
+CLOCK    0.21   (computeAdvection)
+max_speed after computeAdvection():     0.00000000000000
+CLOCK           (compDiffWithSmoothProperty)
+
+In diffusion solver ,m_dt = 0
+  CLOCK           (SetMatrixForDiffusion)
+  CLOCK    0.18   (SetMatrixForDiffusion)
+  CLOCK           (Petsc_Solve_DIFF)
+  CLOCK    0.05   (Petsc_Solve_DIFF)
+Incompress_Solver_Smooth_3D_Cylindrical::compDiffWithSmoothProperty_2nd_coupled: num_iter = 1, rel_residual = 8.833433e-13. 
+  CLOCK           (GetSolAndScat)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK    0.01   (GetSolAndScat)
+CLOCK    0.25   (compDiffWithSmoothProperty)
+max_speed after compDiffWithSmoothProperty():     0.19923000000000
+max_speed after computeNewVelocity():     0.19923000000000
+CLOCK           (copyMeshStates)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.01   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK    0.01   (copyMeshStates)
+In setAdvectionDt: 
+max_dt =     0.019371455102143418 min_dt =  1.46027209712009759e-07
+Zeroth step: Passed ifluid solve()
+Calling initMovieVariables()
+Calling FT_AddMovieFrame()
+CFL = 0.450000
+Frequency_of_redistribution(front,GENERAL_WAVE) = 3
+Time step from start: 0.008717
+CLOCK           (Main_Loop)
+Before FT_Propagate()
+  CLOCK           (FT_Propagate)
+    CLOCK           (FrontAdvance)
+      CLOCK           (mixed_advance_front3d)
+        CLOCK           (preserve_front_advance_front3d)
+          CLOCK           (copy_interface)
+          CLOCK    0.00   (copy_interface)
+          CLOCK           (point_propagate)
+            CLOCK           (normal_propagate)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (init_propagate)
+              CLOCK    0.00   (init_propagate)
+              CLOCK           (propagate_surface_points)
+              CLOCK    0.00   (propagate_surface_points)
+            CLOCK    0.00   (normal_propagate)
+            CLOCK           (scatter_front)
+communicate_default_comp
+#cut_ref  buf_intfc
+            CLOCK    0.04   (scatter_front)
+          CLOCK    0.04   (point_propagate)
+          CLOCK           (redist_and_untangle)
+            CLOCK           (Mesh_Smoothing)
+            CLOCK    0.00   (Mesh_Smoothing)
+            CLOCK           (Mesh_Reparing)
+            CLOCK    0.00   (Mesh_Reparing)
+            CLOCK           (repair_front_at_grid_crossing)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (insert_grid_intfc_crossings)
+              CLOCK    0.00   (insert_grid_intfc_crossings)
+              CLOCK           (repair_intfc3d_in_box)
+              CLOCK    0.07   (repair_intfc3d_in_box)
+            CLOCK    0.07   (repair_front_at_grid_crossing)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+communicate_default_comp
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+communicate_default_comp
+            CLOCK    0.09   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+communicate_default_comp
+            CLOCK    0.04   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+communicate_default_comp
+            CLOCK    0.06   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+communicate_default_comp
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+communicate_default_comp
+            CLOCK    0.05   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+communicate_default_comp
+            CLOCK    0.02   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+communicate_default_comp
+            CLOCK    0.07   (scatter_front)
+          CLOCK    0.55   (redist_and_untangle)
+        CLOCK    0.75   (preserve_front_advance_front3d)
+      CLOCK    0.75   (mixed_advance_front3d)
+    CLOCK    0.75   (FrontAdvance)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.01   (set_grid_intfc_components)
+    CLOCK    0.01   (make_grid_intfc)
+  CLOCK    0.76   (FT_Propagate)
+Passed FT_Propagate()
+Calling ifluid solve()
+  CLOCK           (Fluid_Solve)
+
+Entering solve, the dt for this solve is : 0.008717154795964461
+
+In solve, old time = 0, new time = 0.008717154795964461, step = 0
+    CLOCK           (SetCompAndIndex)
+Passed setComponent()
+Passed setCornerComp()
+Passed setGlobalIndex()
+    CLOCK    0.03   (SetCompAndIndex)
+    CLOCK           (setSmoothedProperties)
+      CLOCK           (SetRhoAndMu)
+        CLOCK           (make_tri_lists)
+        CLOCK    0.00   (make_tri_lists)
+      CLOCK    0.00   (SetRhoAndMu)
+      CLOCK           (SurfaceTension)
+
+Enter 3D_Cylindrical::surfaceTension_Peskin 
+      CLOCK    0.00   (SurfaceTension)
+      CLOCK           (ScatStates)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.06   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.07   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.15   (ScatStates)
+    CLOCK    0.15   (setSmoothedProperties)
+Passed setSmoothedProperties()
+    CLOCK           (computeAdvection)
+    CLOCK    0.21   (computeAdvection)
+max_speed after computeAdvection():     0.00000000000000
+    CLOCK           (compDiffWithSmoothProperty)
+
+In diffusion solver ,m_dt = 0.008717154795964461
+      CLOCK           (SetMatrixForDiffusion)
+      CLOCK    0.16   (SetMatrixForDiffusion)
+      CLOCK           (Petsc_Solve_DIFF)
+      CLOCK    0.05   (Petsc_Solve_DIFF)
+Incompress_Solver_Smooth_3D_Cylindrical::compDiffWithSmoothProperty_2nd_coupled: num_iter = 4, rel_residual = 6.599417e-11. 
+      CLOCK           (GetSolAndScat)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.00   (GetSolAndScat)
+    CLOCK    0.21   (compDiffWithSmoothProperty)
+max_speed after compDiffWithSmoothProperty():     0.20000448493312
+    CLOCK           (computeProjection)
+      CLOCK           (SetMatrixForProjection)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The summation of divergence of U is -1.287490079826537e-18
+
+The max value of divergence of U is 0.05731966802136893
+      CLOCK    0.01   (SetMatrixForProjection)
+      CLOCK           (Petsc_Solver_Projection)
+      CLOCK    0.18   (Petsc_Solver_Projection)
+      CLOCK           (GetSolandScat)
+Incompress_Solver_Smooth_3D_Cylindrical::computeProjection: num_iter = 112, rel_residual = 1.052211e-13 
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The max value of phi is 0.0005213947260544988
+      CLOCK    0.00   (GetSolandScat)
+    CLOCK    0.19   (computeProjection)
+    CLOCK           (computePressure)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.01   (scatter_top_grid_float_array)
+    CLOCK    0.01   (computePressure)
+    CLOCK           (computeNewVelocity)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (computeNewVelocity)
+max_speed after computeNewVelocity():     0.19972632268589
+    CLOCK           (copyMeshStates)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (copyMeshStates)
+In setAdvectionDt: 
+max_dt =    0.0193233167671624032 min_dt =  1.46027209712009759e-07
+  CLOCK    0.80   (Fluid_Solve)
+Passed ifluid solve()
+After solve()
+Storage current 51307656 bytes: at end of time step
+Time step from l_cartesian->max_dt():     0.00869549254522
+  CLOCK           (Output_Section)
+
+time =     0.00871715479596   step =     1   next dt =     0.00869549254522
+
+ Entering the Step Diagnosis part 
+
+ Passed the Step Diagnosis part 
+last_restart_step 1
+Time step from FT_TimeControlFilter(): 0.008695
+  CLOCK    0.55   (Output_Section)
+CLOCK    2.11   (Main_Loop)
+CLOCK           (Main_Loop)
+Before FT_Propagate()
+  CLOCK           (FT_Propagate)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.02   (set_grid_intfc_components)
+    CLOCK    0.30   (make_grid_intfc)
+    CLOCK           (FrontAdvance)
+      CLOCK           (mixed_advance_front3d)
+        CLOCK           (preserve_front_advance_front3d)
+          CLOCK           (copy_interface)
+          CLOCK    0.00   (copy_interface)
+          CLOCK           (point_propagate)
+            CLOCK           (normal_propagate)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (init_propagate)
+              CLOCK    0.00   (init_propagate)
+              CLOCK           (propagate_surface_points)
+              CLOCK    0.00   (propagate_surface_points)
+            CLOCK    0.00   (normal_propagate)
+            CLOCK           (scatter_front)
+            CLOCK    0.05   (scatter_front)
+          CLOCK    0.05   (point_propagate)
+          CLOCK           (redist_and_untangle)
+            CLOCK           (Mesh_Smoothing)
+            CLOCK    0.00   (Mesh_Smoothing)
+            CLOCK           (Mesh_Reparing)
+            CLOCK    0.00   (Mesh_Reparing)
+            CLOCK           (repair_front_at_grid_crossing)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (insert_grid_intfc_crossings)
+              CLOCK    0.00   (insert_grid_intfc_crossings)
+              CLOCK           (repair_intfc3d_in_box)
+              CLOCK    0.13   (repair_intfc3d_in_box)
+            CLOCK    0.13   (repair_front_at_grid_crossing)
+            CLOCK           (scatter_front)
+            CLOCK    0.05   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.08   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.06   (scatter_front)
+            CLOCK           (scatter_front)
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.06   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.06   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.06   (scatter_front)
+          CLOCK    0.57   (redist_and_untangle)
+        CLOCK    0.62   (preserve_front_advance_front3d)
+      CLOCK    0.62   (mixed_advance_front3d)
+    CLOCK    0.62   (FrontAdvance)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.02   (set_grid_intfc_components)
+    CLOCK    0.02   (make_grid_intfc)
+  CLOCK    0.94   (FT_Propagate)
+Passed FT_Propagate()
+Calling ifluid solve()
+  CLOCK           (Fluid_Solve)
+
+Entering solve, the dt for this solve is : 0.008695492545223081
+
+In solve, old time = 0.008717154795964461, new time = 0.01741264734118754, step = 1
+    CLOCK           (SetCompAndIndex)
+Passed setComponent()
+Passed setCornerComp()
+Passed setGlobalIndex()
+    CLOCK    0.00   (SetCompAndIndex)
+    CLOCK           (setSmoothedProperties)
+      CLOCK           (SetRhoAndMu)
+        CLOCK           (make_tri_lists)
+        CLOCK    0.00   (make_tri_lists)
+      CLOCK    0.01   (SetRhoAndMu)
+      CLOCK           (SurfaceTension)
+
+Enter 3D_Cylindrical::surfaceTension_Peskin 
+      CLOCK    0.00   (SurfaceTension)
+      CLOCK           (ScatStates)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.02   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.05   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.08   (ScatStates)
+    CLOCK    0.09   (setSmoothedProperties)
+Passed setSmoothedProperties()
+    CLOCK           (computeAdvection)
+    CLOCK    0.23   (computeAdvection)
+max_speed after computeAdvection():     0.00000000000000
+    CLOCK           (compDiffWithSmoothProperty)
+
+In diffusion solver ,m_dt = 0.008695492545223081
+      CLOCK           (SetMatrixForDiffusion)
+      CLOCK    0.17   (SetMatrixForDiffusion)
+      CLOCK           (Petsc_Solve_DIFF)
+      CLOCK    0.05   (Petsc_Solve_DIFF)
+Incompress_Solver_Smooth_3D_Cylindrical::compDiffWithSmoothProperty_2nd_coupled: num_iter = 4, rel_residual = 6.520515e-11. 
+      CLOCK           (GetSolAndScat)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.01   (GetSolAndScat)
+    CLOCK    0.23   (compDiffWithSmoothProperty)
+max_speed after compDiffWithSmoothProperty():     0.20023016741464
+    CLOCK           (computeProjection)
+      CLOCK           (SetMatrixForProjection)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The summation of divergence of U is -4.065758146820642e-20
+
+The max value of divergence of U is 0.03779815960437291
+      CLOCK    0.00   (SetMatrixForProjection)
+      CLOCK           (Petsc_Solver_Projection)
+      CLOCK    0.19   (Petsc_Solver_Projection)
+      CLOCK           (GetSolandScat)
+Incompress_Solver_Smooth_3D_Cylindrical::computeProjection: num_iter = 88, rel_residual = 3.703386e-13 
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The max value of phi is 0.0003230613885189366
+      CLOCK    0.00   (GetSolandScat)
+    CLOCK    0.19   (computeProjection)
+    CLOCK           (computePressure)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.01   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.02   (computePressure)
+    CLOCK           (computeNewVelocity)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.01   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.01   (scatter_top_grid_float_array)
+    CLOCK    0.02   (computeNewVelocity)
+max_speed after computeNewVelocity():     0.20022437558336
+    CLOCK           (copyMeshStates)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.01   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.01   (copyMeshStates)
+In setAdvectionDt: 
+max_dt =    0.0192752505220983167 min_dt =  1.46027209712009759e-07
+  CLOCK    0.79   (Fluid_Solve)
+Passed ifluid solve()
+After solve()
+Storage current 51309128 bytes: at end of time step
+Time step from l_cartesian->max_dt():     0.00867386273494
+  CLOCK           (Output_Section)
+
+time =     0.01741264734119   step =     2   next dt =     0.00867386273494
+
+ Entering the Step Diagnosis part 
+
+ Passed the Step Diagnosis part 
+Time step from FT_TimeControlFilter(): 0.008674
+  CLOCK    0.00   (Output_Section)
+CLOCK    1.73   (Main_Loop)
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Entering TEST_Hiprop
+CLOCK           (Import hiprop)
+Number of Neighbour procs in FT bounding box is 17
+num_pts = 0
+Before InitPInfor
+Before BuildPInfo
+Getting into hpPrint_pinfo()
+
+size of nb_proc list: 17
+nb_proc list:
+5 -> 21 -> 9 -> 25 -> 13 -> 29 -> 6 -> 22 -> 26 -> 14 -> 30 -> 7 -> 23 -> 11 -> 27 -> 15 -> 31 -> 
+
+ps pinfo:
+tris pinfo:
+Getting out of hpPrint_pinfo()
+BoundingBox: 0.108063  0.200687  0.274750  0.510250  2.498750  2.734250  
+Passed ImportMeshToHiprop()
+CLOCK   10.61   (Import hiprop)
+After import, num_points = 0
+hpmesh-t0000002
+out12/hpmesh-t0000002-p0010.vtk
+CLOCK           (Export hiprop)
+Getting into ExportMeshToFronTier
+Getting into read_hiprop_surface()
+No triangles in the surface.
+Passed read_hiprop_surface
+Passed install_subdomain_bdry_curves
+Passed ExportMeshToFronTier
+CLOCK    0.00   (Export hiprop)
+Before scatter_front
+Leaving TEST_Hiprop
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+CLOCK           (Main_Loop)
+Before FT_Propagate()
+  CLOCK           (FT_Propagate)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.02   (set_grid_intfc_components)
+    CLOCK    0.02   (make_grid_intfc)
+    CLOCK           (FrontAdvance)
+      CLOCK           (mixed_advance_front3d)
+        CLOCK           (preserve_front_advance_front3d)
+          CLOCK           (copy_interface)
+          CLOCK    0.01   (copy_interface)
+          CLOCK           (point_propagate)
+            CLOCK           (normal_propagate)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (init_propagate)
+              CLOCK    0.00   (init_propagate)
+              CLOCK           (propagate_surface_points)
+              CLOCK    0.00   (propagate_surface_points)
+            CLOCK    0.02   (normal_propagate)
+            CLOCK           (scatter_front)
+            CLOCK    0.03   (scatter_front)
+          CLOCK    0.05   (point_propagate)
+          CLOCK           (redist_and_untangle)
+            CLOCK           (Mesh_Smoothing)
+            CLOCK    0.00   (Mesh_Smoothing)
+            CLOCK           (Mesh_Reparing)
+            CLOCK    0.00   (Mesh_Reparing)
+            CLOCK           (repair_front_at_grid_crossing)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (insert_grid_intfc_crossings)
+              CLOCK    0.00   (insert_grid_intfc_crossings)
+              CLOCK           (repair_intfc3d_in_box)
+              CLOCK    0.06   (repair_intfc3d_in_box)
+            CLOCK    0.06   (repair_front_at_grid_crossing)
+            CLOCK           (scatter_front)
+            CLOCK    0.05   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.06   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (scatter_front)
+            CLOCK    0.05   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.05   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.07   (scatter_front)
+          CLOCK    0.43   (redist_and_untangle)
+        CLOCK    0.49   (preserve_front_advance_front3d)
+      CLOCK    0.49   (mixed_advance_front3d)
+    CLOCK    0.49   (FrontAdvance)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.03   (set_grid_intfc_components)
+    CLOCK    0.03   (make_grid_intfc)
+  CLOCK    0.54   (FT_Propagate)
+Passed FT_Propagate()
+Calling ifluid solve()
+  CLOCK           (Fluid_Solve)
+
+Entering solve, the dt for this solve is : 0.008673862734944244
+
+In solve, old time = 0.01741264734118754, new time = 0.02608651007613178, step = 2
+    CLOCK           (SetCompAndIndex)
+Passed setComponent()
+Passed setCornerComp()
+Passed setGlobalIndex()
+    CLOCK    0.02   (SetCompAndIndex)
+    CLOCK           (setSmoothedProperties)
+      CLOCK           (SetRhoAndMu)
+        CLOCK           (make_tri_lists)
+        CLOCK    0.00   (make_tri_lists)
+      CLOCK    0.01   (SetRhoAndMu)
+      CLOCK           (SurfaceTension)
+
+Enter 3D_Cylindrical::surfaceTension_Peskin 
+      CLOCK    0.00   (SurfaceTension)
+      CLOCK           (ScatStates)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.02   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.02   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.01   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.01   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.07   (ScatStates)
+    CLOCK    0.08   (setSmoothedProperties)
+Passed setSmoothedProperties()
+    CLOCK           (computeAdvection)
+    CLOCK    0.23   (computeAdvection)
+max_speed after computeAdvection():     0.00000000000000
+    CLOCK           (compDiffWithSmoothProperty)
+
+In diffusion solver ,m_dt = 0.008673862734944244
+      CLOCK           (SetMatrixForDiffusion)
+      CLOCK    0.17   (SetMatrixForDiffusion)
+      CLOCK           (Petsc_Solve_DIFF)
+      CLOCK    0.07   (Petsc_Solve_DIFF)
+Incompress_Solver_Smooth_3D_Cylindrical::compDiffWithSmoothProperty_2nd_coupled: num_iter = 4, rel_residual = 6.447022e-11. 
+      CLOCK           (GetSolAndScat)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.00   (GetSolAndScat)
+    CLOCK    0.25   (compDiffWithSmoothProperty)
+max_speed after compDiffWithSmoothProperty():     0.20072480280771
+    CLOCK           (computeProjection)
+      CLOCK           (SetMatrixForProjection)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The summation of divergence of U is -2.710505431213761e-19
+
+The max value of divergence of U is 0.03844594727289939
+      CLOCK    0.02   (SetMatrixForProjection)
+      CLOCK           (Petsc_Solver_Projection)
+      CLOCK    0.11   (Petsc_Solver_Projection)
+      CLOCK           (GetSolandScat)
+Incompress_Solver_Smooth_3D_Cylindrical::computeProjection: num_iter = 92, rel_residual = 5.291358e-13 
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The max value of phi is 0.000419685422138866
+      CLOCK    0.00   (GetSolandScat)
+    CLOCK    0.14   (computeProjection)
+    CLOCK           (computePressure)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (computePressure)
+    CLOCK           (computeNewVelocity)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (computeNewVelocity)
+max_speed after computeNewVelocity():     0.20071618336006
+    CLOCK           (copyMeshStates)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (copyMeshStates)
+In setAdvectionDt: 
+max_dt =    0.0192280210563627908 min_dt =  1.46027209712009759e-07
+  CLOCK    0.73   (Fluid_Solve)
+Passed ifluid solve()
+After solve()
+Storage current 51309128 bytes: at end of time step
+Time step from l_cartesian->max_dt():     0.00865260947536
+  CLOCK           (Output_Section)
+
+time =     0.02608651007613   step =     3   next dt =     0.00865260947536
+
+ Entering the Step Diagnosis part 
+
+ Passed the Step Diagnosis part 
+last_restart_step 3
+Calling initMovieVariables()
+Calling FT_AddMovieFrame()
+After time loop
+
+iFluid.cpp:271: error: calling clean_up
+
+		CLEAN_UP, error = 0
+
+Storage used 51309128 bytes
+
+
+		EXECUTION TIME DATA:
+
+		CPU TIME: 32 Seconds
+		SYS TIME: 4 Minutes 28 Seconds
+		MAX RSS = 81872 Kilobytes
+
+		TERMINATION TIME OF RUN:   Sun Mar  3 18:04:27 2013
+

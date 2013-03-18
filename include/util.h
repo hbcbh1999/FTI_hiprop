@@ -50,6 +50,14 @@
  */
 #define I3dm(i,j,k,size) (((k-1)*(size[1])+(j-1))*(size[0])+(i-1))
 
+#ifndef hpmax
+	#define hpMax( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#endif
+
+#ifndef hpmin
+	#define hpMin( a, b ) ( ((a) < (b)) ? (a) : (b) )
+#endif
+
 /*!
  * \brief Transform an int number into string using certain number of digits
  * \param n int number that is being transformed

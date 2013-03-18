@@ -1,0 +1,3522 @@
+Domain limit in 0-th dimension: 0.000000 0.247000
+Domain limit in 1-th dimension: 0.000000 0.628000
+Domain limit in 2-th dimension: 2.538000 3.166000
+Computational grid: 64 64 64 
+Regrid: 64 64 64 
+Repartition: 4 4 4 
+Type y to Restart the Regrid: 
+Lower boundary in 0-th dimension: PERIODIC_BOUNDARY
+Upper boundary in 0-th dimension: PERIODIC_BOUNDARY
+Lower boundary in 1-th dimension: PERIODIC_BOUNDARY
+Upper boundary in 1-th dimension: PERIODIC_BOUNDARY
+Lower boundary in 2-th dimension: REFLECTION_BOUNDARY
+Upper boundary in 2-th dimension: REFLECTION_BOUNDARY
+Enter yes for debugging: yes
+Enter the debugging string: trace
+Enter the debugging string: step_size
+Enter the debugging string: PETSc
+Enter the debugging string: CLOCK
+Passed FT_StartUp()
+Enter problem type: Enter projection type: BELL_COLELLA
+Type y to make movie of pressure: y
+Type y to make movie of vorticity: y
+Type y to make movie of velocity: y
+Type y to make yz cross section movie: Cannot find the string, using default
+Domain
+Type y to make xz cross section movie: Cannot find the string, using default
+Domain
+Type y to make xy cross section movie: Cannot find the string, using default
+Domain
+Type y to make movie of component: y
+Type y to make vector velocity field movie: Cannot find the string, using default
+Domain
+Type y to make movie of phase 1: y
+Type y to make movie of phase 2: y
+Type y to make movie of density: y
+Type y to make movie of pressure error: n
+Type y to make movie of divergence of velocity: n
+Type y to make movie of rho_t: n
+Type y to make movie of mass balance residual: n
+Type y to output connectivity information: n
+Type y to output droplet analysis: n
+Type y to output triangle diameter information: n
+Type y to output error with exact solution: n
+Passed read_iFparams()
+Enter mean position of fluid interface: 2.900000
+Enter the minimum mode numbers: 2
+Enter the maximum mode numbers: 4
+Enter the amplitude standard deviation: 0.030000
+Enter the average phase: 0.000000
+Enter the phase standard deviation: 90.000000
+Enter density and viscosity of fluid 1: 1.030000 0.000010
+Enter density and viscosity of fluid 2: 0.811000 0.000016
+Type y to use couette initial velocity: Enter constant initial velocoty: 0.199230 0.000000 0.000000 Enter inner velocoty: 0.398460 0.000000 0.000000 
+Enter outer velocoty: 0.000000 0.000000 0.000000 
+Enter gravity: 0.000000 0.000000 0.000000 
+Enter surface tension: 0.000010
+Enter factor of smoothing radius: 1.000000
+Passed setInitialIntfc()
+CLOCK           (make_tri_lists)
+CLOCK    0.01   (make_tri_lists)
+In first call to u_pp_send(), setting the buffer size to 32000000 bytes.
+communicate_default_comp
+Passed FT_InitIntfc()
+Passed read_iF_dirichlet_bdry_data()
+Passed FT_InitVeloFunc()
+CLOCK           (make_grid_intfc)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+  CLOCK           (insert_grid_intfc_crossings)
+  CLOCK    0.00   (insert_grid_intfc_crossings)
+  CLOCK           (set_grid_intfc_components)
+  CLOCK    0.05   (set_grid_intfc_components)
+CLOCK    0.06   (make_grid_intfc)
+CLOCK           (make_tri_lists)
+CLOCK    0.01   (make_tri_lists)
+Passed l_cartesian.initMesh()
+CLOCK           (make_grid_intfc)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+  CLOCK           (insert_grid_intfc_crossings)
+  CLOCK    0.00   (insert_grid_intfc_crossings)
+  CLOCK           (set_grid_intfc_components)
+  CLOCK    0.05   (set_grid_intfc_components)
+CLOCK    0.06   (make_grid_intfc)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.01   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.01   (scatter_top_grid_float_array)
+
+totalVolume for the processor itself is 0.003982511199874881
+
+The averagep is 0
+
+The totalVolume is 0.2778214424960019
+
+The average of p after adjusting is 0
+
+Total volume is 0.2778214424960019
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.01   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK           (scatter_top_grid_float_array)
+CLOCK    0.00   (scatter_top_grid_float_array)
+In setAdvectionDt: 
+max_dt =    0.0193714551021432514 min_dt =  1.46027209712009759e-07
+Passed state initialization()
+
+node = 3, PID = 7285
+Max time: 1000000.000000
+Max step: 3
+Print interval: 0.500000
+Movie frame interval: 1.000000
+CFL factor: 0.450000
+Type y to use the Fast Merge Algorithm: Type y to turn on turbulence model: Redistribution interval: 3
+Type yes to turn off auto-redistribution: Cannot find the string, using default
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.04   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.09   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.01   (redistribute_surface)
+CLOCK    0.01   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.14   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.13   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.10   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.13   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.01   (redistribute_surface)
+CLOCK    0.01   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.14   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.14   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.05   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.12   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.09   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.15   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.13   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.13   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.13   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.14   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.15   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.09   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.14   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.10   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.10   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.08   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.08   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.05   (scatter_front)
+CLOCK           (Add_and_Delete_Points)
+  CLOCK           (redistribute_surface)
+  CLOCK    0.00   (redistribute_surface)
+CLOCK    0.00   (Add_and_Delete_Points)
+CLOCK           (scatter_front)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+CLOCK    0.11   (scatter_front)
+Zeroth step: Before FT_Propagate() front->dt = 0.000000,l_cartesian->max_dt = 0.019371
+CLOCK           (FrontAdvance)
+  CLOCK           (mixed_advance_front3d)
+    CLOCK           (preserve_front_advance_front3d)
+      CLOCK           (copy_interface)
+      CLOCK    0.01   (copy_interface)
+      CLOCK           (point_propagate)
+        CLOCK           (normal_propagate)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+          CLOCK           (init_propagate)
+          CLOCK    0.00   (init_propagate)
+          CLOCK           (propagate_surface_points)
+          CLOCK    0.00   (propagate_surface_points)
+        CLOCK    0.09   (normal_propagate)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.09   (scatter_front)
+      CLOCK    0.20   (point_propagate)
+      CLOCK           (redist_and_untangle)
+        CLOCK           (Mesh_Smoothing)
+        CLOCK    0.00   (Mesh_Smoothing)
+        CLOCK           (Mesh_Reparing)
+        CLOCK    0.00   (Mesh_Reparing)
+        CLOCK           (repair_front_at_grid_crossing)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+          CLOCK           (insert_grid_intfc_crossings)
+          CLOCK    0.00   (insert_grid_intfc_crossings)
+          CLOCK           (repair_intfc3d_in_box)
+          CLOCK    0.10   (repair_intfc3d_in_box)
+        CLOCK    0.11   (repair_front_at_grid_crossing)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.12   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.26   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.05   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.14   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.11   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.13   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.12   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.09   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.07   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.15   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.11   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.15   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.14   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.08   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.09   (scatter_front)
+        CLOCK           (Add_and_Delete_Points)
+          CLOCK           (redistribute_surface)
+          CLOCK    0.00   (redistribute_surface)
+        CLOCK    0.00   (Add_and_Delete_Points)
+        CLOCK           (scatter_front)
+          CLOCK           (make_tri_lists)
+          CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+        CLOCK    0.11   (scatter_front)
+      CLOCK    2.06   (redist_and_untangle)
+    CLOCK    2.27   (preserve_front_advance_front3d)
+  CLOCK    2.28   (mixed_advance_front3d)
+CLOCK    2.28   (FrontAdvance)
+CLOCK           (make_grid_intfc)
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+  CLOCK           (insert_grid_intfc_crossings)
+  CLOCK    0.00   (insert_grid_intfc_crossings)
+  CLOCK           (set_grid_intfc_components)
+  CLOCK    0.05   (set_grid_intfc_components)
+CLOCK    0.05   (make_grid_intfc)
+Zeroth step: Calling ifluid solve()
+
+Entering solve, the dt for this solve is : 0
+
+In solve, old time = 0, new time = 0, step = 0
+CLOCK           (SetCompAndIndex)
+Passed setComponent()
+  CLOCK           (make_tri_lists)
+  CLOCK    0.00   (make_tri_lists)
+Passed setCornerComp()
+Passed setGlobalIndex()
+CLOCK    0.07   (SetCompAndIndex)
+CLOCK           (setSmoothedProperties)
+  CLOCK           (SetRhoAndMu)
+  CLOCK    0.00   (SetRhoAndMu)
+  CLOCK           (SurfaceTension)
+
+Enter 3D_Cylindrical::surfaceTension_Peskin 
+  CLOCK    0.01   (SurfaceTension)
+  CLOCK           (ScatStates)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.11   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.05   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK    0.16   (ScatStates)
+CLOCK    0.18   (setSmoothedProperties)
+Passed setSmoothedProperties()
+CLOCK           (computeAdvection)
+CLOCK    0.21   (computeAdvection)
+max_speed after computeAdvection():     0.00000000000000
+CLOCK           (compDiffWithSmoothProperty)
+
+In diffusion solver ,m_dt = 0
+  CLOCK           (SetMatrixForDiffusion)
+  CLOCK    0.16   (SetMatrixForDiffusion)
+  CLOCK           (Petsc_Solve_DIFF)
+  CLOCK    0.04   (Petsc_Solve_DIFF)
+Incompress_Solver_Smooth_3D_Cylindrical::compDiffWithSmoothProperty_2nd_coupled: num_iter = 1, rel_residual = 8.833433e-13. 
+  CLOCK           (GetSolAndScat)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK           (scatter_top_grid_float_array)
+    CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK    0.00   (GetSolAndScat)
+CLOCK    0.23   (compDiffWithSmoothProperty)
+max_speed after compDiffWithSmoothProperty():     0.19923000000000
+max_speed after computeNewVelocity():     0.19923000000000
+CLOCK           (copyMeshStates)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.01   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+  CLOCK           (scatter_top_grid_float_array)
+  CLOCK    0.00   (scatter_top_grid_float_array)
+CLOCK    0.01   (copyMeshStates)
+In setAdvectionDt: 
+max_dt =     0.019371455102143418 min_dt =  1.46027209712009759e-07
+Zeroth step: Passed ifluid solve()
+Calling initMovieVariables()
+Calling FT_AddMovieFrame()
+CFL = 0.450000
+Frequency_of_redistribution(front,GENERAL_WAVE) = 3
+Time step from start: 0.008717
+CLOCK           (Main_Loop)
+Before FT_Propagate()
+  CLOCK           (FT_Propagate)
+    CLOCK           (FrontAdvance)
+      CLOCK           (mixed_advance_front3d)
+        CLOCK           (preserve_front_advance_front3d)
+          CLOCK           (copy_interface)
+          CLOCK    0.00   (copy_interface)
+          CLOCK           (point_propagate)
+            CLOCK           (normal_propagate)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.01   (make_tri_lists)
+              CLOCK           (init_propagate)
+              CLOCK    0.00   (init_propagate)
+              CLOCK           (propagate_surface_points)
+              CLOCK    0.00   (propagate_surface_points)
+            CLOCK    0.01   (normal_propagate)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+#cut_ref  buf_intfc
+            CLOCK    0.08   (scatter_front)
+          CLOCK    0.10   (point_propagate)
+          CLOCK           (redist_and_untangle)
+            CLOCK           (Mesh_Smoothing)
+            CLOCK    0.00   (Mesh_Smoothing)
+            CLOCK           (Mesh_Reparing)
+            CLOCK    0.00   (Mesh_Reparing)
+            CLOCK           (repair_front_at_grid_crossing)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (insert_grid_intfc_crossings)
+              CLOCK    0.00   (insert_grid_intfc_crossings)
+              CLOCK           (repair_intfc3d_in_box)
+              CLOCK    0.10   (repair_intfc3d_in_box)
+            CLOCK    0.10   (repair_front_at_grid_crossing)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+            CLOCK    0.03   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+            CLOCK    0.03   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+            CLOCK    0.04   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+            CLOCK    0.06   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+communicate_default_comp
+            CLOCK    0.04   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.01   (make_tri_lists)
+communicate_default_comp
+            CLOCK    0.09   (scatter_front)
+          CLOCK    0.55   (redist_and_untangle)
+        CLOCK    0.77   (preserve_front_advance_front3d)
+      CLOCK    0.78   (mixed_advance_front3d)
+    CLOCK    0.78   (FrontAdvance)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.01   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.05   (set_grid_intfc_components)
+    CLOCK    0.06   (make_grid_intfc)
+  CLOCK    0.84   (FT_Propagate)
+Passed FT_Propagate()
+Calling ifluid solve()
+  CLOCK           (Fluid_Solve)
+
+Entering solve, the dt for this solve is : 0.008717154795964461
+
+In solve, old time = 0, new time = 0.008717154795964461, step = 0
+    CLOCK           (SetCompAndIndex)
+Passed setComponent()
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+Passed setCornerComp()
+Passed setGlobalIndex()
+    CLOCK    0.01   (SetCompAndIndex)
+    CLOCK           (setSmoothedProperties)
+      CLOCK           (SetRhoAndMu)
+      CLOCK    0.01   (SetRhoAndMu)
+      CLOCK           (SurfaceTension)
+
+Enter 3D_Cylindrical::surfaceTension_Peskin 
+      CLOCK    0.00   (SurfaceTension)
+      CLOCK           (ScatStates)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.07   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.03   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.10   (ScatStates)
+    CLOCK    0.12   (setSmoothedProperties)
+Passed setSmoothedProperties()
+    CLOCK           (computeAdvection)
+    CLOCK    0.21   (computeAdvection)
+max_speed after computeAdvection():     0.00000000000000
+    CLOCK           (compDiffWithSmoothProperty)
+
+In diffusion solver ,m_dt = 0.008717154795964461
+      CLOCK           (SetMatrixForDiffusion)
+      CLOCK    0.17   (SetMatrixForDiffusion)
+      CLOCK           (Petsc_Solve_DIFF)
+      CLOCK    0.08   (Petsc_Solve_DIFF)
+Incompress_Solver_Smooth_3D_Cylindrical::compDiffWithSmoothProperty_2nd_coupled: num_iter = 4, rel_residual = 6.599417e-11. 
+      CLOCK           (GetSolAndScat)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.00   (GetSolAndScat)
+    CLOCK    0.25   (compDiffWithSmoothProperty)
+max_speed after compDiffWithSmoothProperty():     0.20000448493312
+    CLOCK           (computeProjection)
+      CLOCK           (SetMatrixForProjection)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The summation of divergence of U is -1.287490079826537e-18
+
+The max value of divergence of U is 0.05731966802136893
+      CLOCK    0.01   (SetMatrixForProjection)
+      CLOCK           (Petsc_Solver_Projection)
+      CLOCK    0.21   (Petsc_Solver_Projection)
+      CLOCK           (GetSolandScat)
+Incompress_Solver_Smooth_3D_Cylindrical::computeProjection: num_iter = 112, rel_residual = 1.052211e-13 
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The max value of phi is 0.0005213947260544988
+      CLOCK    0.00   (GetSolandScat)
+    CLOCK    0.22   (computeProjection)
+    CLOCK           (computePressure)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (computePressure)
+    CLOCK           (computeNewVelocity)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (computeNewVelocity)
+max_speed after computeNewVelocity():     0.19972632268589
+    CLOCK           (copyMeshStates)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.01   (scatter_top_grid_float_array)
+    CLOCK    0.01   (copyMeshStates)
+In setAdvectionDt: 
+max_dt =    0.0193233167671624032 min_dt =  1.46027209712009759e-07
+  CLOCK    0.82   (Fluid_Solve)
+Passed ifluid solve()
+After solve()
+Storage current 66253768 bytes: at end of time step
+Time step from l_cartesian->max_dt():     0.00869549254522
+  CLOCK           (Output_Section)
+
+time =     0.00871715479596   step =     1   next dt =     0.00869549254522
+
+ Entering the Step Diagnosis part 
+
+ Passed the Step Diagnosis part 
+last_restart_step 1
+Time step from FT_TimeControlFilter(): 0.008695
+  CLOCK    1.18   (Output_Section)
+CLOCK    2.84   (Main_Loop)
+CLOCK           (Main_Loop)
+Before FT_Propagate()
+  CLOCK           (FT_Propagate)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.05   (set_grid_intfc_components)
+    CLOCK    0.21   (make_grid_intfc)
+    CLOCK           (FrontAdvance)
+      CLOCK           (mixed_advance_front3d)
+        CLOCK           (preserve_front_advance_front3d)
+          CLOCK           (copy_interface)
+          CLOCK    0.00   (copy_interface)
+          CLOCK           (point_propagate)
+            CLOCK           (normal_propagate)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (init_propagate)
+              CLOCK    0.00   (init_propagate)
+              CLOCK           (propagate_surface_points)
+              CLOCK    0.00   (propagate_surface_points)
+            CLOCK    0.00   (normal_propagate)
+            CLOCK           (scatter_front)
+            CLOCK    0.08   (scatter_front)
+          CLOCK    0.09   (point_propagate)
+          CLOCK           (redist_and_untangle)
+            CLOCK           (Mesh_Smoothing)
+            CLOCK    0.00   (Mesh_Smoothing)
+            CLOCK           (Mesh_Reparing)
+            CLOCK    0.00   (Mesh_Reparing)
+            CLOCK           (repair_front_at_grid_crossing)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (insert_grid_intfc_crossings)
+              CLOCK    0.00   (insert_grid_intfc_crossings)
+              CLOCK           (repair_intfc3d_in_box)
+              CLOCK    0.08   (repair_intfc3d_in_box)
+            CLOCK    0.09   (repair_front_at_grid_crossing)
+            CLOCK           (scatter_front)
+            CLOCK    0.03   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.05   (scatter_front)
+            CLOCK           (scatter_front)
+            CLOCK    0.10   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.06   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.05   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.08   (scatter_front)
+          CLOCK    0.53   (redist_and_untangle)
+        CLOCK    0.62   (preserve_front_advance_front3d)
+      CLOCK    0.62   (mixed_advance_front3d)
+    CLOCK    0.62   (FrontAdvance)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.06   (set_grid_intfc_components)
+    CLOCK    0.06   (make_grid_intfc)
+  CLOCK    0.89   (FT_Propagate)
+Passed FT_Propagate()
+Calling ifluid solve()
+  CLOCK           (Fluid_Solve)
+
+Entering solve, the dt for this solve is : 0.008695492545223081
+
+In solve, old time = 0.008717154795964461, new time = 0.01741264734118754, step = 1
+    CLOCK           (SetCompAndIndex)
+Passed setComponent()
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+Passed setCornerComp()
+Passed setGlobalIndex()
+    CLOCK    0.02   (SetCompAndIndex)
+    CLOCK           (setSmoothedProperties)
+      CLOCK           (SetRhoAndMu)
+      CLOCK    0.00   (SetRhoAndMu)
+      CLOCK           (SurfaceTension)
+
+Enter 3D_Cylindrical::surfaceTension_Peskin 
+      CLOCK    0.01   (SurfaceTension)
+      CLOCK           (ScatStates)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.03   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.02   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.05   (ScatStates)
+    CLOCK    0.07   (setSmoothedProperties)
+Passed setSmoothedProperties()
+    CLOCK           (computeAdvection)
+    CLOCK    0.23   (computeAdvection)
+max_speed after computeAdvection():     0.00000000000000
+    CLOCK           (compDiffWithSmoothProperty)
+
+In diffusion solver ,m_dt = 0.008695492545223081
+      CLOCK           (SetMatrixForDiffusion)
+      CLOCK    0.17   (SetMatrixForDiffusion)
+      CLOCK           (Petsc_Solve_DIFF)
+      CLOCK    0.04   (Petsc_Solve_DIFF)
+Incompress_Solver_Smooth_3D_Cylindrical::compDiffWithSmoothProperty_2nd_coupled: num_iter = 4, rel_residual = 6.520515e-11. 
+      CLOCK           (GetSolAndScat)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.01   (GetSolAndScat)
+    CLOCK    0.23   (compDiffWithSmoothProperty)
+max_speed after compDiffWithSmoothProperty():     0.20023016741464
+    CLOCK           (computeProjection)
+      CLOCK           (SetMatrixForProjection)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The summation of divergence of U is -4.065758146820642e-20
+
+The max value of divergence of U is 0.03779815960437291
+      CLOCK    0.01   (SetMatrixForProjection)
+      CLOCK           (Petsc_Solver_Projection)
+      CLOCK    0.17   (Petsc_Solver_Projection)
+      CLOCK           (GetSolandScat)
+Incompress_Solver_Smooth_3D_Cylindrical::computeProjection: num_iter = 88, rel_residual = 3.703386e-13 
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The max value of phi is 0.0003230613885189366
+      CLOCK    0.00   (GetSolandScat)
+    CLOCK    0.18   (computeProjection)
+    CLOCK           (computePressure)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.01   (scatter_top_grid_float_array)
+    CLOCK    0.02   (computePressure)
+    CLOCK           (computeNewVelocity)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.01   (scatter_top_grid_float_array)
+    CLOCK    0.01   (computeNewVelocity)
+max_speed after computeNewVelocity():     0.20022437558336
+    CLOCK           (copyMeshStates)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (copyMeshStates)
+In setAdvectionDt: 
+max_dt =    0.0192752505220983167 min_dt =  1.46027209712009759e-07
+  CLOCK    0.76   (Fluid_Solve)
+Passed ifluid solve()
+After solve()
+Storage current 66246120 bytes: at end of time step
+Time step from l_cartesian->max_dt():     0.00867386273494
+  CLOCK           (Output_Section)
+
+time =     0.01741264734119   step =     2   next dt =     0.00867386273494
+
+ Entering the Step Diagnosis part 
+
+ Passed the Step Diagnosis part 
+Time step from FT_TimeControlFilter(): 0.008674
+  CLOCK    0.00   (Output_Section)
+CLOCK    1.65   (Main_Loop)
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Entering TEST_Hiprop
+CLOCK           (Import hiprop)
+Number of Neighbour procs in FT bounding box is 7
+num_pts = 370
+Before InitPInfor
+Before BuildPInfo
+Getting into hpPrint_pinfo()
+
+size of nb_proc list: 7
+nb_proc list:
+2 -> 18 -> 6 -> 22 -> 19 -> 7 -> 23 -> 
+
+ps pinfo:
+point 1: 3/1-->19/594-->
+Head = 1, Tail = 371
+point 2: 3/2-->19/595-->
+Head = 2, Tail = 372
+point 3: 3/3-->19/596-->
+Head = 3, Tail = 373
+point 4: 3/4-->19/729-->
+Head = 4, Tail = 374
+point 5: 3/5-->19/730-->
+Head = 5, Tail = 375
+point 6: 3/6-->19/731-->
+Head = 6, Tail = 376
+point 7: 3/7-->19/734-->
+Head = 7, Tail = 377
+point 8: 3/8-->19/735-->
+Head = 8, Tail = 378
+point 9: 3/9-->19/736-->
+Head = 9, Tail = 379
+point 10: 3/10-->19/737-->
+Head = 10, Tail = 380
+point 11: 3/11-->19/738-->
+Head = 11, Tail = 381
+point 12: 3/12-->19/739-->
+Head = 12, Tail = 382
+point 13: 3/13-->19/740-->
+Head = 13, Tail = 383
+point 14: 3/14-->19/741-->
+Head = 14, Tail = 384
+point 15: 3/15-->19/742-->
+Head = 15, Tail = 385
+point 16: 3/16-->19/601-->
+Head = 16, Tail = 386
+point 17: 3/17-->19/743-->
+Head = 17, Tail = 387
+point 18: 3/18-->19/744-->
+Head = 18, Tail = 388
+point 19: 3/19-->19/838-->
+Head = 19, Tail = 389
+point 20: 3/20-->19/839-->
+Head = 20, Tail = 390
+point 21: 3/21-->19/840-->
+Head = 21, Tail = 391
+point 22: 3/22-->19/845-->
+Head = 22, Tail = 392
+point 23: 3/23-->19/846-->
+Head = 23, Tail = 393
+point 24: 3/24-->19/856-->
+Head = 24, Tail = 394
+point 25: 3/25-->19/857-->
+Head = 25, Tail = 395
+point 26: 3/26-->19/858-->
+Head = 26, Tail = 396
+point 27: 3/27-->19/859-->
+Head = 27, Tail = 397
+point 28: 3/28-->19/860-->
+Head = 28, Tail = 398
+point 29: 3/29-->19/861-->
+Head = 29, Tail = 399
+point 30: 3/30-->19/862-->
+Head = 30, Tail = 400
+point 31: 3/31-->19/863-->
+Head = 31, Tail = 401
+point 32: 3/32-->19/864-->
+Head = 32, Tail = 402
+point 33: 3/33-->19/865-->
+Head = 33, Tail = 403
+point 34: 3/34-->19/866-->
+Head = 34, Tail = 404
+point 35: 3/35-->19/867-->
+Head = 35, Tail = 405
+point 36: 3/36-->19/868-->
+Head = 36, Tail = 406
+point 37: 3/37-->19/869-->
+Head = 37, Tail = 407
+point 38: 3/38-->19/870-->
+Head = 38, Tail = 408
+point 39: 3/39-->19/871-->
+Head = 39, Tail = 409
+point 40: 3/40-->19/872-->
+Head = 40, Tail = 410
+point 41: 3/41-->19/873-->
+Head = 41, Tail = 411
+point 42: 3/42-->19/874-->
+Head = 42, Tail = 412
+point 43: 3/43-->19/875-->
+Head = 43, Tail = 413
+point 44: 3/44-->19/876-->
+Head = 44, Tail = 414
+point 45: 3/45-->19/877-->
+Head = 45, Tail = 415
+point 46: 3/46-->19/878-->
+Head = 46, Tail = 416
+point 47: 3/47-->19/879-->
+Head = 47, Tail = 417
+point 48: 3/48-->19/880-->
+Head = 48, Tail = 418
+point 49: 3/49-->19/954-->
+Head = 49, Tail = 419
+point 50: 3/50-->19/955-->
+Head = 50, Tail = 420
+point 51: 3/51-->19/956-->
+Head = 51, Tail = 421
+point 52: 3/52-->19/957-->
+Head = 52, Tail = 422
+point 53: 3/53-->19/958-->
+Head = 53, Tail = 423
+point 54: 3/54-->19/959-->
+Head = 54, Tail = 424
+point 55: 3/55-->19/843-->
+Head = 55, Tail = 425
+point 56: 3/56-->19/965-->
+Head = 56, Tail = 426
+point 57: 3/57-->19/966-->
+Head = 57, Tail = 427
+point 58: 3/58-->19/967-->
+Head = 58, Tail = 428
+point 59: 3/59-->19/968-->
+Head = 59, Tail = 429
+point 60: 3/60-->19/969-->
+Head = 60, Tail = 430
+point 61: 3/61-->19/970-->
+Head = 61, Tail = 431
+point 62: 3/62-->19/971-->
+Head = 62, Tail = 432
+point 63: 3/63-->19/972-->
+Head = 63, Tail = 433
+point 64: 3/64-->19/973-->
+Head = 64, Tail = 434
+point 65: 3/65-->19/974-->
+Head = 65, Tail = 435
+point 66: 3/66-->19/975-->
+Head = 66, Tail = 436
+point 67: 3/67-->19/976-->
+Head = 67, Tail = 437
+point 68: 3/68-->19/977-->
+Head = 68, Tail = 438
+point 69: 3/69-->19/978-->
+Head = 69, Tail = 439
+point 70: 3/70-->19/979-->
+Head = 70, Tail = 440
+point 71: 3/71-->19/980-->
+Head = 71, Tail = 441
+point 72: 3/72-->19/981-->
+Head = 72, Tail = 442
+point 73: 3/73-->19/982-->
+Head = 73, Tail = 443
+point 74: 3/74-->19/983-->
+Head = 74, Tail = 444
+point 75: 3/75-->19/984-->
+Head = 75, Tail = 445
+point 76: 3/76-->19/985-->
+Head = 76, Tail = 446
+point 77: 3/77-->19/986-->
+Head = 77, Tail = 447
+point 78: 3/78-->19/987-->
+Head = 78, Tail = 448
+point 79: 3/79-->19/988-->
+Head = 79, Tail = 449
+point 80: 3/80-->19/989-->
+Head = 80, Tail = 450
+point 81: 3/81-->19/990-->
+Head = 81, Tail = 451
+point 82: 3/82-->19/991-->
+Head = 82, Tail = 452
+point 83: 3/83-->19/992-->
+Head = 83, Tail = 453
+point 84: 3/84-->19/1040-->
+Head = 84, Tail = 454
+point 85: 3/85-->19/1041-->
+Head = 85, Tail = 455
+point 86: 3/86-->19/1042-->
+Head = 86, Tail = 456
+point 87: 3/87-->19/1043-->
+Head = 87, Tail = 457
+point 88: 3/88-->19/1044-->
+Head = 88, Tail = 458
+point 89: 3/89-->19/1045-->
+Head = 89, Tail = 459
+point 90: 3/90-->19/1049-->
+Head = 90, Tail = 460
+point 91: 3/91-->19/1050-->
+Head = 91, Tail = 461
+point 92: 3/92-->19/1051-->
+Head = 92, Tail = 462
+point 93: 3/93-->19/1052-->
+Head = 93, Tail = 463
+point 94: 3/94-->19/1053-->
+Head = 94, Tail = 464
+point 95: 3/95-->19/1054-->
+Head = 95, Tail = 465
+point 96: 3/96-->19/1055-->
+Head = 96, Tail = 466
+point 97: 3/97-->19/1056-->
+Head = 97, Tail = 467
+point 98: 3/98-->19/1057-->
+Head = 98, Tail = 468
+point 99: 3/99-->19/1058-->
+Head = 99, Tail = 469
+point 100: 3/100-->19/1059-->
+Head = 100, Tail = 470
+point 101: 3/101-->19/1060-->
+Head = 101, Tail = 471
+point 102: 3/102-->19/1061-->
+Head = 102, Tail = 472
+point 103: 3/103-->19/1062-->
+Head = 103, Tail = 473
+point 104: 3/104-->19/1063-->
+Head = 104, Tail = 474
+point 105: 3/105-->19/1064-->
+Head = 105, Tail = 475
+point 106: 3/106-->19/1065-->
+Head = 106, Tail = 476
+point 107: 3/107-->19/1066-->
+Head = 107, Tail = 477
+point 108: 3/108-->19/1067-->
+Head = 108, Tail = 478
+point 109: 3/109-->19/1068-->
+Head = 109, Tail = 479
+point 110: 3/110-->19/1069-->
+Head = 110, Tail = 480
+point 111: 3/111-->19/1070-->
+Head = 111, Tail = 481
+point 112: 3/112-->19/1071-->
+Head = 112, Tail = 482
+point 113: 3/113-->19/1072-->
+Head = 113, Tail = 483
+point 114: 3/114-->19/1073-->
+Head = 114, Tail = 484
+point 115: 3/115-->19/1074-->
+Head = 115, Tail = 485
+point 116: 3/116-->19/1075-->
+Head = 116, Tail = 486
+point 117: 3/117-->19/1139-->
+Head = 117, Tail = 487
+point 118: 3/118-->19/1140-->
+Head = 118, Tail = 488
+point 119: 3/119-->19/1141-->
+Head = 119, Tail = 489
+point 120: 3/120-->19/1142-->
+Head = 120, Tail = 490
+point 121: 3/121-->19/1143-->
+Head = 121, Tail = 491
+point 122: 3/122-->19/1144-->
+Head = 122, Tail = 492
+point 123: 3/123-->19/1145-->
+Head = 123, Tail = 493
+point 124: 3/124-->19/1151-->
+Head = 124, Tail = 494
+point 125: 3/125-->19/1152-->
+Head = 125, Tail = 495
+point 126: 3/126-->19/1153-->
+Head = 126, Tail = 496
+point 127: 3/127-->19/1154-->
+Head = 127, Tail = 497
+point 128: 3/128-->19/1155-->
+Head = 128, Tail = 498
+point 129: 3/129-->19/1156-->
+Head = 129, Tail = 499
+point 130: 3/130-->19/1157-->
+Head = 130, Tail = 500
+point 131: 3/131-->19/1158-->
+Head = 131, Tail = 501
+point 132: 3/132-->19/1159-->
+Head = 132, Tail = 502
+point 133: 3/133-->19/1160-->
+Head = 133, Tail = 503
+point 134: 3/134-->19/1161-->
+Head = 134, Tail = 504
+point 135: 3/135-->19/1162-->
+Head = 135, Tail = 505
+point 136: 3/136-->19/1163-->
+Head = 136, Tail = 506
+point 137: 3/137-->19/1164-->
+Head = 137, Tail = 507
+point 138: 3/138-->19/1165-->
+Head = 138, Tail = 508
+point 139: 3/139-->19/1166-->
+Head = 139, Tail = 509
+point 140: 3/140-->19/1167-->
+Head = 140, Tail = 510
+point 141: 3/141-->19/1168-->
+Head = 141, Tail = 511
+point 142: 3/142-->19/1169-->
+Head = 142, Tail = 512
+point 143: 3/143-->19/1170-->
+Head = 143, Tail = 513
+point 144: 3/144-->19/1171-->
+Head = 144, Tail = 514
+point 145: 3/145-->19/1172-->
+Head = 145, Tail = 515
+point 146: 3/146-->19/1173-->
+Head = 146, Tail = 516
+point 147: 3/147-->19/1175-->
+Head = 147, Tail = 517
+point 148: 3/148-->19/1176-->
+Head = 148, Tail = 518
+point 149: 3/149-->19/1177-->
+Head = 149, Tail = 519
+point 150: 3/150-->19/1274-->
+Head = 150, Tail = 520
+point 151: 3/151-->19/1275-->
+Head = 151, Tail = 521
+point 152: 3/152-->19/1276-->
+Head = 152, Tail = 522
+point 153: 3/153-->19/1277-->
+Head = 153, Tail = 523
+point 154: 3/154-->19/1279-->
+Head = 154, Tail = 524
+point 155: 3/155-->19/1281-->
+Head = 155, Tail = 525
+point 156: 3/156-->19/1146-->
+Head = 156, Tail = 526
+point 157: 3/157-->19/1283-->
+Head = 157, Tail = 527
+point 158: 3/158-->19/1284-->
+Head = 158, Tail = 528
+point 159: 3/159-->19/1285-->
+Head = 159, Tail = 529
+point 160: 3/160-->19/1286-->
+Head = 160, Tail = 530
+point 161: 3/161-->19/1287-->
+Head = 161, Tail = 531
+point 162: 3/162-->19/1288-->
+Head = 162, Tail = 532
+point 163: 3/163-->19/1289-->
+Head = 163, Tail = 533
+point 164: 3/164-->19/1290-->
+Head = 164, Tail = 534
+point 165: 3/165-->19/1291-->
+Head = 165, Tail = 535
+point 166: 3/166-->19/1292-->
+Head = 166, Tail = 536
+point 167: 3/167-->19/1293-->
+Head = 167, Tail = 537
+point 168: 3/168-->19/1294-->
+Head = 168, Tail = 538
+point 169: 3/169-->19/1295-->
+Head = 169, Tail = 539
+point 170: 3/170-->19/1296-->
+Head = 170, Tail = 540
+point 171: 3/171-->19/1297-->
+Head = 171, Tail = 541
+point 172: 3/172-->19/1298-->
+Head = 172, Tail = 542
+point 173: 3/173-->19/1401-->
+Head = 173, Tail = 543
+point 174: 3/174-->19/1402-->
+Head = 174, Tail = 544
+point 175: 3/175-->19/1403-->
+Head = 175, Tail = 545
+point 176: 3/176-->19/1404-->
+Head = 176, Tail = 546
+point 177: 3/177-->19/1278-->
+Head = 177, Tail = 547
+point 178: 3/178-->19/1408-->
+Head = 178, Tail = 548
+point 179: 3/179-->19/1409-->
+Head = 179, Tail = 549
+point 180: 3/180-->19/1410-->
+Head = 180, Tail = 550
+point 181: 3/181-->19/1411-->
+Head = 181, Tail = 551
+point 182: 3/182-->19/1412-->
+Head = 182, Tail = 552
+point 183: 3/183-->19/1413-->
+Head = 183, Tail = 553
+point 184: 3/184-->19/1414-->
+Head = 184, Tail = 554
+point 185: 3/185-->19/1415-->
+Head = 185, Tail = 555
+point 186: 3/186-->19/1416-->
+Head = 186, Tail = 556
+point 187: 3/187-->19/1417-->
+Head = 187, Tail = 557
+point 188: 3/188-->19/1418-->
+Head = 188, Tail = 558
+point 189: 3/189-->19/1419-->
+Head = 189, Tail = 559
+point 190: 3/190-->19/1420-->
+Head = 190, Tail = 560
+point 191: 3/191-->19/1522-->
+Head = 191, Tail = 561
+point 192: 3/192-->19/1523-->
+Head = 192, Tail = 562
+point 193: 3/193-->19/1524-->
+Head = 193, Tail = 563
+point 194: 3/194-->19/1533-->
+Head = 194, Tail = 564
+point 195: 3/195-->19/1534-->
+Head = 195, Tail = 565
+point 196: 3/196-->19/1535-->
+Head = 196, Tail = 566
+point 197: 3/197-->19/1536-->
+Head = 197, Tail = 567
+point 198: 3/198-->19/1537-->
+Head = 198, Tail = 568
+point 199: 3/199-->19/1538-->
+Head = 199, Tail = 569
+point 200: 3/200-->19/1539-->
+Head = 200, Tail = 570
+point 201: 3/201-->19/1540-->
+Head = 201, Tail = 571
+point 202: 3/202-->19/1541-->
+Head = 202, Tail = 572
+point 203: 3/203-->19/1542-->
+Head = 203, Tail = 573
+point 204: 3/204-->19/1642-->
+Head = 204, Tail = 574
+point 205: 3/205-->19/1643-->
+Head = 205, Tail = 575
+point 206: 3/206-->19/1644-->
+Head = 206, Tail = 576
+point 207: 3/207-->19/1645-->
+Head = 207, Tail = 577
+point 208: 3/208-->19/1646-->
+Head = 208, Tail = 578
+point 209: 3/209-->19/1647-->
+Head = 209, Tail = 579
+point 210: 3/210-->19/1648-->
+Head = 210, Tail = 580
+point 211: 3/211-->19/1649-->
+Head = 211, Tail = 581
+point 212: 3/212-->19/1650-->
+Head = 212, Tail = 582
+point 213: 3/213-->19/1675-->
+Head = 213, Tail = 583
+point 214: 3/214-->19/1676-->
+Head = 214, Tail = 584
+point 215: 3/215-->19/1677-->
+Head = 215, Tail = 585
+point 216: 3/216-->19/1678-->
+Head = 216, Tail = 586
+point 217: 3/217-->19/1679-->
+Head = 217, Tail = 587
+point 218: 3/218-->19/1682-->
+Head = 218, Tail = 588
+point 219: 3/219-->19/1686-->
+Head = 219, Tail = 589
+point 220: 3/220-->19/1687-->
+Head = 220, Tail = 590
+point 221: 3/221-->19/1688-->
+Head = 221, Tail = 591
+point 222: 3/222-->19/1691-->
+Head = 222, Tail = 592
+point 223: 3/223-->19/1692-->
+Head = 223, Tail = 593
+point 224: 3/224-->19/1693-->
+Head = 224, Tail = 594
+point 225: 3/225-->19/1695-->
+Head = 225, Tail = 595
+point 226: 3/226-->19/1696-->
+Head = 226, Tail = 596
+point 227: 3/227-->19/1708-->
+Head = 227, Tail = 597
+point 228: 3/228-->19/1709-->
+Head = 228, Tail = 598
+point 229: 3/229-->19/1728-->
+Head = 229, Tail = 599
+point 230: 3/230-->19/1729-->
+Head = 230, Tail = 600
+point 231: 3/231-->19/1760-->
+Head = 231, Tail = 601
+point 232: 3/232-->19/1761-->
+Head = 232, Tail = 602
+point 233: 3/233-->19/1771-->
+Head = 233, Tail = 603
+point 234: 3/234-->19/1772-->
+Head = 234, Tail = 604
+point 235: 3/235-->19/1773-->
+Head = 235, Tail = 605
+point 236: 3/236-->19/1774-->
+Head = 236, Tail = 606
+point 237: 3/237-->19/1775-->
+Head = 237, Tail = 607
+point 238: 3/238-->19/1803-->
+Head = 238, Tail = 608
+point 239: 3/239-->19/1804-->
+Head = 239, Tail = 609
+point 240: 3/240-->19/1818-->
+Head = 240, Tail = 610
+point 241: 3/241-->19/1819-->
+Head = 241, Tail = 611
+point 242: 3/242-->19/1820-->
+Head = 242, Tail = 612
+point 243: 3/243-->19/1834-->
+Head = 243, Tail = 613
+point 244: 3/244-->19/1869-->
+Head = 244, Tail = 614
+point 245: 3/245-->19/1887-->
+Head = 245, Tail = 615
+point 246: 3/246-->19/1956-->
+Head = 246, Tail = 616
+point 247: 3/247-->19/1957-->
+Head = 247, Tail = 617
+point 248: 3/248-->19/1958-->
+Head = 248, Tail = 618
+point 249: 3/249-->19/1972-->
+Head = 249, Tail = 619
+point 250: 3/250-->19/1973-->
+Head = 250, Tail = 620
+point 251: 3/251-->19/2048-->
+Head = 251, Tail = 621
+point 252: 3/252-->19/2049-->
+Head = 252, Tail = 622
+point 253: 3/253-->19/2073-->
+Head = 253, Tail = 623
+point 254: 3/254-->19/2074-->
+Head = 254, Tail = 624
+point 255: 3/255-->19/2085-->
+Head = 255, Tail = 625
+point 256: 3/256-->19/2086-->
+Head = 256, Tail = 626
+point 257: 3/257-->19/2096-->
+Head = 257, Tail = 627
+point 258: 3/258-->19/2097-->
+Head = 258, Tail = 628
+point 259: 3/259-->19/2106-->
+Head = 259, Tail = 629
+point 260: 3/260-->19/2107-->
+Head = 260, Tail = 630
+point 261: 3/261-->19/2115-->
+Head = 261, Tail = 631
+point 262: 3/262-->19/2128-->
+Head = 262, Tail = 632
+point 263: 3/263-->19/2129-->
+Head = 263, Tail = 633
+point 264: 3/264-->19/2132-->
+Head = 264, Tail = 634
+point 265: 3/265-->19/2180-->
+Head = 265, Tail = 635
+point 266: 3/266-->19/2181-->
+Head = 266, Tail = 636
+point 267: 3/267-->19/2182-->
+Head = 267, Tail = 637
+point 268: 3/268-->19/2195-->
+Head = 268, Tail = 638
+point 269: 3/269-->19/2261-->
+Head = 269, Tail = 639
+point 270: 3/270-->19/2268-->
+Head = 270, Tail = 640
+point 271: 3/271-->19/2269-->
+Head = 271, Tail = 641
+point 272: 3/272-->19/2299-->
+Head = 272, Tail = 642
+point 273: 3/273-->19/2310-->
+Head = 273, Tail = 643
+point 274: 3/274-->19/2312-->
+Head = 274, Tail = 644
+point 275: 3/275-->19/2316-->
+Head = 275, Tail = 645
+point 276: 3/276-->19/2318-->
+Head = 276, Tail = 646
+point 277: 3/277-->19/2322-->
+Head = 277, Tail = 647
+point 278: 3/278-->19/2323-->
+Head = 278, Tail = 648
+point 279: 3/279-->19/1299-->
+Head = 279, Tail = 649
+point 280: 3/280-->19/2337-->
+Head = 280, Tail = 650
+point 281: 3/281-->19/2338-->
+Head = 281, Tail = 651
+point 282: 3/282-->19/2343-->
+Head = 282, Tail = 652
+point 283: 3/283-->19/2353-->
+Head = 283, Tail = 653
+point 284: 3/284-->19/1300-->
+Head = 284, Tail = 654
+point 285: 3/285-->19/2366-->
+Head = 285, Tail = 655
+point 286: 3/286-->19/2369-->
+Head = 286, Tail = 656
+point 287: 3/287-->19/2379-->
+Head = 287, Tail = 657
+point 288: 3/288-->19/2380-->
+Head = 288, Tail = 658
+point 289: 3/289-->19/2334-->
+Head = 289, Tail = 659
+point 290: 3/290-->19/1640-->
+Head = 290, Tail = 660
+point 291: 3/291-->19/2407-->
+Head = 291, Tail = 661
+point 292: 3/292-->19/2408-->
+Head = 292, Tail = 662
+point 293: 3/293-->19/2413-->
+Head = 293, Tail = 663
+point 294: 3/294-->19/2414-->
+Head = 294, Tail = 664
+point 295: 3/295-->19/2416-->
+Head = 295, Tail = 665
+point 296: 3/296-->19/2417-->
+Head = 296, Tail = 666
+point 297: 3/297-->19/2418-->
+Head = 297, Tail = 667
+point 298: 3/298-->19/2421-->
+Head = 298, Tail = 668
+point 299: 3/299-->19/2422-->
+Head = 299, Tail = 669
+point 300: 3/300-->19/2435-->
+Head = 300, Tail = 670
+point 301: 3/301-->19/2436-->
+Head = 301, Tail = 671
+point 302: 3/302-->19/2437-->
+Head = 302, Tail = 672
+point 303: 3/303-->19/2438-->
+Head = 303, Tail = 673
+point 304: 3/304-->19/2441-->
+Head = 304, Tail = 674
+point 305: 3/305-->19/2445-->
+Head = 305, Tail = 675
+point 306: 3/306-->19/2446-->
+Head = 306, Tail = 676
+point 307: 3/307-->19/1613-->
+Head = 307, Tail = 677
+point 308: 3/308-->19/2451-->
+Head = 308, Tail = 678
+point 309: 3/309-->19/2453-->
+Head = 309, Tail = 679
+point 310: 3/310-->19/2454-->
+Head = 310, Tail = 680
+point 311: 3/311-->19/591-->
+Head = 311, Tail = 681
+point 312: 3/312-->19/2459-->
+Head = 312, Tail = 682
+point 313: 3/313-->19/2460-->
+Head = 313, Tail = 683
+point 314: 3/314-->19/2461-->
+Head = 314, Tail = 684
+point 315: 3/315-->19/1423-->
+Head = 315, Tail = 685
+point 316: 3/316-->19/2483-->
+Head = 316, Tail = 686
+point 317: 3/317-->19/2484-->
+Head = 317, Tail = 687
+point 318: 3/318-->19/2485-->
+Head = 318, Tail = 688
+point 319: 3/319-->19/2489-->
+Head = 319, Tail = 689
+point 320: 3/320-->19/2495-->
+Head = 320, Tail = 690
+point 321: 3/321-->19/2496-->
+Head = 321, Tail = 691
+point 322: 3/322-->19/2520-->
+Head = 322, Tail = 692
+point 323: 3/323-->19/2521-->
+Head = 323, Tail = 693
+point 324: 3/324-->19/2527-->
+Head = 324, Tail = 694
+point 325: 3/325-->19/2528-->
+Head = 325, Tail = 695
+point 326: 3/326-->19/2550-->
+Head = 326, Tail = 696
+point 327: 3/327-->19/2579-->
+Head = 327, Tail = 697
+point 328: 3/328-->19/2591-->
+Head = 328, Tail = 698
+point 329: 3/329-->19/2626-->
+Head = 329, Tail = 699
+point 330: 3/330-->19/844-->
+Head = 330, Tail = 700
+point 331: 3/331-->19/2642-->
+Head = 331, Tail = 701
+point 332: 3/332-->19/2647-->
+Head = 332, Tail = 702
+point 333: 3/333-->19/2665-->
+Head = 333, Tail = 703
+point 334: 3/334-->19/2684-->
+Head = 334, Tail = 704
+point 335: 3/335-->19/2136-->
+Head = 335, Tail = 705
+point 336: 3/336-->19/1147-->
+Head = 336, Tail = 706
+point 337: 3/337-->19/2745-->
+Head = 337, Tail = 707
+point 338: 3/338-->19/2753-->
+Head = 338, Tail = 708
+point 339: 3/339-->19/2758-->
+Head = 339, Tail = 709
+point 340: 3/340-->19/2759-->
+Head = 340, Tail = 710
+point 341: 3/341-->19/2767-->
+Head = 341, Tail = 711
+point 342: 3/342-->19/1621-->
+Head = 342, Tail = 712
+point 343: 3/343-->19/2771-->
+Head = 343, Tail = 713
+point 344: 3/344-->19/2774-->
+Head = 344, Tail = 714
+point 345: 3/345-->19/1641-->
+Head = 345, Tail = 715
+point 346: 3/346-->19/2786-->
+Head = 346, Tail = 716
+point 347: 3/347-->19/2787-->
+Head = 347, Tail = 717
+point 348: 3/348-->19/2788-->
+Head = 348, Tail = 718
+point 349: 3/349-->19/2789-->
+Head = 349, Tail = 719
+point 350: 3/350-->19/2790-->
+Head = 350, Tail = 720
+point 351: 3/351-->19/2791-->
+Head = 351, Tail = 721
+point 352: 3/352-->19/2792-->
+Head = 352, Tail = 722
+point 353: 3/353-->19/2794-->
+Head = 353, Tail = 723
+point 354: 3/354-->19/592-->
+Head = 354, Tail = 724
+point 355: 3/355-->19/2798-->
+Head = 355, Tail = 725
+point 356: 3/356-->19/2799-->
+Head = 356, Tail = 726
+point 357: 3/357-->19/2800-->
+Head = 357, Tail = 727
+point 358: 3/358-->19/882-->
+Head = 358, Tail = 728
+point 359: 3/359-->19/2803-->
+Head = 359, Tail = 729
+point 360: 3/360-->19/2487-->
+Head = 360, Tail = 730
+point 361: 3/361-->19/578-->
+Head = 361, Tail = 731
+point 362: 3/362-->19/2818-->
+Head = 362, Tail = 732
+point 363: 3/363-->19/2830-->
+Head = 363, Tail = 733
+point 364: 3/364-->19/2117-->
+Head = 364, Tail = 734
+point 365: 3/365-->19/2116-->
+Head = 365, Tail = 735
+point 366: 3/366-->19/2856-->
+Head = 366, Tail = 736
+point 367: 3/367-->19/2130-->
+Head = 367, Tail = 737
+point 368: 3/368-->19/2877-->
+Head = 368, Tail = 738
+point 369: 3/369-->19/2882-->
+Head = 369, Tail = 739
+point 370: 3/370-->19/713-->
+Head = 370, Tail = 740
+tris pinfo:
+triangle 1: 3/1-->19/254-->
+Head = 1, Tail = 692
+triangle 2: 3/2-->19/307-->
+Head = 2, Tail = 693
+triangle 3: 3/3-->19/309-->
+Head = 3, Tail = 694
+triangle 4: 3/4-->19/310-->
+Head = 4, Tail = 695
+triangle 5: 3/5-->19/311-->
+Head = 5, Tail = 696
+triangle 6: 3/6-->19/312-->
+Head = 6, Tail = 697
+triangle 7: 3/7-->19/313-->
+Head = 7, Tail = 698
+triangle 8: 3/8-->19/359-->
+Head = 8, Tail = 699
+triangle 9: 3/9-->19/362-->
+Head = 9, Tail = 700
+triangle 10: 3/10-->19/367-->
+Head = 10, Tail = 701
+triangle 11: 3/11-->19/368-->
+Head = 11, Tail = 702
+triangle 12: 3/12-->19/369-->
+Head = 12, Tail = 703
+triangle 13: 3/13-->19/370-->
+Head = 13, Tail = 704
+triangle 14: 3/14-->19/371-->
+Head = 14, Tail = 705
+triangle 15: 3/15-->19/372-->
+Head = 15, Tail = 706
+triangle 16: 3/16-->19/373-->
+Head = 16, Tail = 707
+triangle 17: 3/17-->19/374-->
+Head = 17, Tail = 708
+triangle 18: 3/18-->19/375-->
+Head = 18, Tail = 709
+triangle 19: 3/19-->19/410-->
+Head = 19, Tail = 710
+triangle 20: 3/20-->19/411-->
+Head = 20, Tail = 711
+triangle 21: 3/21-->19/412-->
+Head = 21, Tail = 712
+triangle 22: 3/22-->19/416-->
+Head = 22, Tail = 713
+triangle 23: 3/23-->19/417-->
+Head = 23, Tail = 714
+triangle 24: 3/24-->19/418-->
+Head = 24, Tail = 715
+triangle 25: 3/25-->19/419-->
+Head = 25, Tail = 716
+triangle 26: 3/26-->19/420-->
+Head = 26, Tail = 717
+triangle 27: 3/27-->19/421-->
+Head = 27, Tail = 718
+triangle 28: 3/28-->19/422-->
+Head = 28, Tail = 719
+triangle 29: 3/29-->19/423-->
+Head = 29, Tail = 720
+triangle 30: 3/30-->19/424-->
+Head = 30, Tail = 721
+triangle 31: 3/31-->19/425-->
+Head = 31, Tail = 722
+triangle 32: 3/32-->19/426-->
+Head = 32, Tail = 723
+triangle 33: 3/33-->19/427-->
+Head = 33, Tail = 724
+triangle 34: 3/34-->19/428-->
+Head = 34, Tail = 725
+triangle 35: 3/35-->19/451-->
+Head = 35, Tail = 726
+triangle 36: 3/36-->19/452-->
+Head = 36, Tail = 727
+triangle 37: 3/37-->19/455-->
+Head = 37, Tail = 728
+triangle 38: 3/38-->19/456-->
+Head = 38, Tail = 729
+triangle 39: 3/39-->19/457-->
+Head = 39, Tail = 730
+triangle 40: 3/40-->19/458-->
+Head = 40, Tail = 731
+triangle 41: 3/41-->19/459-->
+Head = 41, Tail = 732
+triangle 42: 3/42-->19/460-->
+Head = 42, Tail = 733
+triangle 43: 3/43-->19/461-->
+Head = 43, Tail = 734
+triangle 44: 3/44-->19/462-->
+Head = 44, Tail = 735
+triangle 45: 3/45-->19/463-->
+Head = 45, Tail = 736
+triangle 46: 3/46-->19/464-->
+Head = 46, Tail = 737
+triangle 47: 3/47-->19/465-->
+Head = 47, Tail = 738
+triangle 48: 3/48-->19/466-->
+Head = 48, Tail = 739
+triangle 49: 3/49-->19/467-->
+Head = 49, Tail = 740
+triangle 50: 3/50-->19/468-->
+Head = 50, Tail = 741
+triangle 51: 3/51-->19/469-->
+Head = 51, Tail = 742
+triangle 52: 3/52-->19/494-->
+Head = 52, Tail = 743
+triangle 53: 3/53-->19/495-->
+Head = 53, Tail = 744
+triangle 54: 3/54-->19/496-->
+Head = 54, Tail = 745
+triangle 55: 3/55-->19/500-->
+Head = 55, Tail = 746
+triangle 56: 3/56-->19/501-->
+Head = 56, Tail = 747
+triangle 57: 3/57-->19/502-->
+Head = 57, Tail = 748
+triangle 58: 3/58-->19/503-->
+Head = 58, Tail = 749
+triangle 59: 3/59-->19/504-->
+Head = 59, Tail = 750
+triangle 60: 3/60-->19/505-->
+Head = 60, Tail = 751
+triangle 61: 3/61-->19/506-->
+Head = 61, Tail = 752
+triangle 62: 3/62-->19/507-->
+Head = 62, Tail = 753
+triangle 63: 3/63-->19/508-->
+Head = 63, Tail = 754
+triangle 64: 3/64-->19/509-->
+Head = 64, Tail = 755
+triangle 65: 3/65-->19/510-->
+Head = 65, Tail = 756
+triangle 66: 3/66-->19/511-->
+Head = 66, Tail = 757
+triangle 67: 3/67-->19/513-->
+Head = 67, Tail = 758
+triangle 68: 3/68-->19/514-->
+Head = 68, Tail = 759
+triangle 69: 3/69-->19/557-->
+Head = 69, Tail = 760
+triangle 70: 3/70-->19/558-->
+Head = 70, Tail = 761
+triangle 71: 3/71-->19/560-->
+Head = 71, Tail = 762
+triangle 72: 3/72-->19/562-->
+Head = 72, Tail = 763
+triangle 73: 3/73-->19/563-->
+Head = 73, Tail = 764
+triangle 74: 3/74-->19/564-->
+Head = 74, Tail = 765
+triangle 75: 3/75-->19/565-->
+Head = 75, Tail = 766
+triangle 76: 3/76-->19/566-->
+Head = 76, Tail = 767
+triangle 77: 3/77-->19/567-->
+Head = 77, Tail = 768
+triangle 78: 3/78-->19/568-->
+Head = 78, Tail = 769
+triangle 79: 3/79-->19/569-->
+Head = 79, Tail = 770
+triangle 80: 3/80-->19/570-->
+Head = 80, Tail = 771
+triangle 81: 3/81-->19/620-->
+Head = 81, Tail = 772
+triangle 82: 3/82-->19/621-->
+Head = 82, Tail = 773
+triangle 83: 3/83-->19/624-->
+Head = 83, Tail = 774
+triangle 84: 3/84-->19/625-->
+Head = 84, Tail = 775
+triangle 85: 3/85-->19/626-->
+Head = 85, Tail = 776
+triangle 86: 3/86-->19/627-->
+Head = 86, Tail = 777
+triangle 87: 3/87-->19/628-->
+Head = 87, Tail = 778
+triangle 88: 3/88-->19/677-->
+Head = 88, Tail = 779
+triangle 89: 3/89-->19/681-->
+Head = 89, Tail = 780
+triangle 90: 3/90-->19/682-->
+Head = 90, Tail = 781
+triangle 91: 3/91-->19/683-->
+Head = 91, Tail = 782
+triangle 92: 3/92-->19/684-->
+Head = 92, Tail = 783
+triangle 93: 3/93-->19/734-->
+Head = 93, Tail = 784
+triangle 94: 3/94-->19/735-->
+Head = 94, Tail = 785
+triangle 95: 3/95-->19/736-->
+Head = 95, Tail = 786
+triangle 96: 3/96-->19/748-->
+Head = 96, Tail = 787
+triangle 97: 3/97-->19/749-->
+Head = 97, Tail = 788
+triangle 98: 3/98-->19/751-->
+Head = 98, Tail = 789
+triangle 99: 3/99-->19/753-->
+Head = 99, Tail = 790
+triangle 100: 3/100-->19/755-->
+Head = 100, Tail = 791
+triangle 101: 3/101-->19/757-->
+Head = 101, Tail = 792
+triangle 102: 3/102-->19/762-->
+Head = 102, Tail = 793
+triangle 103: 3/103-->19/773-->
+Head = 103, Tail = 794
+triangle 104: 3/104-->19/790-->
+Head = 104, Tail = 795
+triangle 105: 3/105-->19/796-->
+Head = 105, Tail = 796
+triangle 106: 3/106-->19/797-->
+Head = 106, Tail = 797
+triangle 107: 3/107-->19/813-->
+Head = 107, Tail = 798
+triangle 108: 3/108-->19/822-->
+Head = 108, Tail = 799
+triangle 109: 3/109-->19/823-->
+Head = 109, Tail = 800
+triangle 110: 3/110-->19/833-->
+Head = 110, Tail = 801
+triangle 111: 3/111-->19/860-->
+Head = 111, Tail = 802
+triangle 112: 3/112-->19/877-->
+Head = 112, Tail = 803
+triangle 113: 3/113-->19/932-->
+Head = 113, Tail = 804
+triangle 114: 3/114-->19/943-->
+Head = 114, Tail = 805
+triangle 115: 3/115-->19/961-->
+Head = 115, Tail = 806
+triangle 116: 3/116-->19/998-->
+Head = 116, Tail = 807
+triangle 117: 3/117-->19/1010-->
+Head = 117, Tail = 808
+triangle 118: 3/118-->19/1014-->
+Head = 118, Tail = 809
+triangle 119: 3/119-->19/1015-->
+Head = 119, Tail = 810
+triangle 120: 3/120-->19/1033-->
+Head = 120, Tail = 811
+triangle 121: 3/121-->19/1038-->
+Head = 121, Tail = 812
+triangle 122: 3/122-->19/1039-->
+Head = 122, Tail = 813
+triangle 123: 3/123-->19/1054-->
+Head = 123, Tail = 814
+triangle 124: 3/124-->19/1063-->
+Head = 124, Tail = 815
+triangle 125: 3/125-->19/1070-->
+Head = 125, Tail = 816
+triangle 126: 3/126-->19/1071-->
+Head = 126, Tail = 817
+triangle 127: 3/127-->19/1079-->
+Head = 127, Tail = 818
+triangle 128: 3/128-->19/1089-->
+Head = 128, Tail = 819
+triangle 129: 3/129-->19/1092-->
+Head = 129, Tail = 820
+triangle 130: 3/130-->19/1122-->
+Head = 130, Tail = 821
+triangle 131: 3/131-->19/1132-->
+Head = 131, Tail = 822
+triangle 132: 3/132-->19/1133-->
+Head = 132, Tail = 823
+triangle 133: 3/133-->19/1177-->
+Head = 133, Tail = 824
+triangle 134: 3/134-->19/1192-->
+Head = 134, Tail = 825
+triangle 135: 3/135-->19/1193-->
+Head = 135, Tail = 826
+triangle 136: 3/136-->19/1201-->
+Head = 136, Tail = 827
+triangle 137: 3/137-->19/1205-->
+Head = 137, Tail = 828
+triangle 138: 3/138-->19/1209-->
+Head = 138, Tail = 829
+triangle 139: 3/139-->19/1256-->
+Head = 139, Tail = 830
+triangle 140: 3/140-->19/1257-->
+Head = 140, Tail = 831
+triangle 141: 3/141-->19/1277-->
+Head = 141, Tail = 832
+triangle 142: 3/142-->19/1281-->
+Head = 142, Tail = 833
+triangle 143: 3/143-->19/1282-->
+Head = 143, Tail = 834
+triangle 144: 3/144-->19/1285-->
+Head = 144, Tail = 835
+triangle 145: 3/145-->19/1286-->
+Head = 145, Tail = 836
+triangle 146: 3/146-->19/1301-->
+Head = 146, Tail = 837
+triangle 147: 3/147-->19/1302-->
+Head = 147, Tail = 838
+triangle 148: 3/148-->19/1304-->
+Head = 148, Tail = 839
+triangle 149: 3/149-->19/1307-->
+Head = 149, Tail = 840
+triangle 150: 3/150-->19/1308-->
+Head = 150, Tail = 841
+triangle 151: 3/151-->19/1314-->
+Head = 151, Tail = 842
+triangle 152: 3/152-->19/1315-->
+Head = 152, Tail = 843
+triangle 153: 3/153-->19/1319-->
+Head = 153, Tail = 844
+triangle 154: 3/154-->19/1320-->
+Head = 154, Tail = 845
+triangle 155: 3/155-->19/1341-->
+Head = 155, Tail = 846
+triangle 156: 3/156-->19/1345-->
+Head = 156, Tail = 847
+triangle 157: 3/157-->19/1347-->
+Head = 157, Tail = 848
+triangle 158: 3/158-->19/1364-->
+Head = 158, Tail = 849
+triangle 159: 3/159-->19/1374-->
+Head = 159, Tail = 850
+triangle 160: 3/160-->19/1375-->
+Head = 160, Tail = 851
+triangle 161: 3/161-->19/1394-->
+Head = 161, Tail = 852
+triangle 162: 3/162-->19/1401-->
+Head = 162, Tail = 853
+triangle 163: 3/163-->19/1402-->
+Head = 163, Tail = 854
+triangle 164: 3/164-->19/1405-->
+Head = 164, Tail = 855
+triangle 165: 3/165-->19/1406-->
+Head = 165, Tail = 856
+triangle 166: 3/166-->19/1408-->
+Head = 166, Tail = 857
+triangle 167: 3/167-->19/1426-->
+Head = 167, Tail = 858
+triangle 168: 3/168-->19/1439-->
+Head = 168, Tail = 859
+triangle 169: 3/169-->19/1440-->
+Head = 169, Tail = 860
+triangle 170: 3/170-->19/1447-->
+Head = 170, Tail = 861
+triangle 171: 3/171-->19/1448-->
+Head = 171, Tail = 862
+triangle 172: 3/172-->19/1452-->
+Head = 172, Tail = 863
+triangle 173: 3/173-->19/1453-->
+Head = 173, Tail = 864
+triangle 174: 3/174-->19/1469-->
+Head = 174, Tail = 865
+triangle 175: 3/175-->19/1470-->
+Head = 175, Tail = 866
+triangle 176: 3/176-->19/1471-->
+Head = 176, Tail = 867
+triangle 177: 3/177-->19/1472-->
+Head = 177, Tail = 868
+triangle 178: 3/178-->19/1473-->
+Head = 178, Tail = 869
+triangle 179: 3/179-->19/1489-->
+Head = 179, Tail = 870
+triangle 180: 3/180-->19/1490-->
+Head = 180, Tail = 871
+triangle 181: 3/181-->19/1495-->
+Head = 181, Tail = 872
+triangle 182: 3/182-->19/1496-->
+Head = 182, Tail = 873
+triangle 183: 3/183-->19/1499-->
+Head = 183, Tail = 874
+triangle 184: 3/184-->19/1500-->
+Head = 184, Tail = 875
+triangle 185: 3/185-->19/1506-->
+Head = 185, Tail = 876
+triangle 186: 3/186-->19/1532-->
+Head = 186, Tail = 877
+triangle 187: 3/187-->19/1575-->
+Head = 187, Tail = 878
+triangle 188: 3/188-->19/1576-->
+Head = 188, Tail = 879
+triangle 189: 3/189-->19/1583-->
+Head = 189, Tail = 880
+triangle 190: 3/190-->19/1584-->
+Head = 190, Tail = 881
+triangle 191: 3/191-->19/1587-->
+Head = 191, Tail = 882
+triangle 192: 3/192-->19/1588-->
+Head = 192, Tail = 883
+triangle 193: 3/193-->19/1589-->
+Head = 193, Tail = 884
+triangle 194: 3/194-->19/1590-->
+Head = 194, Tail = 885
+triangle 195: 3/195-->19/1594-->
+Head = 195, Tail = 886
+triangle 196: 3/196-->19/1595-->
+Head = 196, Tail = 887
+triangle 197: 3/197-->19/1627-->
+Head = 197, Tail = 888
+triangle 198: 3/198-->19/1628-->
+Head = 198, Tail = 889
+triangle 199: 3/199-->19/1629-->
+Head = 199, Tail = 890
+triangle 200: 3/200-->19/1630-->
+Head = 200, Tail = 891
+triangle 201: 3/201-->19/1631-->
+Head = 201, Tail = 892
+triangle 202: 3/202-->19/1632-->
+Head = 202, Tail = 893
+triangle 203: 3/203-->19/1638-->
+Head = 203, Tail = 894
+triangle 204: 3/204-->19/1641-->
+Head = 204, Tail = 895
+triangle 205: 3/205-->19/1642-->
+Head = 205, Tail = 896
+triangle 206: 3/206-->19/1644-->
+Head = 206, Tail = 897
+triangle 207: 3/207-->19/1645-->
+Head = 207, Tail = 898
+triangle 208: 3/208-->19/1646-->
+Head = 208, Tail = 899
+triangle 209: 3/209-->19/1653-->
+Head = 209, Tail = 900
+triangle 210: 3/210-->19/1666-->
+Head = 210, Tail = 901
+triangle 211: 3/211-->19/1674-->
+Head = 211, Tail = 902
+triangle 212: 3/212-->19/1675-->
+Head = 212, Tail = 903
+triangle 213: 3/213-->19/1676-->
+Head = 213, Tail = 904
+triangle 214: 3/214-->19/1680-->
+Head = 214, Tail = 905
+triangle 215: 3/215-->19/1681-->
+Head = 215, Tail = 906
+triangle 216: 3/216-->19/1684-->
+Head = 216, Tail = 907
+triangle 217: 3/217-->19/1697-->
+Head = 217, Tail = 908
+triangle 218: 3/218-->19/1698-->
+Head = 218, Tail = 909
+triangle 219: 3/219-->19/1699-->
+Head = 219, Tail = 910
+triangle 220: 3/220-->19/1704-->
+Head = 220, Tail = 911
+triangle 221: 3/221-->19/1705-->
+Head = 221, Tail = 912
+triangle 222: 3/222-->19/1706-->
+Head = 222, Tail = 913
+triangle 223: 3/223-->19/1735-->
+Head = 223, Tail = 914
+triangle 224: 3/224-->19/1743-->
+Head = 224, Tail = 915
+triangle 225: 3/225-->19/1755-->
+Head = 225, Tail = 916
+triangle 226: 3/226-->19/1756-->
+Head = 226, Tail = 917
+triangle 227: 3/227-->19/1814-->
+Head = 227, Tail = 918
+triangle 228: 3/228-->19/1826-->
+Head = 228, Tail = 919
+triangle 229: 3/229-->19/1852-->
+Head = 229, Tail = 920
+triangle 230: 3/230-->19/1853-->
+Head = 230, Tail = 921
+triangle 231: 3/231-->19/1854-->
+Head = 231, Tail = 922
+triangle 232: 3/232-->19/1901-->
+Head = 232, Tail = 923
+triangle 233: 3/233-->19/1902-->
+Head = 233, Tail = 924
+triangle 234: 3/234-->19/1903-->
+Head = 234, Tail = 925
+triangle 235: 3/235-->19/1904-->
+Head = 235, Tail = 926
+triangle 236: 3/236-->19/1964-->
+Head = 236, Tail = 927
+triangle 237: 3/237-->19/2001-->
+Head = 237, Tail = 928
+triangle 238: 3/238-->19/2002-->
+Head = 238, Tail = 929
+triangle 239: 3/239-->19/2081-->
+Head = 239, Tail = 930
+triangle 240: 3/240-->19/2082-->
+Head = 240, Tail = 931
+triangle 241: 3/241-->19/2100-->
+Head = 241, Tail = 932
+triangle 242: 3/242-->19/2101-->
+Head = 242, Tail = 933
+triangle 243: 3/243-->19/2102-->
+Head = 243, Tail = 934
+triangle 244: 3/244-->19/2105-->
+Head = 244, Tail = 935
+triangle 245: 3/245-->19/2120-->
+Head = 245, Tail = 936
+triangle 246: 3/246-->19/2153-->
+Head = 246, Tail = 937
+triangle 247: 3/247-->19/2154-->
+Head = 247, Tail = 938
+triangle 248: 3/248-->19/2156-->
+Head = 248, Tail = 939
+triangle 249: 3/249-->19/2157-->
+Head = 249, Tail = 940
+triangle 250: 3/250-->19/2168-->
+Head = 250, Tail = 941
+triangle 251: 3/251-->19/2169-->
+Head = 251, Tail = 942
+triangle 252: 3/252-->19/2170-->
+Head = 252, Tail = 943
+triangle 253: 3/253-->19/2175-->
+Head = 253, Tail = 944
+triangle 254: 3/254-->19/2176-->
+Head = 254, Tail = 945
+triangle 255: 3/255-->19/2177-->
+Head = 255, Tail = 946
+triangle 256: 3/256-->19/2178-->
+Head = 256, Tail = 947
+triangle 257: 3/257-->19/2179-->
+Head = 257, Tail = 948
+triangle 258: 3/258-->19/2199-->
+Head = 258, Tail = 949
+triangle 259: 3/259-->19/2200-->
+Head = 259, Tail = 950
+triangle 260: 3/260-->19/2201-->
+Head = 260, Tail = 951
+triangle 261: 3/261-->19/2213-->
+Head = 261, Tail = 952
+triangle 262: 3/262-->19/2214-->
+Head = 262, Tail = 953
+triangle 263: 3/263-->19/2230-->
+Head = 263, Tail = 954
+triangle 264: 3/264-->19/2233-->
+Head = 264, Tail = 955
+triangle 265: 3/265-->19/2234-->
+Head = 265, Tail = 956
+triangle 266: 3/266-->19/2251-->
+Head = 266, Tail = 957
+triangle 267: 3/267-->19/2298-->
+Head = 267, Tail = 958
+triangle 268: 3/268-->19/2299-->
+Head = 268, Tail = 959
+triangle 269: 3/269-->19/2307-->
+Head = 269, Tail = 960
+triangle 270: 3/270-->19/2308-->
+Head = 270, Tail = 961
+triangle 271: 3/271-->19/2312-->
+Head = 271, Tail = 962
+triangle 272: 3/272-->19/2313-->
+Head = 272, Tail = 963
+triangle 273: 3/273-->19/2314-->
+Head = 273, Tail = 964
+triangle 274: 3/274-->19/2373-->
+Head = 274, Tail = 965
+triangle 275: 3/275-->19/2374-->
+Head = 275, Tail = 966
+triangle 276: 3/276-->19/2379-->
+Head = 276, Tail = 967
+triangle 277: 3/277-->19/2380-->
+Head = 277, Tail = 968
+triangle 278: 3/278-->19/2454-->
+Head = 278, Tail = 969
+triangle 279: 3/279-->19/2455-->
+Head = 279, Tail = 970
+triangle 280: 3/280-->19/2477-->
+Head = 280, Tail = 971
+triangle 281: 3/281-->19/2478-->
+Head = 281, Tail = 972
+triangle 282: 3/282-->19/2491-->
+Head = 282, Tail = 973
+triangle 283: 3/283-->19/2492-->
+Head = 283, Tail = 974
+triangle 284: 3/284-->19/2493-->
+Head = 284, Tail = 975
+triangle 285: 3/285-->19/2504-->
+Head = 285, Tail = 976
+triangle 286: 3/286-->19/2520-->
+Head = 286, Tail = 977
+triangle 287: 3/287-->19/2521-->
+Head = 287, Tail = 978
+triangle 288: 3/288-->19/2528-->
+Head = 288, Tail = 979
+triangle 289: 3/289-->19/2544-->
+Head = 289, Tail = 980
+triangle 290: 3/290-->19/2554-->
+Head = 290, Tail = 981
+triangle 291: 3/291-->19/2594-->
+Head = 291, Tail = 982
+triangle 292: 3/292-->19/2613-->
+Head = 292, Tail = 983
+triangle 293: 3/293-->19/2614-->
+Head = 293, Tail = 984
+triangle 294: 3/294-->19/2626-->
+Head = 294, Tail = 985
+triangle 295: 3/295-->19/2627-->
+Head = 295, Tail = 986
+triangle 296: 3/296-->19/2628-->
+Head = 296, Tail = 987
+triangle 297: 3/297-->19/2629-->
+Head = 297, Tail = 988
+triangle 298: 3/298-->19/2640-->
+Head = 298, Tail = 989
+triangle 299: 3/299-->19/2651-->
+Head = 299, Tail = 990
+triangle 300: 3/300-->19/2652-->
+Head = 300, Tail = 991
+triangle 301: 3/301-->19/2665-->
+Head = 301, Tail = 992
+triangle 302: 3/302-->19/2666-->
+Head = 302, Tail = 993
+triangle 303: 3/303-->19/2667-->
+Head = 303, Tail = 994
+triangle 304: 3/304-->19/2705-->
+Head = 304, Tail = 995
+triangle 305: 3/305-->19/2706-->
+Head = 305, Tail = 996
+triangle 306: 3/306-->19/2726-->
+Head = 306, Tail = 997
+triangle 307: 3/307-->19/2727-->
+Head = 307, Tail = 998
+triangle 308: 3/308-->19/2728-->
+Head = 308, Tail = 999
+triangle 309: 3/309-->19/2753-->
+Head = 309, Tail = 1000
+triangle 310: 3/310-->19/2756-->
+Head = 310, Tail = 1001
+triangle 311: 3/311-->19/2790-->
+Head = 311, Tail = 1002
+triangle 312: 3/312-->19/2798-->
+Head = 312, Tail = 1003
+triangle 313: 3/313-->19/2802-->
+Head = 313, Tail = 1004
+triangle 314: 3/314-->19/2821-->
+Head = 314, Tail = 1005
+triangle 315: 3/315-->19/2836-->
+Head = 315, Tail = 1006
+triangle 316: 3/316-->19/2842-->
+Head = 316, Tail = 1007
+triangle 317: 3/317-->19/2852-->
+Head = 317, Tail = 1008
+triangle 318: 3/318-->19/2870-->
+Head = 318, Tail = 1009
+triangle 319: 3/319-->19/2873-->
+Head = 319, Tail = 1010
+triangle 320: 3/320-->19/2877-->
+Head = 320, Tail = 1011
+triangle 321: 3/321-->19/2882-->
+Head = 321, Tail = 1012
+triangle 322: 3/322-->19/2883-->
+Head = 322, Tail = 1013
+triangle 323: 3/323-->19/2895-->
+Head = 323, Tail = 1014
+triangle 324: 3/324-->19/2913-->
+Head = 324, Tail = 1015
+triangle 325: 3/325-->19/2914-->
+Head = 325, Tail = 1016
+triangle 326: 3/326-->19/2936-->
+Head = 326, Tail = 1017
+triangle 327: 3/327-->19/2939-->
+Head = 327, Tail = 1018
+triangle 328: 3/328-->19/2940-->
+Head = 328, Tail = 1019
+triangle 329: 3/329-->19/2971-->
+Head = 329, Tail = 1020
+triangle 330: 3/330-->19/2972-->
+Head = 330, Tail = 1021
+triangle 331: 3/331-->19/2980-->
+Head = 331, Tail = 1022
+triangle 332: 3/332-->19/2995-->
+Head = 332, Tail = 1023
+triangle 333: 3/333-->19/2998-->
+Head = 333, Tail = 1024
+triangle 334: 3/334-->19/2999-->
+Head = 334, Tail = 1025
+triangle 335: 3/335-->19/3000-->
+Head = 335, Tail = 1026
+triangle 336: 3/336-->19/3018-->
+Head = 336, Tail = 1027
+triangle 337: 3/337-->19/3019-->
+Head = 337, Tail = 1028
+triangle 338: 3/338-->19/3048-->
+Head = 338, Tail = 1029
+triangle 339: 3/339-->19/3057-->
+Head = 339, Tail = 1030
+triangle 340: 3/340-->19/3058-->
+Head = 340, Tail = 1031
+triangle 341: 3/341-->19/3067-->
+Head = 341, Tail = 1032
+triangle 342: 3/342-->19/3068-->
+Head = 342, Tail = 1033
+triangle 343: 3/343-->19/3069-->
+Head = 343, Tail = 1034
+triangle 344: 3/344-->19/3070-->
+Head = 344, Tail = 1035
+triangle 345: 3/345-->19/3071-->
+Head = 345, Tail = 1036
+triangle 346: 3/346-->19/3072-->
+Head = 346, Tail = 1037
+triangle 347: 3/347-->19/3073-->
+Head = 347, Tail = 1038
+triangle 348: 3/348-->19/3078-->
+Head = 348, Tail = 1039
+triangle 349: 3/349-->19/3079-->
+Head = 349, Tail = 1040
+triangle 350: 3/350-->19/3080-->
+Head = 350, Tail = 1041
+triangle 351: 3/351-->19/3084-->
+Head = 351, Tail = 1042
+triangle 352: 3/352-->19/3085-->
+Head = 352, Tail = 1043
+triangle 353: 3/353-->19/3092-->
+Head = 353, Tail = 1044
+triangle 354: 3/354-->19/3093-->
+Head = 354, Tail = 1045
+triangle 355: 3/355-->19/3101-->
+Head = 355, Tail = 1046
+triangle 356: 3/356-->19/3102-->
+Head = 356, Tail = 1047
+triangle 357: 3/357-->19/3103-->
+Head = 357, Tail = 1048
+triangle 358: 3/358-->19/3104-->
+Head = 358, Tail = 1049
+triangle 359: 3/359-->19/3105-->
+Head = 359, Tail = 1050
+triangle 360: 3/360-->19/3106-->
+Head = 360, Tail = 1051
+triangle 361: 3/361-->19/3108-->
+Head = 361, Tail = 1052
+triangle 362: 3/362-->19/3110-->
+Head = 362, Tail = 1053
+triangle 363: 3/363-->19/3111-->
+Head = 363, Tail = 1054
+triangle 364: 3/364-->19/3112-->
+Head = 364, Tail = 1055
+triangle 365: 3/365-->19/3119-->
+Head = 365, Tail = 1056
+triangle 366: 3/366-->19/3120-->
+Head = 366, Tail = 1057
+triangle 367: 3/367-->19/3146-->
+Head = 367, Tail = 1058
+triangle 368: 3/368-->19/3147-->
+Head = 368, Tail = 1059
+triangle 369: 3/369-->19/3154-->
+Head = 369, Tail = 1060
+triangle 370: 3/370-->19/3155-->
+Head = 370, Tail = 1061
+triangle 371: 3/371-->19/3156-->
+Head = 371, Tail = 1062
+triangle 372: 3/372-->19/3164-->
+Head = 372, Tail = 1063
+triangle 373: 3/373-->19/3165-->
+Head = 373, Tail = 1064
+triangle 374: 3/374-->19/3166-->
+Head = 374, Tail = 1065
+triangle 375: 3/375-->19/3167-->
+Head = 375, Tail = 1066
+triangle 376: 3/376-->19/3175-->
+Head = 376, Tail = 1067
+triangle 377: 3/377-->19/3176-->
+Head = 377, Tail = 1068
+triangle 378: 3/378-->19/3177-->
+Head = 378, Tail = 1069
+triangle 379: 3/379-->19/3178-->
+Head = 379, Tail = 1070
+triangle 380: 3/380-->19/3179-->
+Head = 380, Tail = 1071
+triangle 381: 3/381-->19/3186-->
+Head = 381, Tail = 1072
+triangle 382: 3/382-->19/3201-->
+Head = 382, Tail = 1073
+triangle 383: 3/383-->19/3202-->
+Head = 383, Tail = 1074
+triangle 384: 3/384-->19/3218-->
+Head = 384, Tail = 1075
+triangle 385: 3/385-->19/3220-->
+Head = 385, Tail = 1076
+triangle 386: 3/386-->19/3234-->
+Head = 386, Tail = 1077
+triangle 387: 3/387-->19/3235-->
+Head = 387, Tail = 1078
+triangle 388: 3/388-->19/3236-->
+Head = 388, Tail = 1079
+triangle 389: 3/389-->19/3238-->
+Head = 389, Tail = 1080
+triangle 390: 3/390-->19/3239-->
+Head = 390, Tail = 1081
+triangle 391: 3/391-->19/3240-->
+Head = 391, Tail = 1082
+triangle 392: 3/392-->19/3264-->
+Head = 392, Tail = 1083
+triangle 393: 3/393-->19/3265-->
+Head = 393, Tail = 1084
+triangle 394: 3/394-->19/3266-->
+Head = 394, Tail = 1085
+triangle 395: 3/395-->19/3267-->
+Head = 395, Tail = 1086
+triangle 396: 3/396-->19/3268-->
+Head = 396, Tail = 1087
+triangle 397: 3/397-->19/3269-->
+Head = 397, Tail = 1088
+triangle 398: 3/398-->19/3270-->
+Head = 398, Tail = 1089
+triangle 399: 3/399-->19/3271-->
+Head = 399, Tail = 1090
+triangle 400: 3/400-->19/3290-->
+Head = 400, Tail = 1091
+triangle 401: 3/401-->19/3291-->
+Head = 401, Tail = 1092
+triangle 402: 3/402-->19/3292-->
+Head = 402, Tail = 1093
+triangle 403: 3/403-->19/3293-->
+Head = 403, Tail = 1094
+triangle 404: 3/404-->19/3299-->
+Head = 404, Tail = 1095
+triangle 405: 3/405-->19/3335-->
+Head = 405, Tail = 1096
+triangle 406: 3/406-->19/3345-->
+Head = 406, Tail = 1097
+triangle 407: 3/407-->19/3346-->
+Head = 407, Tail = 1098
+triangle 408: 3/408-->19/3349-->
+Head = 408, Tail = 1099
+triangle 409: 3/409-->19/3350-->
+Head = 409, Tail = 1100
+triangle 410: 3/410-->19/3351-->
+Head = 410, Tail = 1101
+triangle 411: 3/411-->19/3354-->
+Head = 411, Tail = 1102
+triangle 412: 3/412-->19/3357-->
+Head = 412, Tail = 1103
+triangle 413: 3/413-->19/3358-->
+Head = 413, Tail = 1104
+triangle 414: 3/414-->19/3360-->
+Head = 414, Tail = 1105
+triangle 415: 3/415-->19/3361-->
+Head = 415, Tail = 1106
+triangle 416: 3/416-->19/3362-->
+Head = 416, Tail = 1107
+triangle 417: 3/417-->19/3373-->
+Head = 417, Tail = 1108
+triangle 418: 3/418-->19/3374-->
+Head = 418, Tail = 1109
+triangle 419: 3/419-->19/3375-->
+Head = 419, Tail = 1110
+triangle 420: 3/420-->19/3376-->
+Head = 420, Tail = 1111
+triangle 421: 3/421-->19/3389-->
+Head = 421, Tail = 1112
+triangle 422: 3/422-->19/3422-->
+Head = 422, Tail = 1113
+triangle 423: 3/423-->19/3430-->
+Head = 423, Tail = 1114
+triangle 424: 3/424-->19/3431-->
+Head = 424, Tail = 1115
+triangle 425: 3/425-->19/3453-->
+Head = 425, Tail = 1116
+triangle 426: 3/426-->19/3454-->
+Head = 426, Tail = 1117
+triangle 427: 3/427-->19/3466-->
+Head = 427, Tail = 1118
+triangle 428: 3/428-->19/3467-->
+Head = 428, Tail = 1119
+triangle 429: 3/429-->19/3491-->
+Head = 429, Tail = 1120
+triangle 430: 3/430-->19/3492-->
+Head = 430, Tail = 1121
+triangle 431: 3/431-->19/3508-->
+Head = 431, Tail = 1122
+triangle 432: 3/432-->19/3509-->
+Head = 432, Tail = 1123
+triangle 433: 3/433-->19/3525-->
+Head = 433, Tail = 1124
+triangle 434: 3/434-->19/3527-->
+Head = 434, Tail = 1125
+triangle 435: 3/435-->19/3550-->
+Head = 435, Tail = 1126
+triangle 436: 3/436-->19/3563-->
+Head = 436, Tail = 1127
+triangle 437: 3/437-->19/3564-->
+Head = 437, Tail = 1128
+triangle 438: 3/438-->19/3601-->
+Head = 438, Tail = 1129
+triangle 439: 3/439-->19/3631-->
+Head = 439, Tail = 1130
+triangle 440: 3/440-->19/3632-->
+Head = 440, Tail = 1131
+triangle 441: 3/441-->19/3660-->
+Head = 441, Tail = 1132
+triangle 442: 3/442-->19/3661-->
+Head = 442, Tail = 1133
+triangle 443: 3/443-->19/3662-->
+Head = 443, Tail = 1134
+triangle 444: 3/444-->19/3663-->
+Head = 444, Tail = 1135
+triangle 445: 3/445-->19/3666-->
+Head = 445, Tail = 1136
+triangle 446: 3/446-->19/3690-->
+Head = 446, Tail = 1137
+triangle 447: 3/447-->19/3736-->
+Head = 447, Tail = 1138
+triangle 448: 3/448-->19/3745-->
+Head = 448, Tail = 1139
+triangle 449: 3/449-->19/3766-->
+Head = 449, Tail = 1140
+triangle 450: 3/450-->19/3767-->
+Head = 450, Tail = 1141
+triangle 451: 3/451-->19/3789-->
+Head = 451, Tail = 1142
+triangle 452: 3/452-->19/3812-->
+Head = 452, Tail = 1143
+triangle 453: 3/453-->19/3814-->
+Head = 453, Tail = 1144
+triangle 454: 3/454-->19/3815-->
+Head = 454, Tail = 1145
+triangle 455: 3/455-->19/3827-->
+Head = 455, Tail = 1146
+triangle 456: 3/456-->19/3828-->
+Head = 456, Tail = 1147
+triangle 457: 3/457-->19/3839-->
+Head = 457, Tail = 1148
+triangle 458: 3/458-->19/3840-->
+Head = 458, Tail = 1149
+triangle 459: 3/459-->19/3851-->
+Head = 459, Tail = 1150
+triangle 460: 3/460-->19/3860-->
+Head = 460, Tail = 1151
+triangle 461: 3/461-->19/3861-->
+Head = 461, Tail = 1152
+triangle 462: 3/462-->19/3873-->
+Head = 462, Tail = 1153
+triangle 463: 3/463-->19/3923-->
+Head = 463, Tail = 1154
+triangle 464: 3/464-->19/3933-->
+Head = 464, Tail = 1155
+triangle 465: 3/465-->19/3934-->
+Head = 465, Tail = 1156
+triangle 466: 3/466-->19/3935-->
+Head = 466, Tail = 1157
+triangle 467: 3/467-->19/3991-->
+Head = 467, Tail = 1158
+triangle 468: 3/468-->19/4017-->
+Head = 468, Tail = 1159
+triangle 469: 3/469-->19/4018-->
+Head = 469, Tail = 1160
+triangle 470: 3/470-->19/4028-->
+Head = 470, Tail = 1161
+triangle 471: 3/471-->19/4032-->
+Head = 471, Tail = 1162
+triangle 472: 3/472-->19/4033-->
+Head = 472, Tail = 1163
+triangle 473: 3/473-->19/4093-->
+Head = 473, Tail = 1164
+triangle 474: 3/474-->19/4094-->
+Head = 474, Tail = 1165
+triangle 475: 3/475-->19/4127-->
+Head = 475, Tail = 1166
+triangle 476: 3/476-->19/4136-->
+Head = 476, Tail = 1167
+triangle 477: 3/477-->19/4152-->
+Head = 477, Tail = 1168
+triangle 478: 3/478-->19/4159-->
+Head = 478, Tail = 1169
+triangle 479: 3/479-->19/4168-->
+Head = 479, Tail = 1170
+triangle 480: 3/480-->19/4172-->
+Head = 480, Tail = 1171
+triangle 481: 3/481-->19/4173-->
+Head = 481, Tail = 1172
+triangle 482: 3/482-->19/4197-->
+Head = 482, Tail = 1173
+triangle 483: 3/483-->19/4229-->
+Head = 483, Tail = 1174
+triangle 484: 3/484-->19/4259-->
+Head = 484, Tail = 1175
+triangle 485: 3/485-->19/4263-->
+Head = 485, Tail = 1176
+triangle 486: 3/486-->19/4271-->
+Head = 486, Tail = 1177
+triangle 487: 3/487-->19/4275-->
+Head = 487, Tail = 1178
+triangle 488: 3/488-->19/4276-->
+Head = 488, Tail = 1179
+triangle 489: 3/489-->19/4291-->
+Head = 489, Tail = 1180
+triangle 490: 3/490-->19/4318-->
+Head = 490, Tail = 1181
+triangle 491: 3/491-->19/4319-->
+Head = 491, Tail = 1182
+triangle 492: 3/492-->19/4320-->
+Head = 492, Tail = 1183
+triangle 493: 3/493-->19/4321-->
+Head = 493, Tail = 1184
+triangle 494: 3/494-->19/4322-->
+Head = 494, Tail = 1185
+triangle 495: 3/495-->19/4323-->
+Head = 495, Tail = 1186
+triangle 496: 3/496-->19/4325-->
+Head = 496, Tail = 1187
+triangle 497: 3/497-->19/4326-->
+Head = 497, Tail = 1188
+triangle 498: 3/498-->19/4335-->
+Head = 498, Tail = 1189
+triangle 499: 3/499-->19/4336-->
+Head = 499, Tail = 1190
+triangle 500: 3/500-->19/4338-->
+Head = 500, Tail = 1191
+triangle 501: 3/501-->19/4346-->
+Head = 501, Tail = 1192
+triangle 502: 3/502-->19/4347-->
+Head = 502, Tail = 1193
+triangle 503: 3/503-->19/4362-->
+Head = 503, Tail = 1194
+triangle 504: 3/504-->19/4363-->
+Head = 504, Tail = 1195
+triangle 505: 3/505-->19/4371-->
+Head = 505, Tail = 1196
+triangle 506: 3/506-->19/4379-->
+Head = 506, Tail = 1197
+triangle 507: 3/507-->19/4380-->
+Head = 507, Tail = 1198
+triangle 508: 3/508-->19/4381-->
+Head = 508, Tail = 1199
+triangle 509: 3/509-->19/4382-->
+Head = 509, Tail = 1200
+triangle 510: 3/510-->19/4383-->
+Head = 510, Tail = 1201
+triangle 511: 3/511-->19/4384-->
+Head = 511, Tail = 1202
+triangle 512: 3/512-->19/4392-->
+Head = 512, Tail = 1203
+triangle 513: 3/513-->19/4393-->
+Head = 513, Tail = 1204
+triangle 514: 3/514-->19/4394-->
+Head = 514, Tail = 1205
+triangle 515: 3/515-->19/4395-->
+Head = 515, Tail = 1206
+triangle 516: 3/516-->19/4396-->
+Head = 516, Tail = 1207
+triangle 517: 3/517-->19/4401-->
+Head = 517, Tail = 1208
+triangle 518: 3/518-->19/4402-->
+Head = 518, Tail = 1209
+triangle 519: 3/519-->19/4403-->
+Head = 519, Tail = 1210
+triangle 520: 3/520-->19/4404-->
+Head = 520, Tail = 1211
+triangle 521: 3/521-->19/4408-->
+Head = 521, Tail = 1212
+triangle 522: 3/522-->19/4409-->
+Head = 522, Tail = 1213
+triangle 523: 3/523-->19/4417-->
+Head = 523, Tail = 1214
+triangle 524: 3/524-->19/4418-->
+Head = 524, Tail = 1215
+triangle 525: 3/525-->19/4419-->
+Head = 525, Tail = 1216
+triangle 526: 3/526-->19/4420-->
+Head = 526, Tail = 1217
+triangle 527: 3/527-->19/4426-->
+Head = 527, Tail = 1218
+triangle 528: 3/528-->19/4427-->
+Head = 528, Tail = 1219
+triangle 529: 3/529-->19/4428-->
+Head = 529, Tail = 1220
+triangle 530: 3/530-->19/4429-->
+Head = 530, Tail = 1221
+triangle 531: 3/531-->19/4430-->
+Head = 531, Tail = 1222
+triangle 532: 3/532-->19/4431-->
+Head = 532, Tail = 1223
+triangle 533: 3/533-->19/4432-->
+Head = 533, Tail = 1224
+triangle 534: 3/534-->19/4434-->
+Head = 534, Tail = 1225
+triangle 535: 3/535-->19/4435-->
+Head = 535, Tail = 1226
+triangle 536: 3/536-->19/4436-->
+Head = 536, Tail = 1227
+triangle 537: 3/537-->19/4437-->
+Head = 537, Tail = 1228
+triangle 538: 3/538-->19/4438-->
+Head = 538, Tail = 1229
+triangle 539: 3/539-->19/4439-->
+Head = 539, Tail = 1230
+triangle 540: 3/540-->19/4440-->
+Head = 540, Tail = 1231
+triangle 541: 3/541-->19/4455-->
+Head = 541, Tail = 1232
+triangle 542: 3/542-->19/4456-->
+Head = 542, Tail = 1233
+triangle 543: 3/543-->19/4460-->
+Head = 543, Tail = 1234
+triangle 544: 3/544-->19/4463-->
+Head = 544, Tail = 1235
+triangle 545: 3/545-->19/4464-->
+Head = 545, Tail = 1236
+triangle 546: 3/546-->19/4467-->
+Head = 546, Tail = 1237
+triangle 547: 3/547-->19/4468-->
+Head = 547, Tail = 1238
+triangle 548: 3/548-->19/4469-->
+Head = 548, Tail = 1239
+triangle 549: 3/549-->19/4476-->
+Head = 549, Tail = 1240
+triangle 550: 3/550-->19/4477-->
+Head = 550, Tail = 1241
+triangle 551: 3/551-->19/4497-->
+Head = 551, Tail = 1242
+triangle 552: 3/552-->19/4502-->
+Head = 552, Tail = 1243
+triangle 553: 3/553-->19/4504-->
+Head = 553, Tail = 1244
+triangle 554: 3/554-->19/4505-->
+Head = 554, Tail = 1245
+triangle 555: 3/555-->19/4506-->
+Head = 555, Tail = 1246
+triangle 556: 3/556-->19/4507-->
+Head = 556, Tail = 1247
+triangle 557: 3/557-->19/4508-->
+Head = 557, Tail = 1248
+triangle 558: 3/558-->19/4509-->
+Head = 558, Tail = 1249
+triangle 559: 3/559-->19/4515-->
+Head = 559, Tail = 1250
+triangle 560: 3/560-->19/4526-->
+Head = 560, Tail = 1251
+triangle 561: 3/561-->19/4528-->
+Head = 561, Tail = 1252
+triangle 562: 3/562-->19/4542-->
+Head = 562, Tail = 1253
+triangle 563: 3/563-->19/4551-->
+Head = 563, Tail = 1254
+triangle 564: 3/564-->19/4573-->
+Head = 564, Tail = 1255
+triangle 565: 3/565-->19/4582-->
+Head = 565, Tail = 1256
+triangle 566: 3/566-->19/4607-->
+Head = 566, Tail = 1257
+triangle 567: 3/567-->19/4635-->
+Head = 567, Tail = 1258
+triangle 568: 3/568-->19/4661-->
+Head = 568, Tail = 1259
+triangle 569: 3/569-->19/4669-->
+Head = 569, Tail = 1260
+triangle 570: 3/570-->19/4683-->
+Head = 570, Tail = 1261
+triangle 571: 3/571-->19/4684-->
+Head = 571, Tail = 1262
+triangle 572: 3/572-->19/4687-->
+Head = 572, Tail = 1263
+triangle 573: 3/573-->19/4688-->
+Head = 573, Tail = 1264
+triangle 574: 3/574-->19/4691-->
+Head = 574, Tail = 1265
+triangle 575: 3/575-->19/4693-->
+Head = 575, Tail = 1266
+triangle 576: 3/576-->19/4700-->
+Head = 576, Tail = 1267
+triangle 577: 3/577-->19/4701-->
+Head = 577, Tail = 1268
+triangle 578: 3/578-->19/4703-->
+Head = 578, Tail = 1269
+triangle 579: 3/579-->19/4710-->
+Head = 579, Tail = 1270
+triangle 580: 3/580-->19/4711-->
+Head = 580, Tail = 1271
+triangle 581: 3/581-->19/4713-->
+Head = 581, Tail = 1272
+triangle 582: 3/582-->19/4723-->
+Head = 582, Tail = 1273
+triangle 583: 3/583-->19/4725-->
+Head = 583, Tail = 1274
+triangle 584: 3/584-->19/4746-->
+Head = 584, Tail = 1275
+triangle 585: 3/585-->19/4747-->
+Head = 585, Tail = 1276
+triangle 586: 3/586-->19/4758-->
+Head = 586, Tail = 1277
+triangle 587: 3/587-->19/4771-->
+Head = 587, Tail = 1278
+triangle 588: 3/588-->19/4792-->
+Head = 588, Tail = 1279
+triangle 589: 3/589-->19/4807-->
+Head = 589, Tail = 1280
+triangle 590: 3/590-->19/4808-->
+Head = 590, Tail = 1281
+triangle 591: 3/591-->19/4809-->
+Head = 591, Tail = 1282
+triangle 592: 3/592-->19/4810-->
+Head = 592, Tail = 1283
+triangle 593: 3/593-->19/4816-->
+Head = 593, Tail = 1284
+triangle 594: 3/594-->19/4818-->
+Head = 594, Tail = 1285
+triangle 595: 3/595-->19/4819-->
+Head = 595, Tail = 1286
+triangle 596: 3/596-->19/4824-->
+Head = 596, Tail = 1287
+triangle 597: 3/597-->19/4828-->
+Head = 597, Tail = 1288
+triangle 598: 3/598-->19/4845-->
+Head = 598, Tail = 1289
+triangle 599: 3/599-->19/4848-->
+Head = 599, Tail = 1290
+triangle 600: 3/600-->19/4855-->
+Head = 600, Tail = 1291
+triangle 601: 3/601-->19/4856-->
+Head = 601, Tail = 1292
+triangle 602: 3/602-->19/4857-->
+Head = 602, Tail = 1293
+triangle 603: 3/603-->19/4858-->
+Head = 603, Tail = 1294
+triangle 604: 3/604-->19/4861-->
+Head = 604, Tail = 1295
+triangle 605: 3/605-->19/4866-->
+Head = 605, Tail = 1296
+triangle 606: 3/606-->19/4867-->
+Head = 606, Tail = 1297
+triangle 607: 3/607-->19/4874-->
+Head = 607, Tail = 1298
+triangle 608: 3/608-->19/4877-->
+Head = 608, Tail = 1299
+triangle 609: 3/609-->19/4878-->
+Head = 609, Tail = 1300
+triangle 610: 3/610-->19/4885-->
+Head = 610, Tail = 1301
+triangle 611: 3/611-->19/4886-->
+Head = 611, Tail = 1302
+triangle 612: 3/612-->19/4889-->
+Head = 612, Tail = 1303
+triangle 613: 3/613-->19/4890-->
+Head = 613, Tail = 1304
+triangle 614: 3/614-->19/4895-->
+Head = 614, Tail = 1305
+triangle 615: 3/615-->19/4896-->
+Head = 615, Tail = 1306
+triangle 616: 3/616-->19/4897-->
+Head = 616, Tail = 1307
+triangle 617: 3/617-->19/4904-->
+Head = 617, Tail = 1308
+triangle 618: 3/618-->19/4906-->
+Head = 618, Tail = 1309
+triangle 619: 3/619-->19/4917-->
+Head = 619, Tail = 1310
+triangle 620: 3/620-->19/4923-->
+Head = 620, Tail = 1311
+triangle 621: 3/621-->19/4924-->
+Head = 621, Tail = 1312
+triangle 622: 3/622-->19/4925-->
+Head = 622, Tail = 1313
+triangle 623: 3/623-->19/4926-->
+Head = 623, Tail = 1314
+triangle 624: 3/624-->19/4929-->
+Head = 624, Tail = 1315
+triangle 625: 3/625-->19/4931-->
+Head = 625, Tail = 1316
+triangle 626: 3/626-->19/4935-->
+Head = 626, Tail = 1317
+triangle 627: 3/627-->19/4938-->
+Head = 627, Tail = 1318
+triangle 628: 3/628-->19/4940-->
+Head = 628, Tail = 1319
+triangle 629: 3/629-->19/4942-->
+Head = 629, Tail = 1320
+triangle 630: 3/630-->19/4943-->
+Head = 630, Tail = 1321
+triangle 631: 3/631-->19/4944-->
+Head = 631, Tail = 1322
+triangle 632: 3/632-->19/4945-->
+Head = 632, Tail = 1323
+triangle 633: 3/633-->19/4947-->
+Head = 633, Tail = 1324
+triangle 634: 3/634-->19/4956-->
+Head = 634, Tail = 1325
+triangle 635: 3/635-->19/4958-->
+Head = 635, Tail = 1326
+triangle 636: 3/636-->19/4959-->
+Head = 636, Tail = 1327
+triangle 637: 3/637-->19/4965-->
+Head = 637, Tail = 1328
+triangle 638: 3/638-->19/4980-->
+Head = 638, Tail = 1329
+triangle 639: 3/639-->19/4990-->
+Head = 639, Tail = 1330
+triangle 640: 3/640-->19/4991-->
+Head = 640, Tail = 1331
+triangle 641: 3/641-->19/5011-->
+Head = 641, Tail = 1332
+triangle 642: 3/642-->19/5012-->
+Head = 642, Tail = 1333
+triangle 643: 3/643-->19/5013-->
+Head = 643, Tail = 1334
+triangle 644: 3/644-->19/5014-->
+Head = 644, Tail = 1335
+triangle 645: 3/645-->19/5027-->
+Head = 645, Tail = 1336
+triangle 646: 3/646-->19/5028-->
+Head = 646, Tail = 1337
+triangle 647: 3/647-->19/5031-->
+Head = 647, Tail = 1338
+triangle 648: 3/648-->19/5038-->
+Head = 648, Tail = 1339
+triangle 649: 3/649-->19/5039-->
+Head = 649, Tail = 1340
+triangle 650: 3/650-->19/5040-->
+Head = 650, Tail = 1341
+triangle 651: 3/651-->19/5041-->
+Head = 651, Tail = 1342
+triangle 652: 3/652-->19/5062-->
+Head = 652, Tail = 1343
+triangle 653: 3/653-->19/5063-->
+Head = 653, Tail = 1344
+triangle 654: 3/654-->19/5076-->
+Head = 654, Tail = 1345
+triangle 655: 3/655-->19/5077-->
+Head = 655, Tail = 1346
+triangle 656: 3/656-->19/5103-->
+Head = 656, Tail = 1347
+triangle 657: 3/657-->19/5104-->
+Head = 657, Tail = 1348
+triangle 658: 3/658-->19/5109-->
+Head = 658, Tail = 1349
+triangle 659: 3/659-->19/5110-->
+Head = 659, Tail = 1350
+triangle 660: 3/660-->19/5119-->
+Head = 660, Tail = 1351
+triangle 661: 3/661-->19/5120-->
+Head = 661, Tail = 1352
+triangle 662: 3/662-->19/5147-->
+Head = 662, Tail = 1353
+triangle 663: 3/663-->19/5148-->
+Head = 663, Tail = 1354
+triangle 664: 3/664-->19/5149-->
+Head = 664, Tail = 1355
+triangle 665: 3/665-->19/5150-->
+Head = 665, Tail = 1356
+triangle 666: 3/666-->19/5155-->
+Head = 666, Tail = 1357
+triangle 667: 3/667-->19/5156-->
+Head = 667, Tail = 1358
+triangle 668: 3/668-->19/5175-->
+Head = 668, Tail = 1359
+triangle 669: 3/669-->19/5176-->
+Head = 669, Tail = 1360
+triangle 670: 3/670-->19/5181-->
+Head = 670, Tail = 1361
+triangle 671: 3/671-->19/5182-->
+Head = 671, Tail = 1362
+triangle 672: 3/672-->19/5183-->
+Head = 672, Tail = 1363
+triangle 673: 3/673-->19/5189-->
+Head = 673, Tail = 1364
+triangle 674: 3/674-->19/5190-->
+Head = 674, Tail = 1365
+triangle 675: 3/675-->19/5202-->
+Head = 675, Tail = 1366
+triangle 676: 3/676-->19/5203-->
+Head = 676, Tail = 1367
+triangle 677: 3/677-->19/5211-->
+Head = 677, Tail = 1368
+triangle 678: 3/678-->19/5216-->
+Head = 678, Tail = 1369
+triangle 679: 3/679-->19/5217-->
+Head = 679, Tail = 1370
+triangle 680: 3/680-->19/5226-->
+Head = 680, Tail = 1371
+triangle 681: 3/681-->19/5227-->
+Head = 681, Tail = 1372
+triangle 682: 3/682-->19/5255-->
+Head = 682, Tail = 1373
+triangle 683: 3/683-->19/5256-->
+Head = 683, Tail = 1374
+triangle 684: 3/684-->19/5272-->
+Head = 684, Tail = 1375
+triangle 685: 3/685-->19/5280-->
+Head = 685, Tail = 1376
+triangle 686: 3/686-->19/5281-->
+Head = 686, Tail = 1377
+triangle 687: 3/687-->19/5282-->
+Head = 687, Tail = 1378
+triangle 688: 3/688-->19/5283-->
+Head = 688, Tail = 1379
+triangle 689: 3/689-->19/5380-->
+Head = 689, Tail = 1380
+triangle 690: 3/690-->19/5453-->
+Head = 690, Tail = 1381
+triangle 691: 3/691-->19/5454-->
+Head = 691, Tail = 1382
+Getting out of hpPrint_pinfo()
+BoundingBox: 0.169813  0.262437  -0.039250  0.196250  2.498750  2.734250  
+Passed ImportMeshToHiprop()
+CLOCK   11.62   (Import hiprop)
+After import, num_points = 370
+hpmesh-t0000002
+out12/hpmesh-t0000002-p0003.vtk
+CLOCK           (Export hiprop)
+Getting into ExportMeshToFronTier
+Getting into read_hiprop_surface()
+In the HiPropMesh, num_pts = 370
+In the FT interface num_pts = 370
+Passed reading the triangles
+Passed read_hiprop_surface
+Passed install_subdomain_bdry_curves
+Passed ExportMeshToFronTier
+CLOCK    0.00   (Export hiprop)
+Before scatter_front
+Leaving TEST_Hiprop
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+CLOCK           (Main_Loop)
+Before FT_Propagate()
+  CLOCK           (FT_Propagate)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.00   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.01   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.05   (set_grid_intfc_components)
+    CLOCK    0.06   (make_grid_intfc)
+    CLOCK           (FrontAdvance)
+      CLOCK           (mixed_advance_front3d)
+        CLOCK           (preserve_front_advance_front3d)
+          CLOCK           (copy_interface)
+          CLOCK    0.01   (copy_interface)
+          CLOCK           (point_propagate)
+            CLOCK           (normal_propagate)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (init_propagate)
+              CLOCK    0.00   (init_propagate)
+              CLOCK           (propagate_surface_points)
+              CLOCK    0.00   (propagate_surface_points)
+            CLOCK    0.02   (normal_propagate)
+            CLOCK           (scatter_front)
+            CLOCK    0.06   (scatter_front)
+          CLOCK    0.10   (point_propagate)
+          CLOCK           (redist_and_untangle)
+            CLOCK           (Mesh_Smoothing)
+            CLOCK    0.00   (Mesh_Smoothing)
+            CLOCK           (Mesh_Reparing)
+            CLOCK    0.00   (Mesh_Reparing)
+            CLOCK           (repair_front_at_grid_crossing)
+              CLOCK           (make_tri_lists)
+              CLOCK    0.00   (make_tri_lists)
+              CLOCK           (insert_grid_intfc_crossings)
+              CLOCK    0.00   (insert_grid_intfc_crossings)
+              CLOCK           (repair_intfc3d_in_box)
+              CLOCK    0.08   (repair_intfc3d_in_box)
+            CLOCK    0.08   (repair_front_at_grid_crossing)
+            CLOCK           (scatter_front)
+            CLOCK    0.03   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.05   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.06   (scatter_front)
+            CLOCK           (scatter_front)
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.07   (scatter_front)
+            CLOCK           (Add_and_Delete_Points)
+              CLOCK           (redistribute_surface)
+              CLOCK    0.00   (redistribute_surface)
+            CLOCK    0.00   (Add_and_Delete_Points)
+            CLOCK           (scatter_front)
+            CLOCK    0.07   (scatter_front)
+          CLOCK    0.44   (redist_and_untangle)
+        CLOCK    0.55   (preserve_front_advance_front3d)
+      CLOCK    0.55   (mixed_advance_front3d)
+    CLOCK    0.55   (FrontAdvance)
+    CLOCK           (make_grid_intfc)
+      CLOCK           (make_tri_lists)
+      CLOCK    0.01   (make_tri_lists)
+      CLOCK           (insert_grid_intfc_crossings)
+      CLOCK    0.00   (insert_grid_intfc_crossings)
+      CLOCK           (set_grid_intfc_components)
+      CLOCK    0.05   (set_grid_intfc_components)
+    CLOCK    0.06   (make_grid_intfc)
+  CLOCK    0.67   (FT_Propagate)
+Passed FT_Propagate()
+Calling ifluid solve()
+  CLOCK           (Fluid_Solve)
+
+Entering solve, the dt for this solve is : 0.008673862734944244
+
+In solve, old time = 0.01741264734118754, new time = 0.02608651007613178, step = 2
+    CLOCK           (SetCompAndIndex)
+Passed setComponent()
+      CLOCK           (make_tri_lists)
+      CLOCK    0.01   (make_tri_lists)
+Passed setCornerComp()
+Passed setGlobalIndex()
+    CLOCK    0.03   (SetCompAndIndex)
+    CLOCK           (setSmoothedProperties)
+      CLOCK           (SetRhoAndMu)
+      CLOCK    0.01   (SetRhoAndMu)
+      CLOCK           (SurfaceTension)
+
+Enter 3D_Cylindrical::surfaceTension_Peskin 
+      CLOCK    0.00   (SurfaceTension)
+      CLOCK           (ScatStates)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.04   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.04   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK    0.10   (ScatStates)
+    CLOCK    0.12   (setSmoothedProperties)
+Passed setSmoothedProperties()
+    CLOCK           (computeAdvection)
+    CLOCK    0.23   (computeAdvection)
+max_speed after computeAdvection():     0.00000000000000
+    CLOCK           (compDiffWithSmoothProperty)
+
+In diffusion solver ,m_dt = 0.008673862734944244
+      CLOCK           (SetMatrixForDiffusion)
+      CLOCK    0.17   (SetMatrixForDiffusion)
+      CLOCK           (Petsc_Solve_DIFF)
+      CLOCK    0.08   (Petsc_Solve_DIFF)
+Incompress_Solver_Smooth_3D_Cylindrical::compDiffWithSmoothProperty_2nd_coupled: num_iter = 4, rel_residual = 6.447022e-11. 
+      CLOCK           (GetSolAndScat)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.01   (scatter_top_grid_float_array)
+      CLOCK    0.02   (GetSolAndScat)
+    CLOCK    0.28   (compDiffWithSmoothProperty)
+max_speed after compDiffWithSmoothProperty():     0.20072480280771
+    CLOCK           (computeProjection)
+      CLOCK           (SetMatrixForProjection)
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.00   (scatter_top_grid_float_array)
+
+The summation of divergence of U is -2.710505431213761e-19
+
+The max value of divergence of U is 0.03844594727289939
+      CLOCK    0.01   (SetMatrixForProjection)
+      CLOCK           (Petsc_Solver_Projection)
+      CLOCK    0.16   (Petsc_Solver_Projection)
+      CLOCK           (GetSolandScat)
+Incompress_Solver_Smooth_3D_Cylindrical::computeProjection: num_iter = 92, rel_residual = 5.291358e-13 
+        CLOCK           (scatter_top_grid_float_array)
+        CLOCK    0.01   (scatter_top_grid_float_array)
+
+The max value of phi is 0.000419685422138866
+      CLOCK    0.01   (GetSolandScat)
+    CLOCK    0.18   (computeProjection)
+    CLOCK           (computePressure)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.03   (computePressure)
+    CLOCK           (computeNewVelocity)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (computeNewVelocity)
+max_speed after computeNewVelocity():     0.20071618336006
+    CLOCK           (copyMeshStates)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+      CLOCK           (scatter_top_grid_float_array)
+      CLOCK    0.00   (scatter_top_grid_float_array)
+    CLOCK    0.00   (copyMeshStates)
+In setAdvectionDt: 
+max_dt =    0.0192280210563627908 min_dt =  1.46027209712009759e-07
+  CLOCK    0.87   (Fluid_Solve)
+Passed ifluid solve()
+After solve()
+Storage current 66263528 bytes: at end of time step
+Time step from l_cartesian->max_dt():     0.00865260947536
+  CLOCK           (Output_Section)
+
+time =     0.02608651007613   step =     3   next dt =     0.00865260947536
+
+ Entering the Step Diagnosis part 
+
+ Passed the Step Diagnosis part 
+last_restart_step 3
+Calling initMovieVariables()
+Calling FT_AddMovieFrame()
+After time loop
+
+iFluid.cpp:271: error: calling clean_up
+
+		CLEAN_UP, error = 0
+
+Storage used 66263528 bytes
+
+
+		EXECUTION TIME DATA:
+
+		CPU TIME: 37 Seconds
+		SYS TIME: 4 Minutes 53 Seconds
+		MAX RSS = 98440 Kilobytes
+
+		TERMINATION TIME OF RUN:   Sun Mar  3 18:04:23 2013
+
