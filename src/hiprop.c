@@ -421,23 +421,8 @@ int hpWriteUnstrMeshVtk3d(const char* name,
 }
 
 
-void hpGetNbProcListFromInput(hiPropMesh *mesh, const int num_nb_proc,
-			      const int *in_nb_proc)
-{
-    if (mesh->nb_proc != ((emxArray_int32_T *) NULL))
-	emxFree_int32_T(&(mesh->nb_proc));
 
-    int i;
-    int num_nb[1];
-    num_nb[0] = num_nb_proc;
-
-    mesh->nb_proc = emxCreateND_int32_T(1, num_nb);
-    for (i = 1; i <= num_nb_proc; i++)
-	mesh->nb_proc->data[I1dm(i)] = in_nb_proc[i-1];
-
-}
-
-void hpGetNbProcListAuto2(hiPropMesh *mesh)
+void hpGetNbProcListAuto(hiPropMesh *mesh)
 {
     if (mesh->nb_proc != ((emxArray_int32_T *) NULL))
 	emxFree_int32_T(&(mesh->nb_proc));
@@ -511,19 +496,18 @@ void hpGetNbProcListAuto2(hiPropMesh *mesh)
 	if (i == rank)
 	    continue;
 
-	double comxL = hpMax(bd_box[0], all_bd_box[rank*6]);
-	double comxU = hpMin(bd_box[1], all_bd_box[rank*6+1]);
-	double comyL = hpMax(bd_box[2], all_bd_box[rank*6+2]);
-	double comyU = hpMin(bd_box[3], all_bd_box[rank*6+3]);
-	double comzL = hpMax(bd_box[4], all_bd_box[rank*6+4]);
-	double comzU = hpMin(bd_box[5], all_bd_box[rank*6+5]);
+	double comxL = hpMax(bd_box[0], all_bd_box[i*6]);
+	double comxU = hpMin(bd_box[1], all_bd_box[i*6+1]);
+	double comyL = hpMax(bd_box[2], all_bd_box[i*6+2]);
+	double comyU = hpMin(bd_box[3], all_bd_box[i*6+3]);
+	double comzL = hpMax(bd_box[4], all_bd_box[i*6+4]);
+	double comzU = hpMin(bd_box[5], all_bd_box[i*6+5]);
 
 	if ( (comxL <= comxU) && (comyL <= comyU) && (comzL <= comzU) )
 	{
 	    nb_ptemp_est[num_nbp_est++] = i;
 	}
     }
-
 
 
     int *nb_ptemp = (int *) calloc (num_nbp_est, sizeof(int));
@@ -533,8 +517,6 @@ void hpGetNbProcListAuto2(hiPropMesh *mesh)
     MPI_Status *send_status_list = (MPI_Status *) malloc(2*num_nbp_est*sizeof(MPI_Status) );
 
     MPI_Request *recv_req_list = (MPI_Request *) malloc(num_nbp_est*sizeof(MPI_Request) );
-
-    /* Build up the points for send */
 
     int *num_ps_send = (int *) calloc(num_nbp_est, sizeof(int));
     double **ps_send = (double **) calloc(num_nbp_est, sizeof(double *));
@@ -575,38 +557,32 @@ void hpGetNbProcListAuto2(hiPropMesh *mesh)
 
 	for (j = 1; j <= ps->size[0]; ++j)
 	{
-	    double cur_x = ps->data[I2dm(j,1,ps->size)];
-	    double cur_y = ps->data[I2dm(j,2,ps->size)];
-	    double cur_z = ps->data[I2dm(j,3,ps->size)];
-
-	    if (flag[j-1] == true)
+	    if (flag[j-1] == 1)
 	    {
-		cur_ps_send[k++] = cur_x;
-		cur_ps_send[k++] = cur_y;
-		cur_ps_send[k++] = cur_z;
+		cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)];
+		cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)];
+		cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)];
 
 	    }
 	}
 
 	free(flag);
-	
     }
 
-    /* Stores the received array size */
-    int *size_info = (int *) calloc( num_nbp_est, sizeof(int));
+    int *size_info = (int *) calloc(num_nbp_est, sizeof(int));
 
     for (i = 0; i < num_nbp_est; ++i)
     {
 	dst = nb_ptemp_est[i];
 	
 	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, 1, MPI_COMM_WORLD, &(send_req_list[i]));
-	MPI_Isend(ps_send[i], num_ps_send[i], MPI_DOUBLE, dst, 2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp_est])); 
+	MPI_Isend(ps_send[i],3*num_ps_send[i], MPI_DOUBLE, dst, 2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp_est])); 
     }
 
     for (i = 0; i < num_nbp_est; ++i)
     {
 	src = nb_ptemp_est[i];
-	MPI_Irecv(&(size_info[i]), 1, MPI_INT, src, 1, MPI_COMM_WORLD, &(recv_req_list[j]));
+	MPI_Irecv(&(size_info[i]), 1, MPI_INT, src, 1, MPI_COMM_WORLD, &(recv_req_list[i]));
     }
 
     for (i = 0; i < num_nbp_est; ++i)
@@ -623,18 +599,17 @@ void hpGetNbProcListAuto2(hiPropMesh *mesh)
 
 	source_id = recv_status1.MPI_SOURCE;
 
-	ps_recv = (double *) calloc(size_info[recv_index], sizeof(double));
-
-	MPI_Recv(ps_recv, size_info[recv_index], MPI_DOUBLE, source_id, 2, MPI_COMM_WORLD, &recv_status2);
+	ps_recv = (double *) calloc(3*size_info[recv_index], sizeof(double));
+	MPI_Recv(ps_recv, 3*size_info[recv_index], MPI_DOUBLE, source_id, 2, MPI_COMM_WORLD, &recv_status2);
 
 	unsigned char *flag = (unsigned char *) calloc (ps->size[0], sizeof (unsigned char));
 
 	double recv_bdbox_xL = all_bd_box[6*source_id];
 	double recv_bdbox_xU = all_bd_box[6*source_id+1];
-	double recv_bdbox_yL = all_bd_box[6*source_id+1];
-	double recv_bdbox_yU = all_bd_box[6*source_id+1];
-	double recv_bdbox_zL = all_bd_box[6*source_id+1];
-	double recv_bdbox_zU = all_bd_box[6*source_id+1];
+	double recv_bdbox_yL = all_bd_box[6*source_id+2];
+	double recv_bdbox_yU = all_bd_box[6*source_id+3];
+	double recv_bdbox_zL = all_bd_box[6*source_id+4];
+	double recv_bdbox_zU = all_bd_box[6*source_id+5];
 
 
 	for (j = 1; j <= mesh->ps->size[0]; ++j)
@@ -648,24 +623,24 @@ void hpGetNbProcListAuto2(hiPropMesh *mesh)
 		 (current_z >= recv_bdbox_zL) && (current_z <= recv_bdbox_zU)
 	       )
 	    {
-		flag[j-1] = true;
+		flag[j-1] = 1;
 	    }
 	}
 
 
 	for (j = 1; j <= mesh->ps->size[0]; j++)
 	{
-	    if (flag[j-1] == true)
-	    {
-		double current_x = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
-		double current_y = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
-		double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
+	    double cur_x = ps->data[I2dm(j,1,ps->size)];
+	    double cur_y = ps->data[I2dm(j,2,ps->size)];
+	    double cur_z = ps->data[I2dm(j,3,ps->size)];
 
+	    if (flag[j-1] == 1)
+	    {
 		for (k = 0; k < size_info[recv_index]; ++k)
 		{
-		    if ( (fabs(current_x - ps_recv[k*3]) < eps) &&
-		         (fabs(current_y - ps_recv[k*3+1]) < eps) &&
-			 (fabs(current_z - ps_recv[k*3+2]) < eps)
+		    if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
+		         (fabs(cur_y - ps_recv[k*3+1]) < eps) &&
+			 (fabs(cur_z - ps_recv[k*3+2]) < eps)
 		       )
 		    {
 			nb_ptemp[num_nbp++] = source_id;
@@ -694,7 +669,6 @@ void hpGetNbProcListAuto2(hiPropMesh *mesh)
     free(ps_send);
     free(all_bd_box);
     free(nb_ptemp_est);
-
     
     int num_nb[1];
     num_nb[0] = num_nbp;
@@ -706,94 +680,227 @@ void hpGetNbProcListAuto2(hiPropMesh *mesh)
     free(nb_ptemp);
 }
 
-
-void hpGetNbProcListAuto(hiPropMesh *mesh)
+void hpGetNbProcListFromInput(hiPropMesh *mesh, const int in_num_nbp, const int *in_nb_proc)
 {
     if (mesh->nb_proc != ((emxArray_int32_T *) NULL))
 	emxFree_int32_T(&(mesh->nb_proc));
 
-    int i, tag_send, tag_recv, j, k;
+    int i, j, k;
+    int src, dst;
     int num_proc, rank;
     double eps = 1e-14;
+    emxArray_real_T *ps = mesh->ps;
 
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int *nb_ptemp = (int *) calloc (num_proc-1, sizeof(int));
+    /* First get the bounding box 
+     * for each processor and reduce to all processor */
+
+    double bd_box[6];
+    bd_box[0]= ps->data[I2dm(1,1,ps->size)];
+    bd_box[1] = bd_box[0];
+    bd_box[2] = ps->data[I2dm(1,2,ps->size)];
+    bd_box[3] = bd_box[2];
+    bd_box[4] = ps->data[I2dm(1,3,ps->size)];
+    bd_box[5] = bd_box[4];
+
+    for (i = 2; i <= ps->size[0]; ++i)
+    {
+	double x = ps->data[I2dm(i,1,ps->size)];
+	double y = ps->data[I2dm(i,2,ps->size)];
+	double z = ps->data[I2dm(i,3,ps->size)];
+
+	if (x < bd_box[0])
+	    bd_box[0] = x;
+	if (x > bd_box[1])
+	    bd_box[1] = x;
+	if (y < bd_box[2])
+	    bd_box[2] = y;
+	if (y > bd_box[3])
+	    bd_box[3] = y;
+	if (z < bd_box[4])
+	    bd_box[4] = z;
+	if (z > bd_box[5])
+	    bd_box[5] = z;
+    }
+
+    bd_box[0] -= eps;
+    bd_box[1] += eps;
+    bd_box[2] -= eps;
+    bd_box[3] += eps;
+    bd_box[4] -= eps;
+    bd_box[5] += eps;
+
+
+    double *in_all_bd_box = (double *)calloc(6*num_proc, sizeof(double));
+    double *all_bd_box = (double *)calloc(6*num_proc, sizeof(double));
+
+    for (i = 0; i < 6; i++)
+	in_all_bd_box[rank*6+i] = bd_box[i];
+
+    MPI_Allreduce(in_all_bd_box, all_bd_box, 6*num_proc, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    free(in_all_bd_box);
+
+    int *nb_ptemp = (int *) calloc (in_num_nbp, sizeof(int));
     int num_nbp = 0;
 
-    MPI_Request *send_req_list = (MPI_Request *) malloc ( 2*(num_proc-1)*sizeof(MPI_Request) );
-    MPI_Status *send_status_list = (MPI_Status *) malloc( 2*(num_proc-1)*sizeof(MPI_Status) );
+    MPI_Request *send_req_list = (MPI_Request *) malloc (2*in_num_nbp*sizeof(MPI_Request) );
+    MPI_Status *send_status_list = (MPI_Status *) malloc(2*in_num_nbp*sizeof(MPI_Status) );
 
-    MPI_Request *recv_req_list = (MPI_Request *) malloc( (num_proc-1)*sizeof(MPI_Request) );
+    MPI_Request *recv_req_list = (MPI_Request *) malloc(in_num_nbp*sizeof(MPI_Request) );
 
-    /* Stores the received array size */
-    int *common_info = (int *) calloc( (num_proc)*2, sizeof(int));
+    int *num_ps_send = (int *) calloc(in_num_nbp, sizeof(int));
+    double **ps_send = (double **) calloc(in_num_nbp, sizeof(double *));
 
-    j = 0;
-    for (i = 0; i < num_proc; i++)
+    for (i = 0; i < in_num_nbp; ++i)
     {
-	tag_send = i;
-	if (rank != i)
+	num_ps_send[i] = 0;
+	int target_id = in_nb_proc[i];
+	double cur_bdbox_xL = all_bd_box[target_id*6];
+	double cur_bdbox_xU = all_bd_box[target_id*6+1];
+	double cur_bdbox_yL = all_bd_box[target_id*6+2];
+	double cur_bdbox_yU = all_bd_box[target_id*6+3];
+	double cur_bdbox_zL = all_bd_box[target_id*6+4];
+	double cur_bdbox_zU = all_bd_box[target_id*6+5];
+
+	unsigned char *flag = (unsigned char *) calloc(ps->size[0], sizeof(unsigned char));
+
+	for (j = 1; j <= ps->size[0]; ++j)
 	{
-	    isend2D_real_T(mesh->ps, i, tag_send, MPI_COMM_WORLD,
-		    	   &(send_req_list[j]), &(send_req_list[num_proc-1+j]));
-	    j++;
+	    double cur_x = ps->data[I2dm(j,1,ps->size)];
+	    double cur_y = ps->data[I2dm(j,2,ps->size)];
+	    double cur_z = ps->data[I2dm(j,3,ps->size)];
+
+	    if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
+		 (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
+		 (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
+	       )
+	    {
+		++(num_ps_send[i]);
+		flag[j-1] = 1;
+	    }
 	}
+
+	ps_send[i] = (double *) calloc(3*num_ps_send[i], sizeof(double));
+	double *cur_ps_send = ps_send[i];
+
+	k = 0;
+
+	for (j = 1; j <= ps->size[0]; ++j)
+	{
+	    if (flag[j-1] == 1)
+	    {
+		cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)];
+		cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)];
+		cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)];
+
+	    }
+	}
+
+	free(flag);
     }
 
-    j = 0;
-    for (i = 0; i < num_proc; i++)
-    {
-	tag_recv = rank;
+    int *size_info = (int *) calloc(in_num_nbp, sizeof(int));
 
-	if (rank != i)
-	{
-	    MPI_Irecv(&(common_info[2*i]), 2, MPI_INT, i, tag_recv+1, MPI_COMM_WORLD, &(recv_req_list[j]));
-	    j++;
-	}
+    for (i = 0; i < in_num_nbp; ++i)
+    {
+	dst = in_nb_proc[i];
+	
+	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, 1, MPI_COMM_WORLD, &(send_req_list[i]));
+	MPI_Isend(ps_send[i],3*num_ps_send[i], MPI_DOUBLE, dst, 2, MPI_COMM_WORLD, &(send_req_list[i+in_num_nbp])); 
     }
 
-    for (i = 0; i < num_proc-1; i++)
+    for (i = 0; i < in_num_nbp; ++i)
     {
-	emxArray_real_T *ps_recv;
-	tag_recv = rank;
+	src = in_nb_proc[i];
+	MPI_Irecv(&(size_info[i]), 1, MPI_INT, src, 1, MPI_COMM_WORLD, &(recv_req_list[i]));
+    }
+
+    for (i = 0; i < in_num_nbp; ++i)
+    {
+	double *ps_recv;
+
 	MPI_Status recv_status1;
 	MPI_Status recv_status2;
+
 	int recv_index;
 	int source_id;
 
-	MPI_Waitany(num_proc-1, recv_req_list, &recv_index, &recv_status1);
+	MPI_Waitany(in_num_nbp, recv_req_list, &recv_index, &recv_status1);
 
 	source_id = recv_status1.MPI_SOURCE;
 
-	ps_recv = emxCreate_real_T(common_info[2*source_id], common_info[2*source_id+1]);
+	ps_recv = (double *) calloc(3*size_info[recv_index], sizeof(double));
+	MPI_Recv(ps_recv, 3*size_info[recv_index], MPI_DOUBLE, source_id, 2, MPI_COMM_WORLD, &recv_status2);
 
-	MPI_Recv(ps_recv->data, common_info[2*source_id]*common_info[2*source_id+1], MPI_DOUBLE, source_id, tag_recv+2, MPI_COMM_WORLD, &recv_status2);
+	unsigned char *flag = (unsigned char *) calloc (ps->size[0], sizeof (unsigned char));
 
-	for (j = 1; j <= mesh->ps->size[0]; j++)
+	double recv_bdbox_xL = all_bd_box[6*source_id];
+	double recv_bdbox_xU = all_bd_box[6*source_id+1];
+	double recv_bdbox_yL = all_bd_box[6*source_id+2];
+	double recv_bdbox_yU = all_bd_box[6*source_id+3];
+	double recv_bdbox_zL = all_bd_box[6*source_id+4];
+	double recv_bdbox_zU = all_bd_box[6*source_id+5];
+
+
+	for (j = 1; j <= mesh->ps->size[0]; ++j)
 	{
 	    double current_x = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
 	    double current_y = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
 	    double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
 
-	    for (k = 1; k <= ps_recv->size[0]; k++)
+	    if ( (current_x >= recv_bdbox_xL) && (current_x <= recv_bdbox_xU) &&
+		 (current_y >= recv_bdbox_yL) && (current_y <= recv_bdbox_yU) &&
+		 (current_z >= recv_bdbox_zL) && (current_z <= recv_bdbox_zU)
+	       )
 	    {
-		if ( (fabs(current_x - ps_recv->data[I2dm(k,1,ps_recv->size)]) < eps) && 
-			(fabs(current_y - ps_recv->data[I2dm(k,2,ps_recv->size)]) < eps) &&
-			(fabs(current_z - ps_recv->data[I2dm(k,3,ps_recv->size)]) < eps)
-			)
-		{
-		    nb_ptemp[num_nbp++] = source_id;
-		    break;
-		}
+		flag[j-1] = 1;
 	    }
-	    if (k <= ps_recv->size[0])
-		break;
 	}
-	emxFree_real_T(&ps_recv);
+
+
+	for (j = 1; j <= mesh->ps->size[0]; j++)
+	{
+	    double cur_x = ps->data[I2dm(j,1,ps->size)];
+	    double cur_y = ps->data[I2dm(j,2,ps->size)];
+	    double cur_z = ps->data[I2dm(j,3,ps->size)];
+
+	    if (flag[j-1] == 1)
+	    {
+		for (k = 0; k < size_info[recv_index]; ++k)
+		{
+		    if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
+		         (fabs(cur_y - ps_recv[k*3+1]) < eps) &&
+			 (fabs(cur_z - ps_recv[k*3+2]) < eps)
+		       )
+		    {
+			nb_ptemp[num_nbp++] = source_id;
+			break;
+		    }
+		}
+		if (k <= size_info[recv_index]-1)
+		    break;
+	    }
+	}
+	free(ps_recv);
+	free(flag);
     }
 
+    free(size_info);
+    free(recv_req_list);
+
+    MPI_Waitall(2*in_num_nbp, send_req_list, send_status_list);
+
+    free(send_req_list);
+    free(send_status_list);
+
+    for (i = 0; i < in_num_nbp; ++i)
+	free(ps_send[i]);
+    free(num_ps_send);
+    free(ps_send);
+    free(all_bd_box);
     
     int num_nb[1];
     num_nb[0] = num_nbp;
@@ -803,14 +910,6 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	mesh->nb_proc->data[I1dm(i)] = nb_ptemp[i-1];
 
     free(nb_ptemp);
-    free(recv_req_list);
-    free(common_info);
-
-    MPI_Waitall(2*(num_proc-1), send_req_list, send_status_list);
-
-    free(send_req_list);
-    free(send_status_list);
-
 
 }
 

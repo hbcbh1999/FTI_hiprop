@@ -200,7 +200,6 @@ EXTERN_C void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
  * \param mesh parallel hiPropMesh with overlapping points and triangles
  */
 EXTERN_C void hpGetNbProcListAuto(hiPropMesh *mesh);
-EXTERN_C void hpGetNbProcListAuto2(hiPropMesh *mesh);
 
 /*!
  * \brief Get the neighboring processor ID and fill the nb_proc list from the
@@ -210,7 +209,7 @@ EXTERN_C void hpGetNbProcListAuto2(hiPropMesh *mesh);
  * \param in_nb_proc array of neighboring processors with length num_nb_proc
  */
 EXTERN_C void hpGetNbProcListFromInput(hiPropMesh *mesh,
-	const int num_nb_proc,
+	const int in_num_nbp,
 	const int *in_nb_proc);
 
 /*!
