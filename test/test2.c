@@ -67,9 +67,9 @@ int main(int argc, char* argv[])
     hpInitMesh(&mesh);
 
     char in_filename[200];
-    sprintf(in_filename, "data/parallel/init-64p/hpmesh-t0000002-p%s.vtk", rank_str);
-    //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
-    if (!hpReadPolyMeshVtk3d(in_filename, mesh))
+    //sprintf(in_filename, "data/parallel/init-64p/hpmesh-t0000002-p%s.vtk", rank_str);
+    sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
+    if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
 	return 0;
@@ -136,7 +136,6 @@ int main(int argc, char* argv[])
     }
     printf("\n");
 
-    /*
     start = time(0);
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
@@ -162,14 +161,7 @@ int main(int argc, char* argv[])
     printf("\n After CleanMeshbyPinfo\n");
     fflush(stdout);
  
-    char debug_filename2[200];
-    sprintf(debug_filename2, "cleandebug-p%s.vtk", rank_str);
-    hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
-    printf("\n After WriteUnstrMeshWithPInfo2\n");
 
-    */
-
-    /*
     start = time(0);
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
@@ -193,7 +185,10 @@ int main(int argc, char* argv[])
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
-    */
+    char debug_filename2[200];
+    sprintf(debug_filename2, "cleandebug-p%s.vtk", rank_str);
+    hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
+    printf("\n After WriteUnstrMeshWithPInfo2\n");
 
 /*
     int num_old_ps = mesh->nps_clean;
