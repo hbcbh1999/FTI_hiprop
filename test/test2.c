@@ -67,16 +67,16 @@ int main(int argc, char* argv[])
     hpInitMesh(&mesh);
 
     char in_filename[200];
-    //sprintf(in_filename, "data/parallel/init-64p/hpmesh-t0000002-p%s.vtk", rank_str);
-    sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
-    if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
+    sprintf(in_filename, "data/parallel/init-64p/hpmesh-t0000002-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
+    if (!hpReadPolyMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
 	return 0;
     }
 
+    start = time(0);
 
-    /*
     int icoords[3];
     int* max_nodes = (int *)calloc(3, sizeof(int));
     max_nodes[0] = 4; max_nodes[1] = 4; max_nodes[2] = 4;
@@ -119,12 +119,16 @@ int main(int argc, char* argv[])
     hpGetNbProcListFromInput(mesh, num_nb_proc, in_nb_proc);
     free(in_nb_proc);
 
-*/
+    end = time(0);
+    printf("Build np_proc seconds used: %22.16g\n", difftime(end, start));
+
+    /*
     start = time(0);
     hpGetNbProcListAuto(mesh);
     printf("\n GetNbProcInfo passed, proc %d \n", rank);
     end = time(0);
-    printf("Seconds used: %22.16g\n", difftime(end, start));
+    printf("Secons used: %22.16g\n", difftime(end, start));
+    */
 
 
 
@@ -136,18 +140,14 @@ int main(int argc, char* argv[])
     }
     printf("\n");
 
-    start = time(0);
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
-    end = time(0);
-    printf("Seconds used: %22.16g\n", difftime(end, start));
-
 
     start = time(0);
     hpBuildPInfoWithOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
     end = time(0);
-    printf("Seconds used: %22.16g\n", difftime(end, start));
+    printf("Build Pinfo seconds used: %22.16g\n", difftime(end, start));
 
 
     char debug_filename[200];
@@ -155,12 +155,14 @@ int main(int argc, char* argv[])
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
     printf("\n After WriteUnstrMeshWithPInfo\n");
 
+
     fflush(stdout);
 
-    //hpCleanMeshByPinfo(mesh);
+    /*
+    hpCleanMeshByPinfo(mesh);
     printf("\n After CleanMeshbyPinfo\n");
     fflush(stdout);
- 
+*/ 
 
     start = time(0);
     hpBuildOppositeHalfEdge(mesh);
@@ -189,6 +191,7 @@ int main(int argc, char* argv[])
     sprintf(debug_filename2, "cleandebug-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
     printf("\n After WriteUnstrMeshWithPInfo2\n");
+
 
 /*
     int num_old_ps = mesh->nps_clean;

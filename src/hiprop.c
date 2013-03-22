@@ -1171,6 +1171,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	    }
 	}
 
+	unsigned char *recv_flag = (unsigned char *) calloc (size_info[recv_index], sizeof(unsigned char));
 
 	for (j = 1; j <= ps->size[0]; ++j) 
 	{
@@ -1182,11 +1183,15 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 		for (k = 0; k < size_info[recv_index]; ++k)
 		{
+		    if (recv_flag[k] == 1)
+			continue;
+
 		    if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
 		         (fabs(cur_y - ps_recv[k*3+1]) < eps) &&
 			 (fabs(cur_z - ps_recv[k*3+2]) < eps)
 		       )
 		    {
+			recv_flag[k] = 1;
 			hpEnsurePInfoCapacity(ps_pinfo);
 			ps_pinfo->allocated_len++;
 			int cur_head = ps_pinfo->head[I1dm(j)];
@@ -1217,6 +1222,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 		}
 	    }
 	}
+	free(recv_flag);
 	free(ps_recv);
 	free(ps_index_recv);
 	free(flag);
@@ -1246,7 +1252,6 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     mesh->is_clean = 1;
 
 }
-
 
 void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 {
@@ -1539,6 +1544,8 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	int *recv_ps_map = (int *) calloc(size_recv[2*recv_index], sizeof(int));
 
+	unsigned char *recv_ps_flag = (unsigned char *)calloc(size_recv[2*recv_index], sizeof(unsigned char));
+
 	/* Build the pinfo for ps */
 	for (j = 1; j <= ps->size[0]; ++j) 
 	{
@@ -1550,11 +1557,15 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 		for (k = 0; k < size_recv[2*recv_index]; ++k)
 		{
+		    if (recv_ps_flag[k] == 1)
+			continue;
+
 		    if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
 		         (fabs(cur_y - ps_recv[k*3+1]) < eps) &&
 			 (fabs(cur_z - ps_recv[k*3+2]) < eps)
 		       )
 		    {
+			recv_ps_flag[k] = 1;
 			recv_ps_map[k] = j;
 			hpEnsurePInfoCapacity(ps_pinfo);
 			ps_pinfo->allocated_len++;
@@ -1586,24 +1597,30 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 		}
 	    }
 	}
+	free(recv_ps_flag);
 
+	unsigned char *recv_tris_flag = (unsigned char *)calloc(size_recv[2*recv_index+1], sizeof(unsigned char));
 
 	/* Build the tris pinfo */
 	for (j = 1; j <= tris->size[0]; ++j) 
 	{
 	    if (tris_flag[j-1] == 1)
 	    {
+	
 		int p1 = tris->data[I2dm(j,1,tris->size)];
 		int p2 = tris->data[I2dm(j,2,tris->size)];
 		int p3 = tris->data[I2dm(j,3,tris->size)];
 
 		for (k = 0; k < size_recv[2*recv_index+1]; ++k)
 		{
+		    if (recv_tris_flag[k] == 1)
+			continue;
 		    if ( (p1 == recv_ps_map[I1dm(tris_recv[k*3])]) &&
 			 (p2 == recv_ps_map[I1dm(tris_recv[k*3+1])]) &&
-			 (p3 == recv_ps_map[I1dm(tris_recv[k+3+2])])
+			 (p3 == recv_ps_map[I1dm(tris_recv[k*3+2])])
 		       )
 		    {
+			recv_tris_flag[k] = 1;
 			is_overlapping_tri = 1;
 			hpEnsurePInfoCapacity(tris_pinfo);
 			tris_pinfo->allocated_len++;
@@ -1619,7 +1636,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			}
 			else if (source_id > cur_master_proc)
 			{
-			    tris_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
+			    tris_pinfo->tail[I1dm(j)] = tris_pinfo->allocated_len;
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = tris_index_recv[k];
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = -1;
@@ -1636,6 +1653,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	    }
 	}
 
+	free(recv_tris_flag);
 	free(recv_ps_map);
 
 	free(ps_recv);
