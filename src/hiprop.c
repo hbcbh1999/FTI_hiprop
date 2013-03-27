@@ -972,12 +972,12 @@ void hpEnsurePInfoCapacity(hpPInfoList *pinfo)
 {
     if (pinfo->allocated_len >= pinfo->max_len)
     {
-	double len_temp = pinfo->max_len * 1.1;
+	double len_temp = (pinfo->max_len+1) * 1.1;
 	int new_max_len = (int) (len_temp); /* Increase 10% */
 	hpPInfoNode *new_pdata = (hpPInfoNode *) calloc(new_max_len, sizeof(hpPInfoNode));
 	memcpy(new_pdata, pinfo->pdata, pinfo->allocated_len*sizeof(hpPInfoNode));
-
 	free(pinfo->pdata);
+
 	pinfo->pdata = new_pdata;
 	pinfo->max_len = new_max_len;
     }
@@ -1608,7 +1608,6 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	{
 	    if (tris_flag[j-1] == 1)
 	    {
-	
 		int p1 = tris->data[I2dm(j,1,tris->size)];
 		int p2 = tris->data[I2dm(j,2,tris->size)];
 		int p3 = tris->data[I2dm(j,3,tris->size)];
@@ -1664,6 +1663,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	free(tris_index_recv);
 	free(ps_flag);
 	free(tris_flag);
+
     }
 
     free(size_recv);
