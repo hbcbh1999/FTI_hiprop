@@ -1307,31 +1307,43 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
      * for each processor and reduce to all processor */
 
     double bd_box[6];
-    bd_box[0]= ps->data[I2dm(1,1,ps->size)];
-    bd_box[1] = bd_box[0];
-    bd_box[2] = ps->data[I2dm(1,2,ps->size)];
-    bd_box[3] = bd_box[2];
-    bd_box[4] = ps->data[I2dm(1,3,ps->size)];
-    bd_box[5] = bd_box[4];
-
-    for (i = 2; i <= ps->size[0]; ++i)
+    if(ps->size[0]>0)
     {
-	double x = ps->data[I2dm(i,1,ps->size)];
-	double y = ps->data[I2dm(i,2,ps->size)];
-	double z = ps->data[I2dm(i,3,ps->size)];
+	bd_box[0]= ps->data[I2dm(1,1,ps->size)];
+	bd_box[1] = bd_box[0];
+	bd_box[2] = ps->data[I2dm(1,2,ps->size)];
+	bd_box[3] = bd_box[2];
+	bd_box[4] = ps->data[I2dm(1,3,ps->size)];
+	bd_box[5] = bd_box[4];
 
-	if (x < bd_box[0])
-	    bd_box[0] = x;
-	if (x > bd_box[1])
-	    bd_box[1] = x;
-	if (y < bd_box[2])
-	    bd_box[2] = y;
-	if (y > bd_box[3])
-	    bd_box[3] = y;
-	if (z < bd_box[4])
-	    bd_box[4] = z;
-	if (z > bd_box[5])
-	    bd_box[5] = z;
+	for (i = 2; i <= ps->size[0]; ++i)
+	{
+	    double x = ps->data[I2dm(i,1,ps->size)];
+	    double y = ps->data[I2dm(i,2,ps->size)];
+	    double z = ps->data[I2dm(i,3,ps->size)];
+
+	    if (x < bd_box[0])
+		bd_box[0] = x;
+	    if (x > bd_box[1])
+		bd_box[1] = x;
+	    if (y < bd_box[2])
+		bd_box[2] = y;
+	    if (y > bd_box[3])
+		bd_box[3] = y;
+	    if (z < bd_box[4])
+		bd_box[4] = z;
+	    if (z > bd_box[5])
+		bd_box[5] = z;
+	}
+    }
+    else
+    {
+	bd_box[0] = 0;
+	bd_box[1] = 0;	
+	bd_box[2] = 0;
+	bd_box[3] = 0;
+	bd_box[4] = 0;
+	bd_box[5] = 0;
     }
 
     bd_box[0] -= eps;

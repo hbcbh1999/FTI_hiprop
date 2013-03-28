@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
     hpInitMesh(&mesh);
 
     char in_filename[200];
-    sprintf(in_filename, "data/parallel/s4-64p/hpmesh-t0000004-p%s.vtk", rank_str);
+    sprintf(in_filename, "data/parallel/t2/hpmesh-t0000002-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
