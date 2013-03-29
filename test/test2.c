@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
     hpInitMesh(&mesh);
 
     char in_filename[200];
-    sprintf(in_filename, "data/parallel/t2/hpmesh-t0000002-p%s.vtk", rank_str);
+    sprintf(in_filename, "data/parallel/s2-64p/hpmesh-t0000002-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
@@ -195,7 +195,6 @@ int main(int argc, char* argv[])
     sprintf(debug_filename2, "cleandebug-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
     printf("\n After WriteUnstrMeshWithPInfo2\n");
-
 /*
     int num_old_ps = mesh->nps_clean;
     printf("num of old ps = %d\n", num_old_ps);

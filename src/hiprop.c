@@ -2814,13 +2814,15 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
 
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
+
 	int next_node = head[I1dm(i)];
 	while(next_node != -1)
 	{
-	    nb_flag[pdata[next_node].proc] = 1;
-	    next_node = pdata[next_node].next;
+	    nb_flag[pdata[I1dm(next_node)].proc] = 1;
+	    next_node = pdata[I1dm(next_node)].next;
 	}
     }
+
 
     int new_num_nbp = 0;
     
@@ -2859,6 +2861,7 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
     mesh->nb_proc = new_nb_proc;
 
     free(nb_flag);
+
 }
 
 
