@@ -21,8 +21,6 @@ static void b_eigenanalysis_surf(const emxArray_real_T *As, const
   emxArray_real_T *Vs);
 static boolean_T b_eml_strcmp(const char_T a[3]);
 
-static void b_emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T
-  numDimensions);
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
   numDimensions);
 static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
@@ -68,8 +66,6 @@ static void c_constrained_smooth_surf_clean(int32_T nv_clean, const
   *grads_smooth, const emxArray_real_T *Hs_smooth, boolean_T check_trank,
   emxArray_real_T *us_smooth);
 static boolean_T c_eml_strcmp(const char_T a[3]);
-static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
-  numDimensions);
 static void c_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 static void c_eval_vander_bivar(const emxArray_real_T *us, emxArray_real_T *bs,
   int32_T *degree, const emxArray_real_T *ws);
@@ -115,8 +111,6 @@ static real_T cos_angle(const real_T ts1[3], const real_T ts2[3]);
 static int32_T count_folded_tris_global(int32_T nt_clean, const emxArray_real_T *
   ps, const emxArray_int32_T *tris, const emxArray_real_T *nrms);
 static boolean_T d_eml_strcmp(const char_T a[3]);
-static void d_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
-
 
 static void c_determine_incident_halfedges(const emxArray_int32_T *elems, const
   emxArray_int32_T *opphes, emxArray_int32_T *v2he);
@@ -1488,24 +1482,6 @@ static boolean_T b_eml_strcmp(const char_T a[3])
   return b_bool;
 }
 
-static void b_emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T
-  numDimensions)
-{
-  emxArray_boolean_T *emxArray;
-  int32_T loop_ub;
-  int32_T i;
-  *pEmxArray = (emxArray_boolean_T *)malloc(sizeof(emxArray_boolean_T));
-  emxArray = *pEmxArray;
-  emxArray->data = (boolean_T *)NULL;
-  emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
-  emxArray->allocatedSize = 0;
-  emxArray->canFreeData = TRUE;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    emxArray->size[i] = 0;
-  }
-}
 
 static void b_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
   numDimensions)
@@ -5846,25 +5822,6 @@ static boolean_T c_eml_strcmp(const char_T a[3])
   return b_bool;
 }
 
-static void c_emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T
-  numDimensions)
-{
-  emxArray_int32_T *emxArray;
-  int32_T loop_ub;
-  int32_T i;
-  *pEmxArray = (emxArray_int32_T *)malloc(sizeof(emxArray_int32_T));
-  emxArray = *pEmxArray;
-  emxArray->data = (int32_T *)NULL;
-  emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
-  emxArray->allocatedSize = 0;
-  emxArray->canFreeData = TRUE;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    emxArray->size[i] = 0;
-  }
-}
-
 static void c_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
 {
   emxArray_real_T *emxArray;
@@ -8646,23 +8603,6 @@ static boolean_T d_eml_strcmp(const char_T a[3])
   return b_bool;
 }
 
-static void d_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
-{
-  emxArray_real_T *emxArray;
-  int32_T loop_ub;
-  int32_T i;
-  *pEmxArray = (emxArray_real_T *)malloc(sizeof(emxArray_real_T));
-  emxArray = *pEmxArray;
-  emxArray->data = (real_T *)NULL;
-  emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
-  emxArray->allocatedSize = 0;
-  emxArray->canFreeData = TRUE;
-  loop_ub = numDimensions - 1;
-  for (i = 0; i <= loop_ub; i++) {
-    emxArray->size[i] = 0;
-  }
-}
 
 /*
  * function v2he = determine_incident_halfedges(elems, opphes, v2he)

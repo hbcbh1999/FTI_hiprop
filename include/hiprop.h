@@ -503,12 +503,12 @@ EXTERN_C void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 
 EXTERN_C void hpCollectAllGhostPs(hiPropMesh *mesh,
 			 	const int nbp_index,
-				int *sizep,
+				int *size_send,
 				int **ppinfol);
 
 EXTERN_C void hpCollectAllGhostTris(hiPropMesh *mesh,
 			 	  const int nbp_index,
-				  int *sizet,
+				  int *size_send,
 				  int **tpinfol);
 
 
