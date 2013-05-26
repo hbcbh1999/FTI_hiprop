@@ -67,9 +67,11 @@ int main(int argc, char* argv[])
     hpInitMesh(&mesh);
 
     char in_filename[200];
-    sprintf(in_filename, "data/parallel/s19560-64p/hpmesh-t0019560-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/s19560-64p/hpmesh-t0019560-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
+    sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
+    //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
@@ -157,13 +159,11 @@ int main(int argc, char* argv[])
     printf("Build Pinfo seconds used: %22.16g\n", difftime(end, start));
 
 
-/*
+
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
     printf("\n After WriteUnstrMeshWithPInfo\n");
-*/
-    //hpUpdateNbWithPInfo(mesh);
 
 
     /*
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
     printf("CleanMeshByPInfo seconds used: %22.16g\n", difftime(end, start));
 */
     fflush(stdout);
-/*
+
     start = time(0);
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
@@ -187,16 +187,6 @@ int main(int argc, char* argv[])
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
     end = time(0);
     printf("Seconds used: %22.16g\n", difftime(end, start));
-*/
-/*
-    hpUpdateMasterPInfo(mesh);
-
-    for (i = 1; i <= 10000000; ++i)
-    {
-	double a = pow(2.0, 4.5);
-    }	
-
-    hpUpdateMasterPInfo(mesh);
 
     start = time(0);
     hpBuildNRingGhost(mesh, 2);
@@ -204,9 +194,6 @@ int main(int argc, char* argv[])
     end = time(0);
     printf("Build 2 Ring Seconds used: %22.16g\n", difftime(end, start));
 
-*/
-
-/*
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
@@ -214,8 +201,6 @@ int main(int argc, char* argv[])
     sprintf(debug_filename2, "cleandebug-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
     printf("\n After WriteUnstrMeshWithPInfo2\n");
-*/
-
 
 /*
     int num_old_ps = mesh->nps_clean;

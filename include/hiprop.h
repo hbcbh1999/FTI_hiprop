@@ -524,14 +524,14 @@ EXTERN_C void hpMergeOverlayTrisPInfo(hiPropMesh *mesh,
 
 EXTERN_C void hpCollectAllOverlayPs(hiPropMesh *mesh,
 				  const int nbp_index,
-				  int *sizep,
+				  int *size_send,
 				  int **ppinfot,
 				  int **ppinfol,
 				  int **ppinfop);
 
 EXTERN_C void hpCollectAllOverlayTris(hiPropMesh *mesh,
 				    const int nbp_index,
-				    int *sizet,
+				    int *size_send,
 				    int **tpinfot,
 				    int **tpinfol,
 				    int **tpinfop);

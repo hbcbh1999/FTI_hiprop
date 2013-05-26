@@ -50,3 +50,6 @@ clean:
 	rm -f *.vtk
 	rm -f run-log.*
 
+cleanout:
+	rm -f *.vtk
+	rm -f run-log.*
