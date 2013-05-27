@@ -9,11 +9,11 @@ CPPFLAGS =
 VPATH = src test
 
 test.exe: pre test.o libhiprop.a
-	$(CC) -g -o $@ test.o -L./ -lhiprop
+	$(CC) -g -o $@ test.o -lm -L./ -lhiprop
 test2.exe: pre test2.o libhiprop.a
-	$(CC) -g -o $@ test2.o -L./ -lhiprop
+	$(CC) -g -o $@ test2.o -lm -L./ -lhiprop
 test3.exe: pre test3.o libhiprop.a
-	$(CC) -g -o $@ test3.o -L./ -lhiprop
+	$(CC) -g -o $@ test3.o -lm -L./ -lhiprop
 
 all: test.exe test2.exe test3.exe
 
@@ -32,13 +32,13 @@ libhiprop.a: emx_util.o smoothing_clean.o compute_diffops_clean.o obtain_ringsz.
 	ranlib libhiprop.a
 
 %.o:%.c 
-	$(CC) $(CFLAGS) $(Include_Dir) $< -o $@
+	$(CC) $(CFLAGS) $(Include_Dir) $< -o $@ -lm
 
 %.o:%.cpp
-	$(CXX) $(CPPFLAGS) $(Include_Dir)  $< -o $@  
+	$(CXX) $(CPPFLAGS) $(Include_Dir)  $< -o $@ -lm
 
 %.o:%.cxx
-	$(CXX) $(CPPFLAGS) $(Include_Dir) $< -o $@
+	$(CXX) $(CPPFLAGS) $(Include_Dir) $< -o $@ -lm
 
 tagsfile:
 	ctags -R --c++-kinds=+p --fields=+iaS --extra=+q src/*.c include/*.h test/*.c
