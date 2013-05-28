@@ -27,7 +27,7 @@ pre: ./include/stdafx.h.gch
 doc:
 	doxygen hiprop-doxygen-file
 
-libhiprop.a: emx_util.o smoothing_clean.o compute_diffops_clean.o obtain_ringsz.o util.o hiprop.o
+libhiprop.a: nonfinite_util.o emx_util.o smoothing_clean.o compute_diffops_clean.o obtain_ringsz.o util.o hiprop.o
 	$(AR) cru libhiprop.a $^
 	ranlib libhiprop.a
 
