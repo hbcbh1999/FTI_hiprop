@@ -1456,3 +1456,106 @@ void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const
   }
 }
 
+void average_vertex_normal_tri_cleanmesh(int32_T nv_clean, const emxArray_real_T
+  *xs, const emxArray_int32_T *tris, const emxArray_real_T *flabel,
+  emxArray_real_T *nrms)
+{
+  int32_T ntris;
+  int32_T nv;
+  int32_T i0;
+  int32_T ii;
+  int32_T iy;
+  real_T a[3];
+  real_T b[3];
+  real_T nrm[3];
+  int32_T k;
+  real_T y;
+
+  /* AVERAGE_VERTEX_NORMAL_TRI_CLEANMESH Compute average vertex normal for */
+  /* clean submesh. */
+  /* # coder.typeof( int32(0), [inf,3], [1,0]), coder.typeof( double(0), [inf,1], [1,0])} */
+  /* 'average_vertex_normal_tri_cleanmesh:7' ntris = int32(size(tris, 1)); */
+  ntris = tris->size[0];
+
+  /* 'average_vertex_normal_tri_cleanmesh:8' nv = int32(size(xs, 1)); */
+  nv = xs->size[0];
+
+  /* 'average_vertex_normal_tri_cleanmesh:9' if nargin<4 */
+  /* 'average_vertex_normal_tri_cleanmesh:10' nrms = zeros( nv, 3); */
+  i0 = nrms->size[0] * nrms->size[1];
+  nrms->size[0] = nv;
+  nrms->size[1] = 3;
+  emxEnsureCapacity((emxArray__common *)nrms, i0, (int32_T)sizeof(real_T));
+  nv = nv * 3 - 1;
+  for (i0 = 0; i0 <= nv; i0++) {
+    nrms->data[i0] = 0.0;
+  }
+
+  /* 'average_vertex_normal_tri_cleanmesh:11' for ii = 1 : ntris */
+  for (ii = 0; ii + 1 <= ntris; ii++) {
+    /* 'average_vertex_normal_tri_cleanmesh:12' if nargin>3 && flabel(ii) */
+    if (flabel->data[ii] != 0.0) {
+    } else {
+      /* 'average_vertex_normal_tri_cleanmesh:13' nrm = cross_col( xs(tris(ii,3), 1:3)-xs(tris(ii,2), 1:3), ... */
+      /* 'average_vertex_normal_tri_cleanmesh:14'         xs(tris(ii,1), 1:3)-xs(tris(ii,3), 1:3)); */
+      nv = tris->data[ii + (tris->size[0] << 1)];
+      iy = tris->data[ii + tris->size[0]];
+      for (i0 = 0; i0 < 3; i0++) {
+        a[i0] = xs->data[(nv + xs->size[0] * i0) - 1] - xs->data[(iy + xs->size
+          [0] * i0) - 1];
+      }
+
+      nv = tris->data[ii];
+      iy = tris->data[ii + (tris->size[0] << 1)];
+      for (i0 = 0; i0 < 3; i0++) {
+        b[i0] = xs->data[(nv + xs->size[0] * i0) - 1] - xs->data[(iy + xs->size
+          [0] * i0) - 1];
+      }
+
+      /* CROSS_COL Efficient routine for computing cross product of two  */
+      /* 3-dimensional column vectors. */
+      /*  CROSS_COL(A,B) Efficiently computes the cross product between */
+      /*  3-dimensional column vector A, and 3-dimensional column vector B. */
+      /* 'cross_col:7' c = [a(2)*b(3)-a(3)*b(2); a(3)*b(1)-a(1)*b(3); a(1)*b(2)-a(2)*b(1)]; */
+      nrm[0] = a[1] * b[2] - a[2] * b[1];
+      nrm[1] = a[2] * b[0] - a[0] * b[2];
+      nrm[2] = a[0] * b[1] - a[1] * b[0];
+
+      /* 'average_vertex_normal_tri_cleanmesh:16' for jj = int32(1):3 */
+      for (k = 0; k < 3; k++) {
+        /* 'average_vertex_normal_tri_cleanmesh:17' nrms(tris(ii,jj), :) = nrms(tris(ii,jj), :) + nrm'; */
+        nv = tris->data[ii + tris->size[0] * k];
+        iy = tris->data[ii + tris->size[0] * k];
+        for (i0 = 0; i0 < 3; i0++) {
+          a[i0] = nrms->data[(iy + nrms->size[0] * i0) - 1] + nrm[i0];
+        }
+
+        for (i0 = 0; i0 < 3; i0++) {
+          nrms->data[(nv + nrms->size[0] * i0) - 1] = a[i0];
+        }
+      }
+    }
+  }
+
+  /* 'average_vertex_normal_tri_cleanmesh:21' for ii = 1:nv_clean */
+  for (ii = 0; ii + 1 <= nv_clean; ii++) {
+    /* 'average_vertex_normal_tri_cleanmesh:22' nrms(ii,:) = nrms(ii,:)/sqrt(nrms(ii,:)*nrms(ii,:)'+1.e-100); */
+    for (i0 = 0; i0 < 3; i0++) {
+      nrm[i0] = nrms->data[ii + nrms->size[0] * i0];
+    }
+
+    y = 0.0;
+    nv = 0;
+    iy = 0;
+    for (k = 0; k < 3; k++) {
+      y += nrms->data[ii + nrms->size[0] * nv] * nrm[iy];
+      nv++;
+      iy++;
+    }
+
+    y = sqrt(y + 1.0E-100);
+    for (i0 = 0; i0 < 3; i0++) {
+      nrms->data[ii + nrms->size[0] * i0] /= y;
+    }
+  }
+}

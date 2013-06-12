@@ -13,7 +13,7 @@
 
 
 #include "stdafx.h"
-#include "metis.h"
+/* #include "metis.h" */
 
 /*!
  * \brief Parallel information element for each point/triangle in hiPropMesh
@@ -56,21 +56,30 @@ typedef struct hpPInfoList
  */
 typedef struct hiPropMesh
 {
-    emxArray_real_T *ps;		/*!< point positions, # of points = n */
-    emxArray_int32_T *tris;		/*!< triangles, # of triangles = m */
-    emxArray_real_T *nor;		/*!< point normals */
-    emxArray_real_T *curv;		/*!< point curvatures */
+    emxArray_real_T *ps;		/*!< point positions, # of points = num_ps */
+    emxArray_int32_T *tris;		/*!< triangles, # of triangles = num_tris */
+    emxArray_real_T *nor;		/*!< point normals, size num_ps */
+    emxArray_real_T *curv;		/*!< point main curvatures, size num_ps */
+
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
+    emxArray_int32_T *part_bdry;	/*!< partition boundary points*/
+    emxArray_int32_T *ps_type;		/*!< point type, 0 INTERIOR, 1 OVERLAY, 2 GHOST, size num_ps */
+
     hpPInfoList *ps_pinfo;		/*!< parallel information for points */
     hpPInfoList *tris_pinfo;		/*!< parallel information for tris */
     
     emxArray_int32_T *opphe;		/*!< opposite half edge */
     emxArray_int32_T *inhe;		/*!< incident half edge */
+    emxArray_real_T *est_nor;		/*!< estimated normal, given by tri normal average, size num_ps */
 
     emxArray_int32_T **ps_send_index;
-    emxArray_real_T **ps_send_buffer;
     emxArray_int32_T **ps_recv_index;
-    emxArray_real_T **ps_recv_buffer;
+
+    int32_T nps_clean;			/*!< number of points for the clean mesh (with no overlapping triangles) */
+    int32_T ntris_clean;		/*!< number of tris for the clean mesh (with no overlapping triangles) */
+    int32_T npspi_clean;		/*!< number of ps pinfo for the clean mesh (with no overlapping triangles) */
+    boolean_T is_clean;			/*!< flag to denote whether current mesh is clean,
+					     0 with overlapping triangles, 1 without overlapping triangles */
     
 } hiPropMesh;
 
@@ -199,9 +208,9 @@ EXTERN_C void hpGetNbProcListAuto(hiPropMesh *mesh);
  * \param num_nb_proc number of neighboring processor
  * \param in_nb_proc array of neighboring processors with length num_nb_proc
  */
-EXTERN_C void hpGetNbProcListInput(hiPropMesh *mesh,
-				 const int num_nb_proc, 
-				 const int *in_nb_proc);
+EXTERN_C void hpGetNbProcListFromInput(hiPropMesh *mesh,
+	const int in_num_nbp,
+	const int *in_nb_proc);
 
 /*!
  * \brief Initialize the parallel information given a mesh
@@ -239,6 +248,31 @@ EXTERN_C void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
 EXTERN_C void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
 
 /*!
+ * \brief Build the partition boundary information for a "clean" hiProp mesh
+ * (with not overlapping triangles).
+ * \detail Before calling this function, a parallel hiProp mesh with no
+ * overlapping triangles and correct parallel information is required. The
+ * result is output to the boolean array mesh->part_bdry. If
+ * mesh->part_bdry->data[I1dm(i)] = 1, it means point i is a partition boundary
+ * for the submesh on the current processor.
+ * \param mesh pointer to the hiProp mesh.
+ */
+EXTERN_C void hpBuildPartitionBoundary(hiPropMesh *mesh);
+
+/*!
+ * \brief Build the point type information for a hiProp mesh
+ * \detail Before calling this function, a parallel hiProp mesh with parrallel
+ * info is required. The result is output to the boolean array mesh->ps_type.
+ * Point type = 0: INTERIOR point, only exists to current processor.
+ * Point type = 1: OVERLAY point, owned by current processor and exists on other
+ * processors.
+ * Point type = 2: GHOST point, exists on current processor but owned by another
+ * processor.
+ * \param mesh pointer to the hiProp mesh.
+ */
+EXTERN_C void hpBuildPsType(hiPropMesh *mesh);
+
+/*!
  * \brief Build the parallel update information for submesh 
  * \detail This uses the ps_pinfo,
  * so hpBuildPInfoNoOverlappingTris or hpBuildPInfoWithOverlappingTris or hpConstrPInfoFromGlobalLocalInfo
@@ -251,7 +285,7 @@ EXTERN_C void hpBuildPUpdateInfo(hiPropMesh *mesh);
  * \brief Wrapper for building the opposite half edge structure for triangular
  * mesh
  * \detail Fill the mesh->opphe data
- * \param mesh hiPropMesh on this processor
+ * \param mesh pointer to the hiProp mesh
  */
 EXTERN_C void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
 
@@ -259,7 +293,7 @@ EXTERN_C void hpBuildOppositeHalfEdge(hiPropMesh *mesh);
  * \brief Wrapper for building the incident half edge structure for triangular
  * mesh
  * \detail Fill the mesh->inhe data
- * \param mesh hiPropMesh on this processor
+ * \param mesh pointer to the hiProp mesh
  */
 EXTERN_C void hpBuildIncidentHalfEdge(hiPropMesh *mesh);
 
@@ -298,19 +332,23 @@ EXTERN_C void hpObtainNRingTris(const hiPropMesh *mesh,
 			      int32_T *in_nverts,
 			      int32_T *in_nfaces);
 /*!
- * \brief Make all submeshes to be clean (no overlapping triangles).
- * This function uses tris_pinfo and nb_proc. In the end, nb_proc is rebuilt
+ * \brief Make all submeshes to be clean (no overlapping triangles) and update
+ * the parallel information.
+ * \detail This function uses tris_pinfo and nb_proc. In the end, nb_proc is rebuilt
  * and tris_pinfo is freed.
- * \param mesh The submeshes to be cleaned.
+ * \param mesh pointer to the hiProp mesh with overlapping triangles across
+ * different processors.
  */
 EXTERN_C void hpCleanMeshByPinfo(hiPropMesh* mesh);
 
 
 /*!
  * \brief Build a n-ring ghost neighborhood on the current hiProp mesh
- * \detail The input mesh could have ghost points and triangles. After building
- * the n-ring ghost neighborhood, the neighbor processor information might need
- * to be updated.
+ * \detail The input mesh could have ghost points and triangles. Correct
+ * parallel information is needed for both points and triangles before calling
+ * this function. The parallel information would also be updated after this
+ * function is called. At the mean time, the neighboring processor information
+ * is checked and might also need to be updated.
  * \param mesh pointer to hiProp Mesh
  * \param num_ring number of rings needed to be built
  */
@@ -321,14 +359,56 @@ EXTERN_C void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring);
  * \brief Build ghost neighborhood on the current hiProp mesh based on the
  * bounding boxes
  * \detail The bounding box for each processor could overlap with each other.
- * After building the ghost triangles, the neighbor processor information might
- * need to be updated.
+ * Correct parallel information is needed for both points and triangles before
+ * calling this function. The parallel information would also be updated after 
+ * this function is called. At the mean time, the neighboring processor
+ * information is checked and might also need to be updated.
  * \param mesh pointer to hiProp mesh
  * \param bd_box The bounding box for current processor, stored in order:
  * x_low, x_upper, y_low, y_upper, z_low, z_upper.
  */
 EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
 
+
+/*!
+ * \brief Send ghost ps and tris to neighbor processors and receive ghost ps and
+ * tris from neighbor processors with parallel information
+ * \detail This function works as a subfunction for 3 types of building ghost
+ * ps/tris. Before calling this function, for each neighbor processor, we need
+ * to pick up the points and triangle that we want to send and put the local
+ * indices into ps_ring_proc and tris_ring_proc. For conveniece we also put the
+ * exact point positions and connective of the ghost mesh that we want to send
+ * into buffer_ps and buffer_tris. There are three main steps in the function:
+ * 1. Before communication, update the ps_pinfo and tris_pinfo partially. For a
+ * point/triangle which does not exist on the neighbor processor but is to be
+ * sent, we don't know the exact local index of the point/triangle on the new
+ * processor, thus we could only partially construct the paralle information.
+ * 2. Build up the parallel information for send.
+ * 3. Send the buffer_ps, buffer_tris and the corresponding parallel information
+ * to the neighbor processors.
+ * 4. Receive the ghost points and triangles with parallel information coming
+ * from the neighboring processors and add the ghost points and triangles to the
+ * current mesh.
+ * 5. Update the parallel information across differrent processors to make it
+ * consistent.
+ * 6. Update the nb_proc as the neighbor processors could be changed after
+ * building ghost points and triangles.
+ * \param mesh pointer to a hiProp mesh
+ * \param ps_ring_proc local index of the ghost points that is to be sent to the
+ * neighboring processors
+ * \param tris_ring_proc local index of the ghost triangles that is to be sent
+ * to the neighboring processors 
+ * \param buffer_ps point positions of the ghost points that is to be sent to
+ * the neighboring processors
+ * \param buffer_tris triangle connectivity of the ghost triangles that is to be
+ * sent to the neighboring processors. The elements in buffer_tris are index in
+ * buffer_ps rather than ps_ring_proc. 
+ */
+EXTERN_C void hpCommPsTrisWithPInfo(hiPropMesh *mesh,
+				    emxArray_int32_T **ps_ring_proc,
+				    emxArray_int32_T **tris_ring_proc,
+				    emxArray_real_T **buffer_ps,
+				    emxArray_int32_T **buffer_tris);
 /*!
  * \brief Collect the n-ring neighborhood for a list of points
  * \detail Before calling this function, mesh has to have the opposite half edge
@@ -423,12 +503,12 @@ EXTERN_C void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 
 EXTERN_C void hpCollectAllGhostPs(hiPropMesh *mesh,
 			 	const int nbp_index,
-				int *sizep,
+				int *size_send,
 				int **ppinfol);
 
 EXTERN_C void hpCollectAllGhostTris(hiPropMesh *mesh,
 			 	  const int nbp_index,
-				  int *sizet,
+				  int *size_send,
 				  int **tpinfol);
 
 
@@ -444,14 +524,14 @@ EXTERN_C void hpMergeOverlayTrisPInfo(hiPropMesh *mesh,
 
 EXTERN_C void hpCollectAllOverlayPs(hiPropMesh *mesh,
 				  const int nbp_index,
-				  int *sizep,
+				  int *size_send,
 				  int **ppinfot,
 				  int **ppinfol,
 				  int **ppinfop);
 
 EXTERN_C void hpCollectAllOverlayTris(hiPropMesh *mesh,
 				    const int nbp_index,
-				    int *sizet,
+				    int *size_send,
 				    int **tpinfot,
 				    int **tpinfol,
 				    int **tpinfop);
@@ -470,7 +550,89 @@ EXTERN_C void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 				  int *tpinfot,
 				  int *tpinfol,
 				  int *tpinfop);
-
+/*!
+ * \brief Calculates the high-order normal and curvature
+ * \detail The unit normal of each point output to mesh->nor, the 2 main
+ * curvatures output to mesh->curv. Before calling this function, the adaptive
+ * n-ring neighborhood should be construced based on the degree of fitting the
+ * function needs. The minimun requirement of # of rings = (degree + 2)/2.
+ * \param mesh pointer to a hiProp Mesh
+ * \param in_degree the order of accuracy 
+ */
 EXTERN_C void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree);
 
+/*!
+ * \brief Calculates the estimated normal by averaging face normals 
+ * \detail The result is saved in est_nor. At least one-ring ghost is needed
+ * before calling this function.
+ * \param mesh pointer to a hiProp Mesh
+ */
+EXTERN_C void hpComputeEstimatedNormal(hiPropMesh *mesh);
+
+/*!
+ * \brief Update the estimated normal of the ghost points from master
+ * processors.
+ * \param mesh pointer to a hiProp mesh
+ */
+EXTERN_C void hpUpdateEstimatedNormal(hiPropMesh *mesh);
+
+/*!
+ * \brief Update the calculated normal and curvature of the ghost points from
+ * master processors.
+ * \param mesh pointer to a hiProp mesh
+ */
+EXTERN_C void hpUpdateNorCurv(hiPropMesh *mesh);
+
+/*!
+ * \brief Build the adaptive ghost for partition boundary with different ring
+ * size
+ * \detail The input ring size of the function could be inconsistent between
+ * different processors. The first step of the function is to do a parallel
+ * reduction on the ring size of each partiontion boundary point. The second
+ * step is to build ghost based on the ring size for each partition boundary
+ * point.
+ * \param mesh mesh pointer to a hiProp mesh
+ * \param ring_size ring size for each partition boundary point, size of the
+ * array = size of the part_bdry array
+ */
+EXTERN_C void hpBuildPartBdryGhost(hiPropMesh *mesh, emxArray_real_T *ring_size);
+
+/*!
+ * \brief Reduce the ghost ring size on the part_bdry to make sure the same
+ * point on different processors would have the same ring of neighborhood
+ * \param mesh mesh pointer to a hiProp mesh
+ * \param ring_size input and output ring size for each partition boundary
+ * point
+ */
+EXTERN_C void hpReducePartBdryGhostRingSize(hiPropMesh *mesh, emxArray_real_T *ring_size);
+
+EXTERN_C void hpBuildPartBdryGhostPsTrisForSend(const hiPropMesh *mesh,
+						const int nb_proc_index,
+						const emxArray_real_T *num_ring,
+						emxArray_int32_T **ps_ring_proc,
+						emxArray_int32_T **tris_ring_proc,
+						emxArray_real_T **buffer_ps,
+						emxArray_int32_T **buffer_tris);
+
+EXTERN_C void hpCollectPartBdryNRingTris(const hiPropMesh *mesh,
+					 const int nb_proc_index,
+					 const emxArray_real_T *num_ring,
+					 emxArray_int32_T **out_ps,
+					 emxArray_int32_T **out_tris);
+
+EXTERN_C void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array);
+
+EXTERN_C void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array);
+
+EXTERN_C void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *array);
+
+EXTERN_C void hpAdaptiveBuildGhost(hiPropMesh *mesh, const int32_T in_degree);
+
+EXTERN_C void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree);
+/*!
+ * \brief Small function to print the pinfo of points and triangles to stdout
+ * used for debugging
+ * \aram mesh mesh pointer to a hiProp mesh
+ */
+EXTERN_C void hpPrint_pinfo(hiPropMesh *mesh);
 #endif

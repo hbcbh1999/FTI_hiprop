@@ -29,6 +29,7 @@
 #define __UTIL_H__
 
 #include "emx_util.h"
+#include "hiprop.h"
 
 /*!
  * Compute the index of A[i] in a 1D array
@@ -48,6 +49,14 @@
  * Compute the index of A[i][j][k] in a 3D array
  */
 #define I3dm(i,j,k,size) (((k-1)*(size[1])+(j-1))*(size[0])+(i-1))
+
+#ifndef hpmax
+	#define hpMax( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#endif
+
+#ifndef hpmin
+	#define hpMin( a, b ) ( ((a) < (b)) ? (a) : (b) )
+#endif
 
 /*!
  * \brief Transform an int number into string using certain number of digits
@@ -347,7 +356,7 @@ EXTERN_C void isend2D_real_T(const emxArray_real_T *array_send, const int dst, c
  *
  *
  */
-EXTERN_C void determine_opposite_halfedge_tri(int32_T nv, const emxArray_int32_T *tris ,emxArray_int32_T *opphes);
+EXTERN_C void determine_opposite_halfedge_tri(int32_T nv, const emxArray_int32_T *tris, emxArray_int32_T *opphes);
 
 EXTERN_C void determine_incident_halfedges(const emxArray_int32_T *elems, const emxArray_int32_T *opphes, emxArray_int32_T *v2he);
 
@@ -356,5 +365,32 @@ EXTERN_C void obtain_nring_surf(int32_T vid, real_T ring, int32_T minpnts, const
 EXTERN_C void compute_diffops_surf(const emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, real_T ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs, emxArray_real_T *prdirs, int32_T param);
 
 EXTERN_C void test_walf_tri(const emxArray_real_T *ps, const emxArray_int32_T *tris, int32_T degree, const emxArray_real_T *param, emxArray_real_T *pnts);
+
+EXTERN_C void average_vertex_normal_tri_cleanmesh(int32_T nv_clean, const emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T *flabel, emxArray_real_T *nrms);
+
+EXTERN_C void obtain_ringsz_cleanmesh(int32_T nv_clean, const emxArray_int32_T *part_bdry, const emxArray_real_T *xs, const emxArray_int32_T *elems, int32_T degree, emxArray_real_T *ring_sz);
+
+EXTERN_C void compute_diffops_surf_cleanmesh(int32_T nv_clean, const emxArray_real_T *xs, const emxArray_int32_T *tris, const emxArray_real_T *nrms_proj, int32_T degree, real_T ring, boolean_T iterfit, emxArray_real_T *nrms, emxArray_real_T *curs, emxArray_real_T *prdirs);
+
+/*
+EXTERN_C void compute_hisurf_normals(int32_T nv_clean,
+				     const emxArray_real_T *xs,
+				     const emxArray_int32_T *tris,
+				     int32_T degree,
+				     emxArray_real_T *nrms);
+
+EXTERN_C void compute_statistics_tris_global(int32_T nt_clean,
+					     const emxArray_real_T *xs,
+					     const emxArray_int32_T *tris,
+					     real_T *min_angle,
+					     real_T *max_angle,
+					     real_T *min_area,
+					     real_T *max_area);
+
+*/
+
+EXTERN_C void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean, emxArray_real_T *xs, const emxArray_int32_T *tris, int32_T degree, const emxArray_boolean_T *isridge, const emxArray_boolean_T *ridgeedge, const emxArray_int32_T *flabel, int32_T niter, int32_T verbose, boolean_T check_trank, hiPropMesh *pmesh);
+
+
 
 #endif

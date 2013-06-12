@@ -6,10 +6,11 @@
 #include "stdafx.h"
 #include "util.h"
 #include "hiprop.h"
-#include "metis.h"
+/* #include "metis.h" */
 
 int main(int argc, char* argv[])
 {
+    /*
     MPI_Init(&argc, &argv);
 
     int num_proc, rank;
@@ -20,7 +21,7 @@ int main(int argc, char* argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 
-    hiPropMesh *mesh;	//mesh after partition
+    hiPropMesh *mesh;
     hpInitMesh(&mesh);
     emxArray_int32_T* ps_globalid, *tri_globalid;
 
@@ -29,8 +30,8 @@ int main(int argc, char* argv[])
 	char in_filename[200];
     	sprintf(in_filename, "data/serial/%s.vtk",argv[1]);
 
-    	hiPropMesh *in_mesh;	//input mesh
-    	hpInitMesh(&in_mesh);
+    	hiPropMesh *in_mesh;	
+	hpInitMesh(&in_mesh);
 
     	if(!hpReadUnstrMeshVtk3d(in_filename, in_mesh))
     	{
@@ -48,7 +49,6 @@ int main(int argc, char* argv[])
     else
 	hpDistMesh(root, NULL, mesh, NULL, tag, &ps_globalid, &tri_globalid);
 
-    // output
     char rank_str[5];
     char out_name[200];
     char id_out_name[200];
@@ -66,17 +66,18 @@ int main(int argc, char* argv[])
 	fprintf(id_out_file, "%d\n", tri_globalid->data[i-1]);
 
     fclose(id_out_file);
-/*
+
     if(!hpWriteUnstrMeshVtk3d(out_name, mesh))
     {
 	printf("Write fail\n");
 	return 0;
     }
-    */
+
     hpDeleteMesh(&mesh);
     printf("Success for proc %d\n", rank);
 
     MPI_Finalize();
+    */
     return 1;
 }
 
