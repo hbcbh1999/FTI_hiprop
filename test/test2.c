@@ -69,9 +69,9 @@ int main(int argc, char* argv[])
     char in_filename[200];
     //sprintf(in_filename, "data/parallel/s19560-64p/hpmesh-t0019560-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
-    sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
-    //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
+    sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
     hpGetNbProcListAuto(mesh);
     printf("\n GetNbProcInfo passed, proc %d \n", rank);
     end = time(0);
-    printf("Secons used: %22.16g\n", difftime(end, start));
+    printf("Seconds used: %22.16g\n", difftime(end, start));
 
     printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);
     printf("nb_proc list:\n");

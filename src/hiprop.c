@@ -80,6 +80,10 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->curv = (emxArray_real_T *) NULL;
 
     mesh->nb_proc = (emxArray_int32_T *) NULL;
+    int i;
+    for (i = 0; i < 3; i++)
+	mesh->periodic_length[i] = (emxArray_real_T *) NULL;
+
     mesh->part_bdry = (emxArray_int32_T *) NULL;
     mesh->ps_type = (emxArray_int32_T *) NULL;
     mesh->ps_pinfo = (hpPInfoList *) NULL;
@@ -144,6 +148,14 @@ void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
 
     if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->nb_proc));
+
+    int i;
+
+    for (i = 0; i < 3; i++)
+    {
+	if (pmesh->periodic_length[i] != ((emxArray_real_T *) NULL) )
+	    emxFree_real_T(&(pmesh->periodic_length[i]));
+    }
 
     if (pmesh->part_bdry != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->part_bdry));
@@ -351,8 +363,8 @@ int hpReadUnstrMeshVtk3d(
     }
 
     pt_coord = (double*) malloc(3 * num_points * sizeof(double));
-    for (i = 0; i< (3*num_points); i++)
-	fscanf(file, "%lg", &pt_coord[i]);
+    for (i = 0; i < (3*num_points); i++)
+	fscanf(file, "%lf", &pt_coord[i]);
 
     if(!findString(file, "CELLS"))
 	return 0;
@@ -367,14 +379,14 @@ int hpReadUnstrMeshVtk3d(
     /*	store the info into the hiPropMesh structure */
     /* points */
     (mesh->ps) = emxCreate_real_T(num_points, 3);
-    for (i = 0; i<num_points; i++)
-	for (j = 0; j<3; j++)
+    for (i = 0; i < num_points; i++)
+	for (j = 0; j < 3; j++)
 	    mesh->ps->data[j*num_points+i] = pt_coord[i*3+j];
 
     /* triangles */
     (mesh->tris) = emxCreate_int32_T(num_tris, 3);
-    for (i = 0; i< num_tris; i++)
-	for (j = 0; j<3; j++)
+    for (i = 0; i < num_tris; i++)
+	for (j = 0; j < 3; j++)
 	    mesh->tris->data[j*num_tris+i] = tri_index[i*4+(j+1)] + 1;
     free(pt_coord);
     free(tri_index);
@@ -944,6 +956,11 @@ void hpGetNbProcListFromInput(hiPropMesh *mesh, const int in_num_nbp, const int 
 
 }
 
+void hpInitPeriodicBoundaryInfo(hiPropMesh *pmesh)
+{
+    /* User specify periodic boundary information */
+}
+
 void hpInitPInfo(hiPropMesh *mesh)
 {
     hpDeletePInfoList(&(mesh->ps_pinfo));
@@ -1102,12 +1119,17 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     {
 	num_ps_send[i] = 0;
 	int target_id = nb_proc->data[i];
-	double cur_bdbox_xL = all_bd_box[target_id*6];
-	double cur_bdbox_xU = all_bd_box[target_id*6+1];
-	double cur_bdbox_yL = all_bd_box[target_id*6+2];
-	double cur_bdbox_yU = all_bd_box[target_id*6+3];
-	double cur_bdbox_zL = all_bd_box[target_id*6+4];
-	double cur_bdbox_zU = all_bd_box[target_id*6+5];
+
+	double domain_x = (mesh->periodic_length[0])->data[i];
+	double domain_y = (mesh->periodic_length[1])->data[i];
+	double domain_z = (mesh->periodic_length[2])->data[i];
+
+	double cur_bdbox_xL = all_bd_box[target_id*6] - domain_x;
+	double cur_bdbox_xU = all_bd_box[target_id*6+1] - domain_x;
+	double cur_bdbox_yL = all_bd_box[target_id*6+2] - domain_y;
+	double cur_bdbox_yU = all_bd_box[target_id*6+3] - domain_y;
+	double cur_bdbox_zL = all_bd_box[target_id*6+4] - domain_z;
+	double cur_bdbox_zU = all_bd_box[target_id*6+5] - domain_z;
 
 	unsigned char *flag = (unsigned char *) calloc(ps->size[0], sizeof(unsigned char));
 
@@ -1140,9 +1162,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	{
 	    if (flag[j-1] == 1)
 	    {
-		cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)];
-		cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)];
-		cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)];
+		cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)] + domain_x;
+		cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)] + domain_y;
+		cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)] + domain_z;
 		cur_ps_index_send[ki++] = j;
 
 	    }
@@ -1156,22 +1178,63 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     for (i = 0; i < num_nbp; ++i)
     {
 	dst = nb_proc->data[i];
+
+	int tag1, tag2, tag3;
+
+	if (rank != dst)
+	{
+	    tag1 = 1;
+	    tag2 = 2;
+	    tag3 = 3;
+	}
+	else
+	{
+	    if ((mesh->periodic_length[0])->data[i] > 0)
+	    {
+		tag1 = 1;
+		tag2 = 2;
+		tag3 = 3;
+	    }
+	    else if ((mesh->periodic_length[0])->data[i] < 0)
+	    {
+		tag1 = 4;
+		tag2 = 5;
+		tag3 = 6;
+	    }
+	}
 	
-	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, 1, MPI_COMM_WORLD, &(send_req_list[i]));
-	MPI_Isend(ps_send[i], 3*num_ps_send[i], MPI_DOUBLE, dst, 2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp])); 
-	MPI_Isend(ps_index_send[i], num_ps_send[i], MPI_INT, dst, 3, MPI_COMM_WORLD, &(send_req_list[i+2*num_nbp])); 
+	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, tag1, MPI_COMM_WORLD, &(send_req_list[i]));
+	MPI_Isend(ps_send[i], 3*num_ps_send[i], MPI_DOUBLE, dst, tag2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp])); 
+	MPI_Isend(ps_index_send[i], num_ps_send[i], MPI_INT, dst, tag3, MPI_COMM_WORLD, &(send_req_list[i+2*num_nbp])); 
     }
 
     for (i = 0; i < num_nbp; ++i)
     {
 	src = nb_proc->data[i];
-	MPI_Irecv(&(size_info[i]), 1, MPI_INT, src, 1, MPI_COMM_WORLD, &(recv_req_list[i]));
+
+	int tagrecv;
+
+	if (src != rank)
+	    tagrecv = 1;
+	else
+	{
+	    if ((mesh->periodic_length[0])->data[i] < 0)
+		tagrecv = 1;
+	    else if ((mesh->periodic_length[0])->data[i] > 0)
+		tagrecv = 4;
+	}
+
+	MPI_Irecv(&(size_info[i]), 1, MPI_INT, src, tagrecv, MPI_COMM_WORLD, &(recv_req_list[i]));
     }
 
     for (i = 0; i < num_nbp; ++i)
     {
 	double *ps_recv;
 	int *ps_index_recv;
+
+	double domain_x = (mesh->periodic_length[0])->data[i];
+	double domain_y = (mesh->periodic_length[1])->data[i];
+	double domain_z = (mesh->periodic_length[2])->data[i];
 
 	MPI_Status recv_status1;
 	MPI_Status recv_status2;
@@ -1184,20 +1247,41 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	source_id = recv_status1.MPI_SOURCE;
 
+	int tagrecv1, tagrecv2;
+
+	if (source_id != rank)
+	{
+	    tagrecv1 = 2;
+	    tagrecv2 = 3;
+	}
+	else
+	{
+	    if ((mesh->periodic_length[0])->data[i] < 0)
+	    {
+		tagrecv1 = 2;
+		tagrecv2 = 3;
+	    }
+	    else if ((mesh->periodic_length[0])->data[i] > 0)
+	    {
+		tagrecv1 = 5;
+		tagrecv2 = 6;
+	    }
+	}
+
 	ps_recv = (double *) calloc(3*size_info[recv_index], sizeof(double));
 	ps_index_recv = (int *) calloc(size_info[recv_index], sizeof(int));
 
-	MPI_Recv(ps_recv, 3*size_info[recv_index], MPI_DOUBLE, source_id, 2, MPI_COMM_WORLD, &recv_status2);
-	MPI_Recv(ps_index_recv, size_info[recv_index], MPI_INT, source_id, 3, MPI_COMM_WORLD, &recv_status3);
+	MPI_Recv(ps_recv, 3*size_info[recv_index], MPI_DOUBLE, source_id, tagrecv1, MPI_COMM_WORLD, &recv_status2);
+	MPI_Recv(ps_index_recv, size_info[recv_index], MPI_INT, source_id, tagrecv2, MPI_COMM_WORLD, &recv_status3);
 
 	unsigned char *flag = (unsigned char *) calloc (ps->size[0], sizeof (unsigned char));
 
-	double recv_bdbox_xL = all_bd_box[6*source_id];
-	double recv_bdbox_xU = all_bd_box[6*source_id+1];
-	double recv_bdbox_yL = all_bd_box[6*source_id+2];
-	double recv_bdbox_yU = all_bd_box[6*source_id+3];
-	double recv_bdbox_zL = all_bd_box[6*source_id+4];
-	double recv_bdbox_zU = all_bd_box[6*source_id+5];
+	double recv_bdbox_xL = all_bd_box[6*source_id] + domain_x;
+	double recv_bdbox_xU = all_bd_box[6*source_id+1] + domain_x;
+	double recv_bdbox_yL = all_bd_box[6*source_id+2] + domain_y;
+	double recv_bdbox_yU = all_bd_box[6*source_id+3] + domain_y;
+	double recv_bdbox_zL = all_bd_box[6*source_id+4] + domain_z;
+	double recv_bdbox_zU = all_bd_box[6*source_id+5] + domain_z;
 
 
 	for (j = 1; j <= ps->size[0]; ++j)
@@ -1258,8 +1342,27 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 			}
 			else
 			{
-			    printf("\n Receiving processor ID already in the PInfo list!\n");
-			    exit(0);
+			    /* Using local index to decide */
+
+			    if (j > ps_index_recv[k])
+			    {
+				ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
+			    }
+			    else if (j < ps_index_recv[k])
+			    {
+				ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
+				ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
+			    }
+			    else
+			    {
+				printf("\n Receiving processor ID already in the PInfo list!\n");
+				exit(0);
+			    }
 			}
 			break;
 		    }
