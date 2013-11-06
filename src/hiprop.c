@@ -1276,12 +1276,12 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	unsigned char *flag = (unsigned char *) calloc (ps->size[0], sizeof (unsigned char));
 
-	double recv_bdbox_xL = all_bd_box[6*source_id] + domain_x;
-	double recv_bdbox_xU = all_bd_box[6*source_id+1] + domain_x;
-	double recv_bdbox_yL = all_bd_box[6*source_id+2] + domain_y;
-	double recv_bdbox_yU = all_bd_box[6*source_id+3] + domain_y;
-	double recv_bdbox_zL = all_bd_box[6*source_id+4] + domain_z;
-	double recv_bdbox_zU = all_bd_box[6*source_id+5] + domain_z;
+	double recv_bdbox_xL = all_bd_box[6*source_id] - domain_x;
+	double recv_bdbox_xU = all_bd_box[6*source_id+1] - domain_x;
+	double recv_bdbox_yL = all_bd_box[6*source_id+2] - domain_y;
+	double recv_bdbox_yU = all_bd_box[6*source_id+3] - domain_y;
+	double recv_bdbox_zL = all_bd_box[6*source_id+4] - domain_z;
+	double recv_bdbox_zU = all_bd_box[6*source_id+5] - domain_z;
 
 
 	for (j = 1; j <= ps->size[0]; ++j)
@@ -1500,12 +1500,16 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	int target_id = nb_proc->data[i];
 
-	double cur_bdbox_xL = all_bd_box[target_id*6];
-	double cur_bdbox_xU = all_bd_box[target_id*6+1];
-	double cur_bdbox_yL = all_bd_box[target_id*6+2];
-	double cur_bdbox_yU = all_bd_box[target_id*6+3];
-	double cur_bdbox_zL = all_bd_box[target_id*6+4];
-	double cur_bdbox_zU = all_bd_box[target_id*6+5];
+	double domain_x = (mesh->periodic_length[0])->data[i];
+	double domain_y = (mesh->periodic_length[1])->data[i];
+	double domain_z = (mesh->periodic_length[2])->data[i];
+
+	double cur_bdbox_xL = all_bd_box[target_id*6] - domain_x;
+	double cur_bdbox_xU = all_bd_box[target_id*6+1] - domain_x;
+	double cur_bdbox_yL = all_bd_box[target_id*6+2] - domain_y;
+	double cur_bdbox_yU = all_bd_box[target_id*6+3] - domain_y;
+	double cur_bdbox_zL = all_bd_box[target_id*6+4] - domain_z;
+	double cur_bdbox_zU = all_bd_box[target_id*6+5] - domain_z;
 
 	int *ps_map = (int *) calloc(ps->size[0], sizeof(int));
 	unsigned char *tris_flag = (unsigned char *) calloc(tris->size[0], sizeof(unsigned char));
@@ -1561,9 +1565,9 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	{
 	    if (ps_map[I1dm(j)] != 0)
 	    {
-		cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)];
-		cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)];
-		cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)];
+		cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)] + domain_x;
+		cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)] + domain_y;
+		cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)] + domain_z;
 		cur_ps_index_send[ki++] = j;
 
 	    }
@@ -1607,19 +1611,50 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     for (i = 0; i < num_nbp; ++i)
     {
 	dst = nb_proc->data[i];
-	
-	MPI_Isend(&(size_send[2*i]), 2, MPI_INT, dst, 1, MPI_COMM_WORLD, &(send_req_list[i]));
-	MPI_Isend(ps_send[i], 3*size_send[2*i], MPI_DOUBLE, dst, 2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp])); 
-	MPI_Isend(ps_index_send[i], size_send[2*i], MPI_INT, dst, 3, MPI_COMM_WORLD, &(send_req_list[i+2*num_nbp])); 
 
-	MPI_Isend(tris_send[i], 3*size_send[2*i+1], MPI_INT, dst, 4, MPI_COMM_WORLD, &(send_req_list[i+3*num_nbp]));
-	MPI_Isend(tris_index_send[i], size_send[2*i+1], MPI_INT, dst, 5, MPI_COMM_WORLD, &(send_req_list[i+4*num_nbp]));
+	int tag1, tag2, tag3, tag4, tag5;
+
+	if (rank != dst)
+	{
+	    tag1 = 1; tag2 = 2; tag3 = 3; tag4 = 4; tag5 = 5;
+	}
+	else
+	{
+	    if ((mesh->periodic_length[0])->data[i] > 0)
+	    {
+		tag1 = 1; tag2 = 2; tag3 = 3; tag4 = 4; tag5 = 5;
+	    }
+	    else if ((mesh->periodic_length[0])->data[i] < 0)
+	    {
+		tag1 = 6; tag2 = 7; tag3 = 8; tag4 = 9; tag5 = 10;
+	    }	    
+	}
+	
+	MPI_Isend(&(size_send[2*i]), 2, MPI_INT, dst, tag1, MPI_COMM_WORLD, &(send_req_list[i]));
+	MPI_Isend(ps_send[i], 3*size_send[2*i], MPI_DOUBLE, dst, tag2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp])); 
+	MPI_Isend(ps_index_send[i], size_send[2*i], MPI_INT, dst, tag3, MPI_COMM_WORLD, &(send_req_list[i+2*num_nbp])); 
+
+	MPI_Isend(tris_send[i], 3*size_send[2*i+1], MPI_INT, dst, tag4, MPI_COMM_WORLD, &(send_req_list[i+3*num_nbp]));
+	MPI_Isend(tris_index_send[i], size_send[2*i+1], MPI_INT, dst, tag5, MPI_COMM_WORLD, &(send_req_list[i+4*num_nbp]));
     }
 
     for (i = 0; i < num_nbp; ++i)
     {
 	src = nb_proc->data[i];
-	MPI_Irecv(&(size_recv[2*i]), 2, MPI_INT, src, 1, MPI_COMM_WORLD, &(recv_req_list[i]));
+
+	int tagrecv;
+
+	if (src != rank)
+	    tagrecv = 1;
+	else
+	{
+	    if ((mesh->periodic_length[0])->data[i] < 0)
+		tagrecv = 1;
+	    else if ((mesh->periodic_length[0])->data[i] > 0)
+		tagrecv = 6;
+	}	
+
+	MPI_Irecv(&(size_recv[2*i]), 2, MPI_INT, src, tagrecv, MPI_COMM_WORLD, &(recv_req_list[i]));
     }
 
     for (i = 0; i < num_nbp; ++i)
@@ -1629,6 +1664,10 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	int *ps_index_recv;
 	int *tris_index_recv;
+
+	double domain_x = (mesh->periodic_length[0])->data[i];
+	double domain_y = (mesh->periodic_length[1])->data[i];
+	double domain_z = (mesh->periodic_length[2])->data[i];	
 
 	MPI_Status recv_status1;
 	MPI_Status recv_status2;
@@ -1643,17 +1682,36 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	source_id = recv_status1.MPI_SOURCE;
 
+	int tagrecv2, tagrecv3, tagrecv4, tagrecv5;
+
+	if (source_id != rank)
+	{
+	    tagrecv2 = 2; tagrecv3 = 3; tagrecv4 = 4; tagrecv5 = 5;
+	}
+	else
+	{
+	    if ((mesh->periodic_length[0])->data[i] < 0)
+	    {
+		tagrecv2 = 2; tagrecv3 = 3; tagrecv4 = 4; tagrecv5 = 5;
+	    }
+	    else if ((mesh->periodic_length[0])->data[i] > 0)
+	    {
+		tagrecv2 = 7; tagrecv3 = 8; tagrecv4 = 9; tagrecv5 = 10;
+	    }	    
+	}
+
+
 	ps_recv = (double *) calloc(3*size_recv[2*recv_index], sizeof(double));
 	ps_index_recv = (int *) calloc(size_recv[2*recv_index], sizeof(int));
 
 	tris_recv = (int *) calloc(3*size_recv[2*recv_index+1], sizeof(int));
 	tris_index_recv = (int *) calloc(size_recv[2*recv_index+1], sizeof(int));
 
-	MPI_Recv(ps_recv, 3*size_recv[2*recv_index], MPI_DOUBLE, source_id, 2, MPI_COMM_WORLD, &recv_status2);
-	MPI_Recv(ps_index_recv, size_recv[2*recv_index], MPI_INT, source_id, 3, MPI_COMM_WORLD, &recv_status3);
+	MPI_Recv(ps_recv, 3*size_recv[2*recv_index], MPI_DOUBLE, source_id, tagrecv2, MPI_COMM_WORLD, &recv_status2);
+	MPI_Recv(ps_index_recv, size_recv[2*recv_index], MPI_INT, source_id, tagrecv3, MPI_COMM_WORLD, &recv_status3);
 
-	MPI_Recv(tris_recv, 3*size_recv[2*recv_index+1], MPI_INT, source_id, 4, MPI_COMM_WORLD, &recv_status4);
-	MPI_Recv(tris_index_recv, size_recv[2*recv_index+1], MPI_INT, source_id, 5, MPI_COMM_WORLD, &recv_status5);
+	MPI_Recv(tris_recv, 3*size_recv[2*recv_index+1], MPI_INT, source_id, tagrecv4, MPI_COMM_WORLD, &recv_status4);
+	MPI_Recv(tris_index_recv, size_recv[2*recv_index+1], MPI_INT, source_id, tagrecv5, MPI_COMM_WORLD, &recv_status5);
 
 	/* Build up the ps_flag and tris_flag for the current processor 
 	 * for comparing with ps and tris from source_id */
@@ -1661,12 +1719,12 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	unsigned char *ps_flag = (unsigned char *) calloc (ps->size[0], sizeof (unsigned char));
 	unsigned char *tris_flag = (unsigned char *) calloc (tris->size[0], sizeof (unsigned char));
 
-	double recv_bdbox_xL = all_bd_box[6*source_id];
-	double recv_bdbox_xU = all_bd_box[6*source_id+1];
-	double recv_bdbox_yL = all_bd_box[6*source_id+2];
-	double recv_bdbox_yU = all_bd_box[6*source_id+3];
-	double recv_bdbox_zL = all_bd_box[6*source_id+4];
-	double recv_bdbox_zU = all_bd_box[6*source_id+5];
+	double recv_bdbox_xL = all_bd_box[6*source_id] - domain_x;
+	double recv_bdbox_xU = all_bd_box[6*source_id+1] - domain_x;
+	double recv_bdbox_yL = all_bd_box[6*source_id+2] - domain_y;
+	double recv_bdbox_yU = all_bd_box[6*source_id+3] - domain_y;
+	double recv_bdbox_zL = all_bd_box[6*source_id+4] - domain_z;
+	double recv_bdbox_zU = all_bd_box[6*source_id+5] - domain_z;
 
 	for (j = 1; j <= ps->size[0]; ++j)
 	{
@@ -1750,8 +1808,27 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			}
 			else
 			{
-			    printf("\n Receiving processor ID already in the PInfo list!\n");
-			    exit(0);
+			    /* Using local index to decide */
+
+			    if (j > ps_index_recv[k])
+			    {
+				ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
+			    }
+			    else if (j < ps_index_recv[k])
+			    {
+				ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
+				ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
+			    }
+			    else
+			    {
+				printf("\n Receiving processor ID already in the PInfo list!\n");
+				exit(0);
+			    }
 			}
 			break;
 		    }
@@ -1804,8 +1881,25 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			}
 			else
 			{
-			    printf("\n Receiving processor ID already in the PInfo list!\n");
-			    exit(0);
+			    if (j > tris_index_recv[k])
+			    {
+				tris_pinfo->head[I1dm(j)] = tris_pinfo->allocated_len;
+				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
+				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = tris_index_recv[k];
+				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = cur_head;
+			    }
+			    else if (j < tris_index_recv[k])
+			    {
+				tris_pinfo->tail[I1dm(j)] = tris_pinfo->allocated_len;
+				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
+				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = -1;
+				tris_pinfo->pdata[I1dm(cur_tail)].next = tris_pinfo->allocated_len;
+			    }
+			    else
+			    {
+				printf("\n Receiving processor ID already in the PInfo list!\n");
+				exit(0);
+			    }
 			}
 			break;
 		    }
