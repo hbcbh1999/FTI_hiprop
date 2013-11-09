@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
     fflush(stdout);
 
     start = time(0);
-    hpBuildPInfoWithOverlappingTris(mesh);
+    hpBuildPInfoNoOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
     end = time(0);
     printf("Build Pinfo seconds used: %22.16g\n", difftime(end, start));
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
     char debug_filename2[200];
-    sprintf(debug_filename2, "cleandebug-p%s.vtk", rank_str);
+    sprintf(debug_filename2, "2ringdebug-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
     printf("\n After WriteUnstrMeshWithPInfo2\n");
 

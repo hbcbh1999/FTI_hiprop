@@ -708,6 +708,8 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	mesh->nb_proc->data[I1dm(i)] = nb_ptemp[i-1];
 
     free(nb_ptemp);
+    
+    hpInitPeriodicBoundaryInfo(mesh);
 }
 
 void hpGetNbProcListFromInput(hiPropMesh *mesh, const int in_num_nbp, const int *in_nb_proc)
@@ -958,6 +960,23 @@ void hpGetNbProcListFromInput(hiPropMesh *mesh, const int in_num_nbp, const int 
 
 void hpInitPeriodicBoundaryInfo(hiPropMesh *pmesh)
 {
+    int i;
+
+    for (i = 0; i < 3; i++)
+    {
+	if (pmesh->periodic_length[i] != ((emxArray_real_T *) NULL) )
+	    emxFree_real_T(&(pmesh->periodic_length[i]));
+    }
+
+    int num_nb[1];
+
+    num_nb[0] = pmesh->nb_proc->size[0];
+
+    for (i = 0; i < 3; i++)
+    {
+	pmesh->periodic_length[i] = emxCreateND_real_T(1, num_nb);
+    }
+    
     /* User specify periodic boundary information */
 }
 
@@ -4246,10 +4265,10 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     free(buffer_tris_pinfo_proc);
 
     /* Merge pinfo for ps/tris to get a fully updated pinfo list */
-    //hpUpdatePInfo(mesh);
+    hpUpdatePInfo(mesh);
 
     /* Update nb_proc information based on the new pinfo */
-    //hpUpdateNbWithPInfo(mesh);
+    hpUpdateNbWithPInfo(mesh);
 
 }
 

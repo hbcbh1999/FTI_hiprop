@@ -9,6 +9,24 @@
 #include "emx_util.h"
 
 
+void emxInit_char_T(emxArray_char_T **pEmxArray, int32_T numDimensions)
+{
+  emxArray_char_T *emxArray;
+  int32_T loop_ub;
+  int32_T i;
+  *pEmxArray = (emxArray_char_T *)malloc(sizeof(emxArray_char_T));
+  emxArray = *pEmxArray;
+  emxArray->data = (char_T *)NULL;
+  emxArray->numDimensions = numDimensions;
+  emxArray->size = (int32_T *)malloc((uint32_T)(sizeof(int32_T) * numDimensions));
+  emxArray->allocatedSize = 0;
+  emxArray->canFreeData = TRUE;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    emxArray->size[i] = 0;
+  }
+}
+
 void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensions)
 {
   emxArray_boolean_T *emxArray;
@@ -82,6 +100,26 @@ void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
   }
 }
 
+emxArray_char_T *emxCreateND_char_T(int32_T numDimensions, int32_T *size)
+{
+  emxArray_char_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  emxInit_char_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (char_T *)calloc((uint32_T)numEl, sizeof(char_T));
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
 emxArray_int32_T *emxCreateND_int32_T(int32_T numDimensions, int32_T *size)
 {
   emxArray_int32_T *emx;
@@ -141,6 +179,28 @@ emxArray_boolean_T *emxCreateND_boolean_T(int32_T numDimensions, int32_T *size)
   emx->allocatedSize = numEl;
   return emx;
 }
+
+emxArray_char_T *emxCreateWrapperND_char_T(char_T *data, int32_T numDimensions, int32_T *size)
+{
+  emxArray_char_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  emxInit_char_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = data;
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  emx->canFreeData = FALSE;
+  return emx;
+}
+
 
 emxArray_int32_T *emxCreateWrapperND_int32_T(int32_T *data, int32_T numDimensions, int32_T *size)
 {
@@ -204,6 +264,29 @@ emxArray_boolean_T *emxCreateWrapperND_boolean_T(boolean_T *data, int32_T numDim
   emx->canFreeData = FALSE;
   return emx;
 }
+
+emxArray_char_T *emxCreateWrapper_char_T(char_T *data, int32_T rows, int32_T cols)
+{
+  emxArray_char_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  emxInit_char_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = data;
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  emx->canFreeData = FALSE;
+  return emx;
+}
+
 
 emxArray_int32_T *emxCreateWrapper_int32_T(int32_T *data, int32_T rows, int32_T cols)
 {
@@ -271,6 +354,26 @@ emxArray_boolean_T *emxCreateWrapper_boolean_T(boolean_T *data, int32_T rows, in
   return emx;
 }
 
+emxArray_char_T *emxCreate_char_T(int32_T rows, int32_T cols)
+{
+  emxArray_char_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  emxInit_char_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (char_T *)calloc((uint32_T)numEl, sizeof(char_T));
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  return emx;
+}
 
 emxArray_int32_T *emxCreate_int32_T(int32_T rows, int32_T cols)
 {
@@ -333,6 +436,19 @@ emxArray_boolean_T *emxCreate_boolean_T(int32_T rows, int32_T cols)
   emx->numDimensions = 2;
   emx->allocatedSize = numEl;
   return emx;
+}
+
+void emxFree_char_T(emxArray_char_T **pEmxArray)
+{
+  if (*pEmxArray != (emxArray_char_T *)NULL) {
+    if ((*pEmxArray)->canFreeData) {
+      free((void *)(*pEmxArray)->data);
+    }
+
+    free((void *)(*pEmxArray)->size);
+    free((void *)*pEmxArray);
+    *pEmxArray = (emxArray_char_T *)NULL;
+  }
 }
 
 void emxFree_boolean_T(emxArray_boolean_T **pEmxArray)
@@ -425,6 +541,11 @@ void emxEnsureCapacity(emxArray__common *emxArray, int32_T oldNumel, int32_T ele
     emxArray->allocatedSize = loop_ub;
     emxArray->canFreeData = TRUE;
   }
+}
+
+void emxDestroyArray_char_T(emxArray_char_T *emxArray)
+{
+  emxFree_char_T(&emxArray);
 }
 
 void emxDestroyArray_int32_T(emxArray_int32_T *emxArray)
