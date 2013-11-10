@@ -635,11 +635,20 @@ EXTERN_C void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolea
 
 EXTERN_C void hpAdaptiveBuildGhost(hiPropMesh *mesh, const int32_T in_degree);
 
-EXTERN_C void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree);
+/*!
+ * \brief Function for redistribute the points on the high order surface in
+ * parallel.
+ * \param mesh Mesh pointer to hiprop mesh
+ * \param in_degree The degree of fitting for high order projection
+ * \param method Projection method needed to be used in fitting, could be "CMF"
+ * or "WALF"
+ */
+
+EXTERN_C void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method);
 /*!
  * \brief Small function to print the pinfo of points and triangles to stdout
  * used for debugging
- * \aram mesh mesh pointer to a hiProp mesh
+ * \param mesh mesh pointer to a hiProp mesh
  */
 EXTERN_C void hpPrint_pinfo(hiPropMesh *mesh);
 #endif

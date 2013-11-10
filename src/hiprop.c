@@ -6076,23 +6076,72 @@ void hpAdaptiveBuildGhost(hiPropMesh *mesh, const int32_T in_degree)
 }
 
 
-void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree)
+void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method)
 {
+    /*
     emxArray_boolean_T *in_isridge;
     emxInit_boolean_T(&in_isridge, 1);
     emxArray_boolean_T *in_ridgeedge;
     emxInit_boolean_T(&in_ridgeedge, 2);
     emxArray_int32_T *in_flabel;
     emxInit_int32_T(&in_flabel, 1);
+*/
+    int num_iter = 15;
+
+    real_T in_angletol_min = 25;
+    real_T in_perfolded = 80;
+    real_T in_disp_alpha = 1;
+    boolean_T in_check_trank = false;
+    boolean_T in_vc_flag = true;
+
+    emxArray_char_T *in_method;
+
+    emxInit_char_T(&in_method, 1);
+
+
+    if (method[0] == 'C')
+    {
+	in_method->size[0] = 3;
+	in_method->data = (char_T *) calloc(3, sizeof(char_T));
+	in_method->data[0] = 'C';
+	in_method->data[1] = 'M';
+	in_method->data[2] = 'F';
+
+	in_method->numDimensions = 1;
+	in_method->allocatedSize = 3;
+	in_method->canFreeData = TRUE;
+    }
+    else if(method[0] == 'W')
+    {
+	in_method->size[0] = 4;
+	in_method->data = (char_T *) calloc(4, sizeof(char_T));
+	in_method->data[0] = 'W';
+	in_method->data[1] = 'A';
+	in_method->data[2] = 'L';
+	in_method->data[3] = 'F';
+
+	in_method->numDimensions = 1;
+	in_method->allocatedSize = 4;
+	in_method->canFreeData = TRUE;
+    }
+    else
+    {
+	printf("Error Method! Terminating...\n");
+	exit(0);
+    }
+
+
+    int32_T in_verbose = (int32_T) 2;
 
     smooth_mesh_hisurf_cleanmesh(mesh->nps_clean, mesh->ntris_clean,
-	    mesh->ps, mesh->tris, in_degree,
-	    in_isridge, in_ridgeedge, in_flabel, 
-	    10, 2, false, mesh);
-
+	    mesh->ps, mesh->tris, in_degree, num_iter, in_angletol_min,
+	    in_perfolded, in_disp_alpha, in_check_trank, in_vc_flag, in_method,
+	    in_verbose, mesh);
+/*
     emxFree_boolean_T(&in_isridge);
     emxFree_boolean_T(&in_ridgeedge);
     emxFree_int32_T(&in_flabel);
+    */
 }
 
 
