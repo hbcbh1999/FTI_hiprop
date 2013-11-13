@@ -651,4 +651,6 @@ EXTERN_C void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* m
  * \param mesh mesh pointer to a hiProp mesh
  */
 EXTERN_C void hpPrint_pinfo(hiPropMesh *mesh);
+
+EXTERN_C void hpDebugParallelToSerialOutput(hiPropMesh *mesh, emxArray_real_T *array, const char *outname);
 #endif

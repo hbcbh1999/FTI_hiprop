@@ -202,22 +202,6 @@ int main(int argc, char* argv[])
     hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
     printf("\n After WriteUnstrMeshWithPInfo2\n");
 
-
-    int num_old_ps = mesh->nps_clean;
-    printf("num of old ps = %d\n", num_old_ps);
-    
-    char ptid_filename[200];
-    sprintf(ptid_filename, "data/parallel/sphere_nonuni_psid-p%s.data", rank_str);
-    FILE *ptinfile = fopen(ptid_filename, "r");
-
-    int *ptid = (int *) calloc(num_old_ps, sizeof(int));
-
-    for (i = 0; i < num_old_ps; i++)
-	fscanf(ptinfile, "%d", &(ptid[i]));
-    fclose(ptinfile);
-
-    //hpComputeDiffops(mesh, 2);
-
     hpMeshSmoothing(mesh, 2, "CMF");
 
     printf("\n hpMeshSmoothing passed, proc %d \n", rank);
@@ -225,60 +209,7 @@ int main(int argc, char* argv[])
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    int num_all_pt = 0;
-
-    for (i = 1; i <= mesh->ps->size[0]; i++)
-    {
-	int head = mesh->ps_pinfo->head[I1dm(i)];
-	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
-	    num_all_pt++;
-    }
-
-    int out_num_all_pt = 0;
-
-    MPI_Allreduce(&num_all_pt, &out_num_all_pt, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-    printf("\n Num of all pts = %d \n", out_num_all_pt);
-
-    double *inps1 = (double *) calloc(out_num_all_pt, sizeof(double));
-    double *inps2 = (double *) calloc(out_num_all_pt, sizeof(double));
-    double *inps3 = (double *) calloc(out_num_all_pt, sizeof(double));
-
-    double *outps1 = (double *) calloc(out_num_all_pt, sizeof(double));
-    double *outps2 = (double *) calloc(out_num_all_pt, sizeof(double));
-    double *outps3 = (double *) calloc(out_num_all_pt, sizeof(double));
-
-
-    for (i = 1; i <= mesh->ps->size[0]; i++)
-    {
-	int head = mesh->ps_pinfo->head[I1dm(i)];
-	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
-	{
-	    inps1[ptid[i-1]-1] = mesh->ps->data[I2dm(i,1,mesh->ps->size)];
-	    inps2[ptid[i-1]-1] = mesh->ps->data[I2dm(i,2,mesh->ps->size)];
-	    inps3[ptid[i-1]-1] = mesh->ps->data[I2dm(i,3,mesh->ps->size)];
-	}
-    }
-
-    MPI_Allreduce(inps1, outps1, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(inps2, outps2, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(inps3, outps3, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-
-    if (rank == 0)
-    {
-	char ncfilename[200];
-	sprintf(ncfilename, "debug_smooth.out");
-	FILE *diffout = fopen(ncfilename, "w");
-
-	for (i = 0; i < out_num_all_pt; i++)
-	    fprintf(diffout, "%22.16g %22.16g %22.16g \n",
-		    outps1[i], outps2[i], outps3[i]);
-    }
-
-    free(ptid);
-    free(inps1); free(inps2); free(inps3);
-    free(outps1); free(outps2); free(outps3);
+    hpDebugParallelToSerialOutput(mesh, mesh->ps, "compdebug.out");
 
     hpDeleteMesh(&mesh);
 

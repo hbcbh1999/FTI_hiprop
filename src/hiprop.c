@@ -6269,8 +6269,6 @@ void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method)
 
     if (method[0] == 'C')
     {
-	int charsize = 3;
-	
 	in_method = emxCreate_char_T(1, 3);
 
 	in_method->data[0] = 'C';
@@ -6279,7 +6277,6 @@ void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method)
     }
     else if(method[0] == 'W')
     {
-	int charsize = 4;
 	in_method = emxCreate_char_T(1, 4);
 
 	in_method->data[0] = 'W';
@@ -6310,7 +6307,106 @@ void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method)
 }
 
 
+void hpDebugParallelToSerialOutput(hiPropMesh *mesh, emxArray_real_T *array, const char *outname)
+{
+    int i;
+    int rank;
+    char rank_str[5];
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    numIntoString(rank,4,rank_str);
+
+    int num_old_ps = mesh->nps_clean;
+    printf("num of old ps = %d\n", num_old_ps);
+
+    char ptid_filename[200];
+    sprintf(ptid_filename, "data/parallel/sphere_nonuni_psid-p%s.data", rank_str);
+    FILE *ptinfile = fopen(ptid_filename, "r");
+
+    int *ptid = (int *) calloc(num_old_ps, sizeof(int));
+
+    for (i = 0; i < num_old_ps; i++)
+	fscanf(ptinfile, "%d", &(ptid[i]));
+    fclose(ptinfile);
+
+    int num_all_pt = 0;
+
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	int head = mesh->ps_pinfo->head[I1dm(i)];
+	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
+	    num_all_pt++;
+    }
+
+    int out_num_all_pt = 0;
+
+    MPI_Allreduce(&num_all_pt, &out_num_all_pt, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    printf("\n Num of all pts = %d \n", out_num_all_pt);
+
+    double *inps1 = (double *) calloc(out_num_all_pt, sizeof(double));
+    double *inps2 = (double *) calloc(out_num_all_pt, sizeof(double));
+    double *inps3 = (double *) calloc(out_num_all_pt, sizeof(double));
+
+    double *outps1 = (double *) calloc(out_num_all_pt, sizeof(double));
+    double *outps2 = (double *) calloc(out_num_all_pt, sizeof(double));
+    double *outps3 = (double *) calloc(out_num_all_pt, sizeof(double));
+
+
+    for (i = 1; i <= mesh->ps->size[0]; i++)
+    {
+	int head = mesh->ps_pinfo->head[I1dm(i)];
+	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
+	{
+	    if (array->numDimensions == 2)
+	    {
+		inps1[ptid[i-1]-1] = array->data[I2dm(i,1,mesh->ps->size)];
+		inps2[ptid[i-1]-1] = array->data[I2dm(i,2,mesh->ps->size)];
+		inps3[ptid[i-1]-1] = array->data[I2dm(i,3,mesh->ps->size)];
+	    }
+	    else if (array->numDimensions == 1)
+	    {
+		inps1[ptid[i-1]-1] = array->data[I1dm(i)];
+	    }
+	}
+    }
+
+    if (array->numDimensions == 2)
+    {
+	MPI_Allreduce(inps1, outps1, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(inps2, outps2, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(inps3, outps3, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    }
+    else if (array->numDimensions == 1)
+    {
+	MPI_Allreduce(inps1, outps1, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    }
+
+
+    if (rank == 0)
+    {
+	char ncfilename[200];
+	sprintf(ncfilename, outname);
+	FILE *diffout = fopen(ncfilename, "w");
+
+	if (array->numDimensions == 2)
+	{
+	    for (i = 0; i < out_num_all_pt; i++)
+		fprintf(diffout, "%22.16g %22.16g %22.16g \n",
+			outps1[i], outps2[i], outps3[i]);
+	}
+	else if(array->numDimensions == 1)
+	{
+	    for (i = 0; i < out_num_all_pt; i++)
+		fprintf(diffout, "%22.16g\n",
+		    outps1[i]);
+	}
+    }
+
+    free(ptid);
+    free(inps1); free(inps2); free(inps3);
+    free(outps1); free(outps2); free(outps3);
+}
 
 
 
