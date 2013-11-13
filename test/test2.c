@@ -158,13 +158,13 @@ int main(int argc, char* argv[])
     end = time(0);
     printf("Build Pinfo seconds used: %22.16g\n", difftime(end, start));
 
-
+/*
 
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
     printf("\n After WriteUnstrMeshWithPInfo\n");
-
+*/
 
     /*
     start = time(0);
@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
     hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
     printf("\n After WriteUnstrMeshWithPInfo2\n");
 
-/*
+
     int num_old_ps = mesh->nps_clean;
     printf("num of old ps = %d\n", num_old_ps);
     
@@ -216,9 +216,14 @@ int main(int argc, char* argv[])
 	fscanf(ptinfile, "%d", &(ptid[i]));
     fclose(ptinfile);
 
-    hpMeshSmoothing(mesh, 2);
+    //hpComputeDiffops(mesh, 2);
+
+    hpMeshSmoothing(mesh, 2, "CMF");
 
     printf("\n hpMeshSmoothing passed, proc %d \n", rank);
+
+
+    MPI_Barrier(MPI_COMM_WORLD);
 
     int num_all_pt = 0;
 
@@ -274,7 +279,7 @@ int main(int argc, char* argv[])
     free(ptid);
     free(inps1); free(inps2); free(inps3);
     free(outps1); free(outps2); free(outps3);
-*/
+
     hpDeleteMesh(&mesh);
 
     printf("Success processor %d\n", rank);

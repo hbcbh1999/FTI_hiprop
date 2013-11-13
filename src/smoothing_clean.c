@@ -989,7 +989,16 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
       }
     } while (exitg2 == 0);
 
-    if (b) {
+    /* Add global communication for b */
+
+    unsigned char global_b;
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    MPI_Allreduce(&(b), &(global_b), 1, MPI_UNSIGNED_CHAR, MPI_MAX, MPI_COMM_WORLD);
+
+
+    if (global_b) {
       /* 'async_scale_disps_tri_cleanmesh:16' scaled = true; */
       scaled = TRUE;
 
@@ -1026,7 +1035,9 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
         }
 
         /*  Step 2: Communicate 'us_smooth' and 'alpha_tmp' for ghost points     */
+
 	MPI_Barrier(MPI_COMM_WORLD);
+
 	hpUpdateGhostPointData_real_T(pmesh, us_smooth);
 	hpUpdateGhostPointData_real_T(pmesh, alpha_tmp);
 
@@ -7938,7 +7949,6 @@ static void compute_statistics_tris_global(int32_T nt_clean, const
   /*  max_area . This step would require communicating the min_angle from other */
   /*  processor and performing a comparision among them to obtain the global */
   /*  minimum angle.  */
-
 
   MPI_Barrier(MPI_COMM_WORLD);
 

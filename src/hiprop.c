@@ -5663,7 +5663,18 @@ void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
 	if (cur_psi != (emxArray_int32_T *) NULL)
 	{
 	    int num_overlay_ps = cur_psi->size[0];
-	    int size_col = array->size[1];
+
+	    int size_col;
+
+	    if (array->numDimensions == 1)
+		size_col = 1;
+	    else if (array->numDimensions > 1)
+		size_col = array->size[1];
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+	    }
 
 	    send_size[I1dm(i)] = num_overlay_ps*size_col;
 	    send_buf[I1dm(i)] = (int *) calloc(send_size[I1dm(i)], sizeof(int));
@@ -5672,7 +5683,18 @@ void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
 	if (cur_pri != (emxArray_int32_T *) NULL)
 	{
 	    int num_ghost_ps = cur_pri->size[0];
-	    int size_col = array->size[1];
+
+	    int size_col;
+
+	    if (array->numDimensions == 1)
+		size_col = 1;
+	    else if (array->numDimensions > 1)
+		size_col = array->size[1];
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+	    }	  
 
 	    recv_size[I1dm(i)] = num_ghost_ps*size_col;
 	    recv_buf[I1dm(i)] = (int *) calloc(recv_size[I1dm(i)], sizeof(int));
@@ -5703,15 +5725,34 @@ void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
 	    
 	    emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
     	    
-	    for (k = 1; k <= array->size[1]; k++)
+	    if (array->numDimensions > 1)
+	    {
+		for (k = 1; k <= array->size[1]; k++)
+		{
+		    for (j = 1; j <= cur_psi->size[0]; j++)
+		    {
+			int overlay_ps_id = cur_psi->data[I1dm(j)];
+			cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+			cur_pos++;
+		    }
+		}
+	    }
+	    else if (array->numDimensions == 1)
 	    {
 		for (j = 1; j <= cur_psi->size[0]; j++)
 		{
 		    int overlay_ps_id = cur_psi->data[I1dm(j)];
-		    cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+		    cur_send_buf[cur_pos] = array->data[I1dm(overlay_ps_id)];
 		    cur_pos++;
 		}
 	    }
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+
+	    }
+
 	    
 	    MPI_Isend(send_buf[I1dm(i)], send_size[I1dm(i)], MPI_INT, 
 		    mesh->nb_proc->data[I1dm(i)], 1, MPI_COMM_WORLD, &(send_req_list[i-1]));
@@ -5742,14 +5783,31 @@ void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
 	int *cur_recv_buf = recv_buf[recv_index];
 	int cur_recv_pos = 0;
 
-	for (k = 1; k <= array->size[1]; k++)
+	if (array->numDimensions > 1)
+	{
+	    for (k = 1; k <= array->size[1]; k++)
+	    {
+		for (j = 1; j <= cur_pri->size[0]; j++)
+		{
+		    int ghost_ps_id = cur_pri->data[I1dm(j)];
+		    array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		    cur_recv_pos++;
+		}
+	    }
+	}
+	else if (array->numDimensions == 1)
 	{
 	    for (j = 1; j <= cur_pri->size[0]; j++)
 	    {
 		int ghost_ps_id = cur_pri->data[I1dm(j)];
-		array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		array->data[I1dm(ghost_ps_id)] = cur_recv_buf[cur_recv_pos];
 		cur_recv_pos++;
 	    }
+	}
+	else
+	{
+	    printf("\n Wrong dimension, less than 1!\n");
+	    exit(0);
 	}
 
     }
@@ -5802,7 +5860,18 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
 	if (cur_psi != (emxArray_int32_T *) NULL)
 	{
 	    int num_overlay_ps = cur_psi->size[0];
-	    int size_col = array->size[1];
+
+	    int size_col;
+
+	    if (array->numDimensions == 1)
+		size_col = 1;
+	    else if (array->numDimensions > 1)
+		size_col = array->size[1];
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+	    }
 
 	    send_size[I1dm(i)] = num_overlay_ps*size_col;
 	    send_buf[I1dm(i)] = (real_T *) calloc(send_size[I1dm(i)], sizeof(real_T));
@@ -5811,7 +5880,18 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
 	if (cur_pri != (emxArray_int32_T *) NULL)
 	{
 	    int num_ghost_ps = cur_pri->size[0];
-	    int size_col = array->size[1];
+
+	    int size_col;
+
+	    if (array->numDimensions == 1)
+		size_col = 1;
+	    else if (array->numDimensions > 1)
+		size_col = array->size[1];
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+	    }
 
 	    recv_size[I1dm(i)] = num_ghost_ps*size_col;
 	    recv_buf[I1dm(i)] = (real_T *) calloc(recv_size[I1dm(i)], sizeof(real_T));
@@ -5841,15 +5921,33 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
 	    int nbp_id = mesh->nb_proc->data[I1dm(i)];
 	    
 	    emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
-    	    
-	    for (k = 1; k <= array->size[1]; k++)
+
+	    if (array->numDimensions > 1)
+	    {
+		for (k = 1; k <= array->size[1]; k++)
+		{
+		    for (j = 1; j <= cur_psi->size[0]; j++)
+		    {
+			int overlay_ps_id = cur_psi->data[I1dm(j)];
+			cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+			cur_pos++;
+		    }
+		}
+	    }
+	    else if (array->numDimensions == 1)
 	    {
 		for (j = 1; j <= cur_psi->size[0]; j++)
 		{
 		    int overlay_ps_id = cur_psi->data[I1dm(j)];
-		    cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+		    cur_send_buf[cur_pos] = array->data[I1dm(overlay_ps_id)];
 		    cur_pos++;
 		}
+	    }
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+
 	    }
 	    
 	    MPI_Isend(send_buf[I1dm(i)], send_size[I1dm(i)], MPI_DOUBLE, 
@@ -5881,14 +5979,31 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
 	real_T *cur_recv_buf = recv_buf[recv_index];
 	int cur_recv_pos = 0;
 
-	for (k = 1; k <= array->size[1]; k++)
+	if (array->numDimensions > 1)
+	{
+	    for (k = 1; k <= array->size[1]; k++)
+	    {
+		for (j = 1; j <= cur_pri->size[0]; j++)
+		{
+		    int ghost_ps_id = cur_pri->data[I1dm(j)];
+		    array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		    cur_recv_pos++;
+		}
+	    }
+	}
+	else if (array->numDimensions == 1)
 	{
 	    for (j = 1; j <= cur_pri->size[0]; j++)
 	    {
 		int ghost_ps_id = cur_pri->data[I1dm(j)];
-		array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		array->data[I1dm(ghost_ps_id)] = cur_recv_buf[cur_recv_pos];
 		cur_recv_pos++;
 	    }
+	}
+	else
+	{
+	    printf("\n Wrong dimension, less than 1!\n");
+	    exit(0);
 	}
 
     }
@@ -5940,7 +6055,17 @@ void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *arra
 	if (cur_psi != (emxArray_int32_T *) NULL)
 	{
 	    int num_overlay_ps = cur_psi->size[0];
-	    int size_col = array->size[1];
+	    int size_col;
+
+	    if (array->numDimensions == 1)
+		size_col = 1;
+	    else if (array->numDimensions > 1)
+		size_col = array->size[1];
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+	    }
 
 	    send_size[I1dm(i)] = num_overlay_ps*size_col;
 	    send_buf[I1dm(i)] = (boolean_T *) calloc(send_size[I1dm(i)], sizeof(boolean_T));
@@ -5949,7 +6074,17 @@ void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *arra
 	if (cur_pri != (emxArray_int32_T *) NULL)
 	{
 	    int num_ghost_ps = cur_pri->size[0];
-	    int size_col = array->size[1];
+	    int size_col;
+
+	    if (array->numDimensions == 1)
+		size_col = 1;
+	    else if (array->numDimensions > 1)
+		size_col = array->size[1];
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+	    }
 
 	    recv_size[I1dm(i)] = num_ghost_ps*size_col;
 	    recv_buf[I1dm(i)] = (boolean_T *) calloc(recv_size[I1dm(i)], sizeof(boolean_T));
@@ -5980,14 +6115,32 @@ void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *arra
 	    
 	    emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
     	    
-	    for (k = 1; k <= array->size[1]; k++)
+	    if (array->numDimensions > 1)
+	    {
+		for (k = 1; k <= array->size[1]; k++)
+		{
+		    for (j = 1; j <= cur_psi->size[0]; j++)
+		    {
+			int overlay_ps_id = cur_psi->data[I1dm(j)];
+			cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+			cur_pos++;
+		    }
+		}
+	    }
+	    else if (array->numDimensions == 1)
 	    {
 		for (j = 1; j <= cur_psi->size[0]; j++)
 		{
 		    int overlay_ps_id = cur_psi->data[I1dm(j)];
-		    cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+		    cur_send_buf[cur_pos] = array->data[I1dm(overlay_ps_id)];
 		    cur_pos++;
 		}
+	    }
+	    else
+	    {
+		printf("\n Wrong dimension, less than 1 !\n");
+		exit(0);
+
 	    }
 	    
 	    MPI_Isend(send_buf[I1dm(i)], send_size[I1dm(i)], MPI_UNSIGNED_CHAR, 
@@ -6019,14 +6172,31 @@ void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *arra
 	boolean_T *cur_recv_buf = recv_buf[recv_index];
 	int cur_recv_pos = 0;
 
-	for (k = 1; k <= array->size[1]; k++)
+	if (array->numDimensions > 1)
+	{
+	    for (k = 1; k <= array->size[1]; k++)
+	    {
+		for (j = 1; j <= cur_pri->size[0]; j++)
+		{
+		    int ghost_ps_id = cur_pri->data[I1dm(j)];
+		    array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		    cur_recv_pos++;
+		}
+	    }
+	}
+	else if (array->numDimensions == 1)
 	{
 	    for (j = 1; j <= cur_pri->size[0]; j++)
 	    {
 		int ghost_ps_id = cur_pri->data[I1dm(j)];
-		array->data[I2dm(ghost_ps_id, k, array->size)] = cur_recv_buf[cur_recv_pos];
+		array->data[I1dm(ghost_ps_id)] = cur_recv_buf[cur_recv_pos];
 		cur_recv_pos++;
 	    }
+	}
+	else
+	{
+	    printf("\n Wrong dimension, less than 1!\n");
+	    exit(0);
 	}
 
     }
@@ -6096,33 +6266,26 @@ void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method)
 
     emxArray_char_T *in_method;
 
-    emxInit_char_T(&in_method, 1);
-
 
     if (method[0] == 'C')
     {
-	in_method->size[0] = 3;
-	in_method->data = (char_T *) calloc(3, sizeof(char_T));
+	int charsize = 3;
+	
+	in_method = emxCreate_char_T(1, 3);
+
 	in_method->data[0] = 'C';
 	in_method->data[1] = 'M';
 	in_method->data[2] = 'F';
-
-	in_method->numDimensions = 1;
-	in_method->allocatedSize = 3;
-	in_method->canFreeData = TRUE;
     }
     else if(method[0] == 'W')
     {
-	in_method->size[0] = 4;
-	in_method->data = (char_T *) calloc(4, sizeof(char_T));
+	int charsize = 4;
+	in_method = emxCreate_char_T(1, 4);
+
 	in_method->data[0] = 'W';
 	in_method->data[1] = 'A';
 	in_method->data[2] = 'L';
 	in_method->data[3] = 'F';
-
-	in_method->numDimensions = 1;
-	in_method->allocatedSize = 4;
-	in_method->canFreeData = TRUE;
     }
     else
     {
@@ -6132,6 +6295,8 @@ void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method)
 
 
     int32_T in_verbose = (int32_T) 2;
+
+    printf("\n clean size = %d, %d, actual size = %d %d\n", mesh->nps_clean, mesh->ntris_clean, mesh->ps->size[0], mesh->tris->size[0]);
 
     smooth_mesh_hisurf_cleanmesh(mesh->nps_clean, mesh->ntris_clean,
 	    mesh->ps, mesh->tris, in_degree, num_iter, in_angletol_min,
