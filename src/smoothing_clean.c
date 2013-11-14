@@ -949,6 +949,10 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
   /* 'async_scale_disps_tri_cleanmesh:6' coder.inline('never') */
   /* 'async_scale_disps_tri_cleanmesh:8' if nargin<5 */
   /* 'async_scale_disps_tri_cleanmesh:10' [alpha_tmp,us_smooth] = rescale_displacements(xs, us_smooth, tris, tol); */
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  hpUpdateGhostPointData_real_T(pmesh, us_smooth);
+  
   rescale_displacements(xs, us_smooth, tris, 0.1, alpha_tmp);
 
   /* 'async_scale_disps_tri_cleanmesh:12' niter = 0; */
@@ -17155,6 +17159,7 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
     /* 'smoothing_single_iteration:42' [us_smooth] = limit_large_disps_to_low_order(nv_clean, xs, us_smooth, us_smooth_linear, tris, opphes, disp_alpha, vc_flag); */
     limit_large_disps_to_low_order(nv_clean, xs, us_smooth, b_us_smooth, tris,
       opphes, disp_alpha, vc_flag);
+
   }
 
   emxFree_real_T(&b_us_smooth);
