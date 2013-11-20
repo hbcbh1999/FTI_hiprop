@@ -1759,21 +1759,21 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	    if ((mesh->periodic_length[0])->data[i] == 0)
 		digit1 = 1;
-	    else if ((mesh->periodic_length[0])->data[i] < 0)
+	    else if ((mesh->periodic_length[0])->data[i] > 0)
 		digit1 = 2;
 	    else
 		digit1 = 3;
 
 	    if ((mesh->periodic_length[1])->data[i] == 0)
 		digit2 = 1;
-	    else if ((mesh->periodic_length[1])->data[i] < 0)
+	    else if ((mesh->periodic_length[1])->data[i] > 0)
 		digit2 = 2;
 	    else
 		digit2 = 3;
 
 	    if ((mesh->periodic_length[2])->data[i] == 0)
 		digit3 = 1;
-	    else if ((mesh->periodic_length[2])->data[i] < 0)
+	    else if ((mesh->periodic_length[2])->data[i] > 0)
 		digit3 = 2;
 	    else
 		digit1 = 3;
@@ -1826,21 +1826,21 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	    if ((mesh->periodic_length[0])->data[i] == 0)
 		digit1 = 1;
-	    else if ((mesh->periodic_length[0])->data[i] < 0)
+	    else if ((mesh->periodic_length[0])->data[i] > 0)
 		digit1 = 2;
 	    else
 		digit1 = 3;
 
 	    if ((mesh->periodic_length[1])->data[i] == 0)
 		digit2 = 1;
-	    else if ((mesh->periodic_length[1])->data[i] < 0)
+	    else if ((mesh->periodic_length[1])->data[i] > 0)
 		digit2 = 2;
 	    else
 		digit2 = 3;
 
 	    if ((mesh->periodic_length[2])->data[i] == 0)
 		digit3 = 1;
-	    else if ((mesh->periodic_length[2])->data[i] < 0)
+	    else if ((mesh->periodic_length[2])->data[i] > 0)
 		digit3 = 2;
 	    else
 		digit1 = 3;
