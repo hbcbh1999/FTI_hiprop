@@ -1198,7 +1198,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     {
 	dst = nb_proc->data[i];
 
-	int tag1, tag2, tag3;
+	int tag1 = 1;
+	int tag2 = 2;
+	int tag3 = 3;
 
 	if (rank != dst)
 	{
@@ -1208,18 +1210,34 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	}
 	else
 	{
-	    if ((mesh->periodic_length[0])->data[i] > 0)
-	    {
-		tag1 = 1;
-		tag2 = 2;
-		tag3 = 3;
-	    }
-	    else if ((mesh->periodic_length[0])->data[i] < 0)
-	    {
-		tag1 = 4;
-		tag2 = 5;
-		tag3 = 6;
-	    }
+	    int digit1 = 1;
+	    int digit2 = 1;
+	    int digit3 = 1;
+
+	    if ((mesh->periodic_length[0])->data[i] == 0)
+		digit1 = 1;
+	    else if ((mesh->periodic_length[0])->data[i] > 0)
+		digit1 = 2;
+	    else
+		digit1 = 3;
+
+	    if ((mesh->periodic_length[1])->data[i] == 0)
+		digit2 = 1;
+	    else if ((mesh->periodic_length[1])->data[i] > 0)
+		digit2 = 2;
+	    else
+		digit2 = 3;
+
+	    if ((mesh->periodic_length[2])->data[i] == 0)
+		digit3 = 1;
+	    else if ((mesh->periodic_length[2])->data[i] > 0)
+		digit3 = 2;
+	    else
+		digit1 = 3;
+
+	    tag1 = digit1 + 10*digit2 + 100*digit3;
+	    tag2 = tag1 + 1000;
+	    tag3 = tag1 + 2000;
 	}
 	
 	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, tag1, MPI_COMM_WORLD, &(send_req_list[i]));
@@ -1231,16 +1249,38 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     {
 	src = nb_proc->data[i];
 
-	int tagrecv;
+	int tagrecv = 1;
 
 	if (src != rank)
 	    tagrecv = 1;
 	else
 	{
-	    if ((mesh->periodic_length[0])->data[i] < 0)
-		tagrecv = 1;
-	    else if ((mesh->periodic_length[0])->data[i] > 0)
-		tagrecv = 4;
+	    int digit1 = 1;
+	    int digit2 = 1;
+	    int digit3 = 1;
+
+	    if ((mesh->periodic_length[0])->data[i] == 0)
+		digit1 = 1;
+	    else if ((mesh->periodic_length[0])->data[i] < 0)
+		digit1 = 2;
+	    else
+		digit1 = 3;
+
+	    if ((mesh->periodic_length[1])->data[i] == 0)
+		digit2 = 1;
+	    else if ((mesh->periodic_length[1])->data[i] < 0)
+		digit2 = 2;
+	    else
+		digit2 = 3;
+
+	    if ((mesh->periodic_length[2])->data[i] == 0)
+		digit3 = 1;
+	    else if ((mesh->periodic_length[2])->data[i] < 0)
+		digit3 = 2;
+	    else
+		digit3 = 3;
+
+	    tagrecv = digit1 + 10*digit2 + 100*digit3;
 	}
 
 	MPI_Irecv(&(size_info[i]), 1, MPI_INT, src, tagrecv, MPI_COMM_WORLD, &(recv_req_list[i]));
@@ -1266,7 +1306,8 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	source_id = recv_status1.MPI_SOURCE;
 
-	int tagrecv1, tagrecv2;
+	int tagrecv1 = 2;
+	int tagrecv2 = 3;
 
 	if (source_id != rank)
 	{
@@ -1275,16 +1316,34 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	}
 	else
 	{
-	    if ((mesh->periodic_length[0])->data[i] < 0)
-	    {
-		tagrecv1 = 2;
-		tagrecv2 = 3;
-	    }
-	    else if ((mesh->periodic_length[0])->data[i] > 0)
-	    {
-		tagrecv1 = 5;
-		tagrecv2 = 6;
-	    }
+	    int digit1 = 1;
+	    int digit2 = 1;
+	    int digit3 = 1;
+
+	    if ((mesh->periodic_length[0])->data[i] == 0)
+		digit1 = 1;
+	    else if ((mesh->periodic_length[0])->data[i] < 0)
+		digit1 = 2;
+	    else
+		digit1 = 3;
+
+	    if ((mesh->periodic_length[1])->data[i] == 0)
+		digit2 = 1;
+	    else if ((mesh->periodic_length[1])->data[i] < 0)
+		digit2 = 2;
+	    else
+		digit2 = 3;
+
+	    if ((mesh->periodic_length[2])->data[i] == 0)
+		digit3 = 1;
+	    else if ((mesh->periodic_length[2])->data[i] < 0)
+		digit3 = 2;
+	    else
+		digit1 = 3;
+
+	    int tag_tmp = digit1 + 10*digit2 + 100*digit3;
+	    tagrecv1 = tag_tmp + 1000;
+	    tagrecv2 = tag_tmp + 2000;
 	}
 
 	ps_recv = (double *) calloc(3*size_info[recv_index], sizeof(double));
@@ -1631,7 +1690,11 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     {
 	dst = nb_proc->data[i];
 
-	int tag1, tag2, tag3, tag4, tag5;
+	int tag1 = 1;
+        int tag2 = 2;
+	int tag3 = 3;
+	int tag4 = 4;
+	int tag5 = 5;
 
 	if (rank != dst)
 	{
@@ -1639,14 +1702,37 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	}
 	else
 	{
-	    if ((mesh->periodic_length[0])->data[i] > 0)
-	    {
-		tag1 = 1; tag2 = 2; tag3 = 3; tag4 = 4; tag5 = 5;
-	    }
+	    int digit1 = 1;
+	    int digit2 = 1;
+	    int digit3 = 1;
+
+	    if ((mesh->periodic_length[0])->data[i] == 0)
+		digit1 = 1;
 	    else if ((mesh->periodic_length[0])->data[i] < 0)
-	    {
-		tag1 = 6; tag2 = 7; tag3 = 8; tag4 = 9; tag5 = 10;
-	    }	    
+		digit1 = 2;
+	    else
+		digit1 = 3;
+
+	    if ((mesh->periodic_length[1])->data[i] == 0)
+		digit2 = 1;
+	    else if ((mesh->periodic_length[1])->data[i] < 0)
+		digit2 = 2;
+	    else
+		digit2 = 3;
+
+	    if ((mesh->periodic_length[2])->data[i] == 0)
+		digit3 = 1;
+	    else if ((mesh->periodic_length[2])->data[i] < 0)
+		digit3 = 2;
+	    else
+		digit1 = 3;
+
+	    tag1 = digit1 + 10*digit2 + 100*digit3;
+	    tag2 = tag1 + 1000;
+	    tag3 = tag1 + 2000;
+	    tag4 = tag1 + 3000;
+	    tag5 = tag1 + 4000;
+
 	}
 	
 	MPI_Isend(&(size_send[2*i]), 2, MPI_INT, dst, tag1, MPI_COMM_WORLD, &(send_req_list[i]));
@@ -1661,16 +1747,38 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     {
 	src = nb_proc->data[i];
 
-	int tagrecv;
+	int tagrecv = 1;
 
 	if (src != rank)
 	    tagrecv = 1;
 	else
 	{
-	    if ((mesh->periodic_length[0])->data[i] < 0)
-		tagrecv = 1;
-	    else if ((mesh->periodic_length[0])->data[i] > 0)
-		tagrecv = 6;
+	    int digit1 = 1;
+	    int digit2 = 1;
+	    int digit3 = 1;
+
+	    if ((mesh->periodic_length[0])->data[i] == 0)
+		digit1 = 1;
+	    else if ((mesh->periodic_length[0])->data[i] < 0)
+		digit1 = 2;
+	    else
+		digit1 = 3;
+
+	    if ((mesh->periodic_length[1])->data[i] == 0)
+		digit2 = 1;
+	    else if ((mesh->periodic_length[1])->data[i] < 0)
+		digit2 = 2;
+	    else
+		digit2 = 3;
+
+	    if ((mesh->periodic_length[2])->data[i] == 0)
+		digit3 = 1;
+	    else if ((mesh->periodic_length[2])->data[i] < 0)
+		digit3 = 2;
+	    else
+		digit1 = 3;
+
+	    tagrecv = digit1 + 10*digit2 + 100*digit3;
 	}	
 
 	MPI_Irecv(&(size_recv[2*i]), 2, MPI_INT, src, tagrecv, MPI_COMM_WORLD, &(recv_req_list[i]));
@@ -1701,7 +1809,10 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	source_id = recv_status1.MPI_SOURCE;
 
-	int tagrecv2, tagrecv3, tagrecv4, tagrecv5;
+	int tagrecv2 = 2;
+      	int tagrecv3 = 3;
+	int tagrecv4 = 4;
+	int tagrecv5 = 5;
 
 	if (source_id != rank)
 	{
@@ -1709,14 +1820,38 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	}
 	else
 	{
-	    if ((mesh->periodic_length[0])->data[i] < 0)
-	    {
-		tagrecv2 = 2; tagrecv3 = 3; tagrecv4 = 4; tagrecv5 = 5;
-	    }
-	    else if ((mesh->periodic_length[0])->data[i] > 0)
-	    {
-		tagrecv2 = 7; tagrecv3 = 8; tagrecv4 = 9; tagrecv5 = 10;
-	    }	    
+	    int digit1 = 1;
+	    int digit2 = 1;
+	    int digit3 = 1;
+
+	    if ((mesh->periodic_length[0])->data[i] == 0)
+		digit1 = 1;
+	    else if ((mesh->periodic_length[0])->data[i] < 0)
+		digit1 = 2;
+	    else
+		digit1 = 3;
+
+	    if ((mesh->periodic_length[1])->data[i] == 0)
+		digit2 = 1;
+	    else if ((mesh->periodic_length[1])->data[i] < 0)
+		digit2 = 2;
+	    else
+		digit2 = 3;
+
+	    if ((mesh->periodic_length[2])->data[i] == 0)
+		digit3 = 1;
+	    else if ((mesh->periodic_length[2])->data[i] < 0)
+		digit3 = 2;
+	    else
+		digit1 = 3;
+
+	    int tag_tmp = digit1 + 10*digit2 + 100*digit3;
+
+	    tagrecv2 = tag_tmp + 1000;
+	    tagrecv3 = tag_tmp + 2000;
+	    tagrecv4 = tag_tmp + 3000;
+	    tagrecv5 = tag_tmp + 4000;
+
 	}
 
 
@@ -6387,6 +6522,7 @@ void hpDebugParallelToSerialOutput(hiPropMesh *mesh, emxArray_real_T *array, con
     {
 	char ncfilename[200];
 	sprintf(ncfilename, outname);
+
 	FILE *diffout = fopen(ncfilename, "w");
 
 	if (array->numDimensions == 2)

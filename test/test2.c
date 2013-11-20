@@ -41,10 +41,11 @@ void find_Cartesian_coordinates(
 int main(int argc, char* argv[])
 {
     time_t start, end;
-    int i, j, k;
+    int i;
+    //int j, k;
     int num_proc, rank;
-    int tag = 1;
-    int root = 0;
+   // int tag = 1;
+    // int root = 0;
 
 
     MPI_Init(&argc, &argv);

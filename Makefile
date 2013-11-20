@@ -49,6 +49,7 @@ clean:
 	rm -f include/stdafx.h.gch
 	rm -f *.vtk
 	rm -f run-log.*
+	rm -f *.out
 
 cleanout:
 	rm -f *.vtk
