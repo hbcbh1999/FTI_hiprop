@@ -72,7 +72,8 @@ int main(int argc, char* argv[])
     //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
-    sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
+    sprintf(in_filename, "data/serial/periodic_test.vtk");
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
@@ -151,6 +152,7 @@ int main(int argc, char* argv[])
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
+
     fflush(stdout);
 
     start = time(0);
@@ -159,13 +161,14 @@ int main(int argc, char* argv[])
     end = time(0);
     printf("Build Pinfo seconds used: %22.16g\n", difftime(end, start));
 
-/*
+
+    hpPrint_pinfo(mesh);
+
 
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
     printf("\n After WriteUnstrMeshWithPInfo\n");
-*/
 
     /*
     start = time(0);
@@ -174,6 +177,8 @@ int main(int argc, char* argv[])
     end = time(0);
     printf("CleanMeshByPInfo seconds used: %22.16g\n", difftime(end, start));
 */
+
+    /*
     fflush(stdout);
 
     start = time(0);
@@ -212,6 +217,7 @@ int main(int argc, char* argv[])
 
     hpDebugParallelToSerialOutput(mesh, mesh->ps, "compdebug.out");
 
+    */
     hpDeleteMesh(&mesh);
 
     printf("Success processor %d\n", rank);

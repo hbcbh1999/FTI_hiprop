@@ -956,11 +956,12 @@ void hpGetNbProcListFromInput(hiPropMesh *mesh, const int in_num_nbp, const int 
 
     free(nb_ptemp);
 
+    hpInitPeriodicBoundaryInfo(mesh);
 }
 
 void hpInitPeriodicBoundaryInfo(hiPropMesh *pmesh)
 {
-    int i;
+    int i, j;
 
     for (i = 0; i < 3; i++)
     {
@@ -969,13 +970,50 @@ void hpInitPeriodicBoundaryInfo(hiPropMesh *pmesh)
     }
 
     int num_nb[1];
+    int new_num_nb[1];
 
     num_nb[0] = pmesh->nb_proc->size[0];
 
+    new_num_nb[0] = num_nb[0] + 8;
+
+    emxArray_int32_T *new_nb_proc = emxCreateND_int32_T(1, new_num_nb);
+
+    for (i = 0; i < num_nb[0]; i++)
+	new_nb_proc->data[i] = pmesh->nb_proc->data[i];
+
+    for (j = 0; j < 8; j++)
+	new_nb_proc->data[num_nb[0]+j] = 0;
+
+    emxFree_int32_T(&(pmesh->nb_proc));
+    pmesh->nb_proc = new_nb_proc;
+
     for (i = 0; i < 3; i++)
     {
-	pmesh->periodic_length[i] = emxCreateND_real_T(1, num_nb);
+	pmesh->periodic_length[i] = emxCreateND_real_T(1, new_num_nb);
     }
+
+    emxArray_real_T *px = pmesh->periodic_length[0];
+    emxArray_real_T *py = pmesh->periodic_length[1];
+
+    px->data[0] = 4;
+    px->data[1] = -4;
+    px->data[2] = 0;
+    px->data[3] = 0;
+    px->data[4] = 4;
+    px->data[5] = -4;
+    px->data[6] = 4;
+    px->data[7] = -4;
+
+    py->data[0] = 0;
+    py->data[1] = 0;
+    py->data[2] = 4;
+    py->data[3] = -4;
+    py->data[4] = 4;
+    py->data[5] = -4;
+    py->data[6] = -4;
+    py->data[7] = 4;
+
+
     
     /* User specify periodic boundary information */
 }
@@ -1422,17 +1460,18 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 			{
 			    /* Using local index to decide */
 
-			    if (j > ps_index_recv[k])
+			    if (ps_pinfo->pdata[I1dm(cur_head)].lindex > ps_index_recv[k])
 			    {
 				ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
 			    }
-			    else if (j < ps_index_recv[k])
+			    else if (ps_pinfo->pdata[I1dm(cur_head)].lindex < ps_index_recv[k])
 			    {
 				ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 				ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
 			    }
@@ -1964,17 +2003,18 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			{
 			    /* Using local index to decide */
 
-			    if (j > ps_index_recv[k])
+			    if (ps_pinfo->pdata[I1dm(cur_head)].lindex > ps_index_recv[k])
 			    {
 				ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
 			    }
-			    else if (j < ps_index_recv[k])
+			    else if (ps_pinfo->pdata[I1dm(cur_head)].lindex < ps_index_recv[k])
 			    {
 				ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 				ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
 			    }
@@ -2035,17 +2075,18 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			}
 			else
 			{
-			    if (j > tris_index_recv[k])
+			    if (tris_pinfo->pdata[I1dm(cur_head)].lindex > tris_index_recv[k])
 			    {
 				tris_pinfo->head[I1dm(j)] = tris_pinfo->allocated_len;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = tris_index_recv[k];
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = cur_head;
 			    }
-			    else if (j < tris_index_recv[k])
+			    else if (tris_pinfo->pdata[I1dm(cur_head)].lindex < tris_index_recv[k])
 			    {
 				tris_pinfo->tail[I1dm(j)] = tris_pinfo->allocated_len;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
+				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = tris_index_recv[k];
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = -1;
 				tris_pinfo->pdata[I1dm(cur_tail)].next = tris_pinfo->allocated_len;
 			    }
@@ -5057,10 +5098,15 @@ void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
 	    ps_type = 2; /* buffer ps */
 	else
 	{
-	    if(ps_head[i] != ps_tail[i])
-		ps_type = 1; /* overlay tri */
+	    if(ps_pdata[ps_head[i]-1].lindex != i+1)
+		ps_type = 2; /* buffer ps */
 	    else
-		ps_type = 0; /* interior tri */
+	    {
+		if(ps_head[i] != ps_tail[i])
+		    ps_type = 1; /* overlay ps */
+		else
+		    ps_type = 0; /* interior ps */
+	    }
 	}
 	fprintf(file, "%d\n", ps_type);
     }
@@ -5075,10 +5121,15 @@ void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
 	    tri_type = 2; /* buffer tri */
 	else
 	{
-	    if(tri_head[i] != tri_tail[i])
-		tri_type = 1; /* overlay tri */
+	    if (tri_pdata[tri_head[i]-1].lindex != i+1)
+		tri_type = 2; /* buffer tri */
 	    else
-		tri_type = 0; /* interior tri */
+	    {
+		if(tri_head[i] != tri_tail[i])
+		    tri_type = 1; /* overlay tri */
+		else
+		    tri_type = 0; /* interior tri */
+	    }
 	}
 	fprintf(file, "%d\n", tri_type);
     }
