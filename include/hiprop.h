@@ -21,6 +21,7 @@
 
 typedef struct hpPInfoNode
 {
+    int pindex;		/*!< processor index for local nb_proc list, different pindex could have same processor ID */
     int proc;		/*!< processor ID */
     int lindex;		/*!< local index on the corresponding proc */
     int next;		/*!< index for the next node in the linked list, if next = -1, 
@@ -268,7 +269,7 @@ EXTERN_C void hpBuildPartitionBoundary(hiPropMesh *mesh);
 
 /*!
  * \brief Build the point type information for a hiProp mesh
- * \detail Before calling this function, a parallel hiProp mesh with parrallel
+ * \detail Before calling this function, a parallel hiProp mesh with parallel
  * info is required. The result is output to the boolean array mesh->ps_type.
  * Point type = 0: INTERIOR point, only exists to current processor.
  * Point type = 1: OVERLAY point, owned by current processor and exists on other

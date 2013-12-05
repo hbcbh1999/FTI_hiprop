@@ -1054,6 +1054,7 @@ void hpInitPInfo(hiPropMesh *mesh)
     {
 	(mesh->ps_pinfo->pdata[I1dm(i)]).proc = my_rank;
 	(mesh->ps_pinfo->pdata[I1dm(i)]).lindex = i;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).pindex = 0;
 	(mesh->ps_pinfo->pdata[I1dm(i)]).next = -1;
 	mesh->ps_pinfo->head[I1dm(i)] = i;
 	mesh->ps_pinfo->tail[I1dm(i)] = i;
@@ -1062,6 +1063,7 @@ void hpInitPInfo(hiPropMesh *mesh)
     {
 	(mesh->tris_pinfo->pdata[I1dm(i)]).proc = my_rank;
 	(mesh->tris_pinfo->pdata[I1dm(i)]).lindex = i;
+	(mesh->tris_pinfo->pdata[I1dm(i)]).pindex = 0;
 	(mesh->tris_pinfo->pdata[I1dm(i)]).next = -1;
 	mesh->tris_pinfo->head[I1dm(i)] = i;
 	mesh->tris_pinfo->tail[I1dm(i)] = i;
@@ -1342,6 +1344,8 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status1);
 
+	printf("recv_index = %d\n", recv_index);
+
 	source_id = recv_status1.MPI_SOURCE;
 
 	int tagrecv1 = 2;
@@ -1446,6 +1450,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 			    ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].pindex = recv_index + 1;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
 			}
 			else if (source_id > cur_master_proc)
@@ -1453,6 +1458,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 			    ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].pindex = recv_index + 1;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 			    ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
 			}
@@ -1465,6 +1471,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 				ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+			    	ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].pindex = recv_index + 1;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
 			    }
 			    else if (ps_pinfo->pdata[I1dm(cur_head)].lindex < ps_index_recv[k])
@@ -1472,12 +1479,13 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 				ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+			    	ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].pindex = recv_index + 1;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 				ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
 			    }
 			    else
 			    {
-				printf("\n Receiving processor ID already in the PInfo list!\n");
+				printf("\n Receiving element already in the PInfo list!\n");
 				exit(0);
 			    }
 			}
@@ -1989,6 +1997,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			    ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].pindex = recv_index + 1;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
 			}
 			else if (source_id > cur_master_proc)
@@ -1996,6 +2005,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			    ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].pindex = recv_index + 1;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 			    ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
 			}
@@ -2008,6 +2018,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 				ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+			    	ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].pindex = recv_index + 1;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
 			    }
 			    else if (ps_pinfo->pdata[I1dm(cur_head)].lindex < ps_index_recv[k])
@@ -2015,12 +2026,13 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 				ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
+			    	ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].pindex = recv_index + 1;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 				ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
 			    }
 			    else
 			    {
-				printf("\n Receiving processor ID already in the PInfo list!\n");
+				printf("\n Receiving element already in the PInfo list!\n");
 				exit(0);
 			    }
 			}
@@ -2063,6 +2075,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			    tris_pinfo->head[I1dm(j)] = tris_pinfo->allocated_len;
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = tris_index_recv[k];
+			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].pindex = recv_index + 1;
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = cur_head;
 			}
 			else if (source_id > cur_master_proc)
@@ -2070,6 +2083,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 			    tris_pinfo->tail[I1dm(j)] = tris_pinfo->allocated_len;
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = tris_index_recv[k];
+			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].pindex = recv_index + 1;
 			    tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = -1;
 			    tris_pinfo->pdata[I1dm(cur_tail)].next = tris_pinfo->allocated_len;
 			}
@@ -2080,6 +2094,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 				tris_pinfo->head[I1dm(j)] = tris_pinfo->allocated_len;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = tris_index_recv[k];
+			    	tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].pindex = recv_index + 1;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = cur_head;
 			    }
 			    else if (tris_pinfo->pdata[I1dm(cur_head)].lindex < tris_index_recv[k])
@@ -2087,12 +2102,13 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 				tris_pinfo->tail[I1dm(j)] = tris_pinfo->allocated_len;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].proc = source_id;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].lindex = tris_index_recv[k];
+			    	tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].pindex = recv_index + 1;
 				tris_pinfo->pdata[I1dm(tris_pinfo->allocated_len)].next = -1;
 				tris_pinfo->pdata[I1dm(cur_tail)].next = tris_pinfo->allocated_len;
 			    }
 			    else
 			    {
-				printf("\n Receiving processor ID already in the PInfo list!\n");
+				printf("\n Receiving element already in the PInfo list!\n");
 				exit(0);
 			    }
 			}
@@ -2604,7 +2620,7 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
 		}
 		else
 		{
-		    printf("\n Receiving processor ID already in the PInfo list!\n");
+		    printf("\n Receiving element already in the PInfo list!\n");
 		    exit(0);
 		}
 
@@ -2718,7 +2734,7 @@ void hpPrint_pinfo(hiPropMesh *mesh)
 	while (next != -1)
 	{
 	    int cur_node = next;
-	    printf("%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex);
+	    printf("%d/%d/%d-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex, mesh->ps_pinfo->pdata[I1dm(cur_node)].pindex);
 	    next = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
 	}
 	printf("\n");
@@ -2758,18 +2774,24 @@ void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 
     /* nb proc mapping[i] stores the index for proc i in
      * mesh->proc->data (starts from 0) */
+    /*
     int *nb_proc_mapping = (int *) calloc(num_all_proc, sizeof(int));
+    */
 
     /* Initialize nb_proc_mapping, for non nb proc, map to -1 */
+    /*
     for (i = 0; i < num_all_proc; i++)
 	nb_proc_mapping[i] = -1;
-    
+    */
+
     /* construct the nb proc mapping */
+    /*
     for (i = 1; i <= num_nb_proc; i++)
     {
 	int nb_proc_id = mesh->nb_proc->data[I1dm(i)];
 	nb_proc_mapping[nb_proc_id] = i-1;
     }
+    */
 
 
     /* Traverse the ps_pinfo to fill num_overlay_ps */
@@ -2778,9 +2800,9 @@ void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 	int next_node = ps_pinfo->head[I1dm(i)];
 	while (next_node != -1)
 	{
-	    int proc_id = ps_pinfo->pdata[I1dm(next_node)].proc;
-	    if (proc_id != cur_proc)
-		num_overlay_ps[nb_proc_mapping[proc_id]]++;
+	    int proc_index = ps_pinfo->pdata[I1dm(next_node)].pindex;
+	    if (proc_index != 0)
+		num_overlay_ps[I1dm(proc_index)]++;
 	    next_node = ps_pinfo->pdata[I1dm(next_node)].next;
 	}
     }
@@ -2799,12 +2821,12 @@ void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 	int next_node = ps_pinfo->head[I1dm(i)];
 	while (next_node != -1)
 	{
-	    int proc_id = ps_pinfo->pdata[I1dm(next_node)].proc;
-	    if (proc_id != cur_proc)
+	    int proc_index = ps_pinfo->pdata[I1dm(next_node)].pindex;
+	    if (proc_index != 0)
 	    {
-		int mapped_index = nb_proc_mapping[proc_id];
-		(out_psid[mapped_index])->data[cur_ps_index[mapped_index]] = i;
-		cur_ps_index[mapped_index]++;
+		//int mapped_index = nb_proc_mapping[proc_id];
+		(out_psid[I1dm(proc_index)])->data[cur_ps_index[I1dm(proc_index)]] = i;
+		cur_ps_index[I1dm(proc_index)]++;
 	    }
 	    next_node = ps_pinfo->pdata[I1dm(next_node)].next;
 	}
@@ -2812,7 +2834,7 @@ void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 
     free(cur_ps_index);
     free(num_overlay_ps);
-    free(nb_proc_mapping);
+    //free(nb_proc_mapping);
 
 }
 
@@ -3026,6 +3048,10 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
     int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
     int j;
 
+    double domain_x = (mesh->periodic_length[0])->data[I1dm(nb_proc_index)];
+    double domain_y = (mesh->periodic_length[1])->data[I1dm(nb_proc_index)];
+    double domain_z = (mesh->periodic_length[2])->data[I1dm(nb_proc_index)];
+
     {
 	hpCollectNRingTris(mesh, nb_proc_index, psid_proc, num_ring,
 			   ps_ring_proc, tris_ring_proc);
@@ -3041,11 +3067,11 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 	{
 	    int cur_buf_ps_index = (*ps_ring_proc)->data[I1dm(j)];
 	    (*buffer_ps)->data[I2dm(j,1,(*buffer_ps)->size)] =
-		mesh->ps->data[I2dm(cur_buf_ps_index,1,mesh->ps->size)];
+		mesh->ps->data[I2dm(cur_buf_ps_index,1,mesh->ps->size)] + domain_x;
 	    (*buffer_ps)->data[I2dm(j,2,(*buffer_ps)->size)] =
-		mesh->ps->data[I2dm(cur_buf_ps_index,2,mesh->ps->size)];
+		mesh->ps->data[I2dm(cur_buf_ps_index,2,mesh->ps->size)] + domain_y;
 	    (*buffer_ps)->data[I2dm(j,3,(*buffer_ps)->size)] =
-		mesh->ps->data[I2dm(cur_buf_ps_index,3,mesh->ps->size)];
+		mesh->ps->data[I2dm(cur_buf_ps_index,3,mesh->ps->size)] + domain_z;
 
 	    ps_mapping[I1dm(cur_buf_ps_index)] = j;
 	}
@@ -4226,7 +4252,7 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     int num_nb_proc = mesh->nb_proc->size[0];
 
     /* Set up the MPI_Request list */
-    int num_all_send_rqst = 10*num_nb_proc;
+    int num_all_send_rqst = 12*num_nb_proc;
 
     MPI_Request* send_rqst_list = (MPI_Request *) calloc(num_all_send_rqst, sizeof(MPI_Request));
     MPI_Status* send_status_list = (MPI_Status *) calloc(num_all_send_rqst, sizeof(MPI_Status));
@@ -4243,10 +4269,12 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     /* Build n-ring neighborhood and send*/
     int **buffer_ps_pinfo_tag = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_ps_pinfo_lindex = (int **) calloc(num_nb_proc, sizeof(int *));
+    int **buffer_ps_pinfo_pindex = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_ps_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
 
     int **buffer_tris_pinfo_tag = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_tris_pinfo_lindex = (int **) calloc(num_nb_proc, sizeof(int *));
+    int **buffer_tris_pinfo_pindex = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_tris_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
 
     int tag_ps = 0;
@@ -4900,9 +4928,10 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
 	    int next_node = tris_phead[I1dm(tris_buf_index)];
 	    while(next_node != -1)
 	    {
-		int proc_id = tris_pdata[I1dm(next_node)].proc;
+		//int proc_id = tris_pdata[I1dm(next_node)].proc;
+		int proc_index = tris_pdata[I1dm(next_node)].pindex;
 		/* If also exists on other processor, do not send it */
-		if (proc_id == nb_proc[I1dm(nb_proc_index)])
+		if (proc_index == nb_proc_index)
 		{
 		    tris_flag->data[I1dm(tris_buf_index)] = false;
 		    break;
@@ -4910,10 +4939,6 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
 		else
 		    next_node = tris_pdata[I1dm(next_node)].next;
 	    }
-
-	    /*
-	    tris_flag->data[I1dm(tris_buf_index)] = true;
-	    */
 	}
     }
 
@@ -4927,9 +4952,9 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
 	    bufpi[0] = tris_data[I2dm(i,1,tris->size)];
 	    bufpi[1] = tris_data[I2dm(i,2,tris->size)];
 	    bufpi[2] = tris_data[I2dm(i,3,tris->size)];
-	    ps_flag->data[bufpi[0]-1] = true;
-	    ps_flag->data[bufpi[1]-1] = true;
-	    ps_flag->data[bufpi[2]-1] = true;
+	    ps_flag->data[I1dm(bufpi[0])] = true;
+	    ps_flag->data[I1dm(bufpi[1])] = true;
+	    ps_flag->data[I1dm(bufpi[2])] = true;
 	}
     }
 
@@ -6594,6 +6619,7 @@ void hpDebugParallelToSerialOutput(hiPropMesh *mesh, emxArray_real_T *array, con
     free(inps1); free(inps2); free(inps3);
     free(outps1); free(outps2); free(outps3);
 }
+
 
 
 
