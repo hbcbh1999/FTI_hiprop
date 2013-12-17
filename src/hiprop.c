@@ -1238,48 +1238,37 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     {
 	dst = nb_proc->data[i];
 
-	int tag1 = 1;
-	int tag2 = 2;
-	int tag3 = 3;
+	int tag1, tag2, tag3;
 
-	if (rank != dst)
-	{
-	    tag1 = 1;
-	    tag2 = 2;
-	    tag3 = 3;
-	}
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
+
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] > 0)
+	    digit1 = 2;
 	else
-	{
-	    int digit1 = 1;
-	    int digit2 = 1;
-	    int digit3 = 1;
+	    digit1 = 3;
 
-	    if ((mesh->periodic_length[0])->data[i] == 0)
-		digit1 = 1;
-	    else if ((mesh->periodic_length[0])->data[i] > 0)
-		digit1 = 2;
-	    else
-		digit1 = 3;
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] > 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
 
-	    if ((mesh->periodic_length[1])->data[i] == 0)
-		digit2 = 1;
-	    else if ((mesh->periodic_length[1])->data[i] > 0)
-		digit2 = 2;
-	    else
-		digit2 = 3;
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] > 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
 
-	    if ((mesh->periodic_length[2])->data[i] == 0)
-		digit3 = 1;
-	    else if ((mesh->periodic_length[2])->data[i] > 0)
-		digit3 = 2;
-	    else
-		digit1 = 3;
+	tag1 = digit1 + 10*digit2 + 100*digit3;
+	tag2 = tag1 + 1000;
+	tag3 = tag1 + 2000;
 
-	    tag1 = digit1 + 10*digit2 + 100*digit3;
-	    tag2 = tag1 + 1000;
-	    tag3 = tag1 + 2000;
-	}
-	
 	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, tag1, MPI_COMM_WORLD, &(send_req_list[i]));
 	MPI_Isend(ps_send[i], 3*num_ps_send[i], MPI_DOUBLE, dst, tag2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp])); 
 	MPI_Isend(ps_index_send[i], num_ps_send[i], MPI_INT, dst, tag3, MPI_COMM_WORLD, &(send_req_list[i+2*num_nbp])); 
@@ -1289,39 +1278,34 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     {
 	src = nb_proc->data[i];
 
-	int tagrecv = 1;
+	int tagrecv;
 
-	if (src != rank)
-	    tagrecv = 1;
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
+
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] < 0)
+	    digit1 = 2;
 	else
-	{
-	    int digit1 = 1;
-	    int digit2 = 1;
-	    int digit3 = 1;
+	    digit1 = 3;
 
-	    if ((mesh->periodic_length[0])->data[i] == 0)
-		digit1 = 1;
-	    else if ((mesh->periodic_length[0])->data[i] < 0)
-		digit1 = 2;
-	    else
-		digit1 = 3;
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] < 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
 
-	    if ((mesh->periodic_length[1])->data[i] == 0)
-		digit2 = 1;
-	    else if ((mesh->periodic_length[1])->data[i] < 0)
-		digit2 = 2;
-	    else
-		digit2 = 3;
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] < 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
 
-	    if ((mesh->periodic_length[2])->data[i] == 0)
-		digit3 = 1;
-	    else if ((mesh->periodic_length[2])->data[i] < 0)
-		digit3 = 2;
-	    else
-		digit3 = 3;
-
-	    tagrecv = digit1 + 10*digit2 + 100*digit3;
-	}
+	tagrecv = digit1 + 10*digit2 + 100*digit3;
 
 	MPI_Irecv(&(size_info[i]), 1, MPI_INT, src, tagrecv, MPI_COMM_WORLD, &(recv_req_list[i]));
     }
@@ -1344,49 +1328,38 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status1);
 
-	printf("recv_index = %d\n", recv_index);
-
 	source_id = recv_status1.MPI_SOURCE;
 
-	int tagrecv1 = 2;
-	int tagrecv2 = 3;
+	int tagrecv1, tagrecv2;
 
-	if (source_id != rank)
-	{
-	    tagrecv1 = 2;
-	    tagrecv2 = 3;
-	}
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
+
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] < 0)
+	    digit1 = 2;
 	else
-	{
-	    int digit1 = 1;
-	    int digit2 = 1;
-	    int digit3 = 1;
+	    digit1 = 3;
 
-	    if ((mesh->periodic_length[0])->data[i] == 0)
-		digit1 = 1;
-	    else if ((mesh->periodic_length[0])->data[i] < 0)
-		digit1 = 2;
-	    else
-		digit1 = 3;
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] < 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
 
-	    if ((mesh->periodic_length[1])->data[i] == 0)
-		digit2 = 1;
-	    else if ((mesh->periodic_length[1])->data[i] < 0)
-		digit2 = 2;
-	    else
-		digit2 = 3;
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] < 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
 
-	    if ((mesh->periodic_length[2])->data[i] == 0)
-		digit3 = 1;
-	    else if ((mesh->periodic_length[2])->data[i] < 0)
-		digit3 = 2;
-	    else
-		digit1 = 3;
-
-	    int tag_tmp = digit1 + 10*digit2 + 100*digit3;
-	    tagrecv1 = tag_tmp + 1000;
-	    tagrecv2 = tag_tmp + 2000;
-	}
+	int tag_tmp = digit1 + 10*digit2 + 100*digit3;
+	tagrecv1 = tag_tmp + 1000;
+	tagrecv2 = tag_tmp + 2000;
 
 	ps_recv = (double *) calloc(3*size_info[recv_index], sizeof(double));
 	ps_index_recv = (int *) calloc(size_info[recv_index], sizeof(int));
@@ -1737,50 +1710,38 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     {
 	dst = nb_proc->data[i];
 
-	int tag1 = 1;
-        int tag2 = 2;
-	int tag3 = 3;
-	int tag4 = 4;
-	int tag5 = 5;
+	int tag1, tag2, tag3, tag4, tag5;
 
-	if (rank != dst)
-	{
-	    tag1 = 1; tag2 = 2; tag3 = 3; tag4 = 4; tag5 = 5;
-	}
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
+
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] > 0)
+	    digit1 = 2;
 	else
-	{
-	    int digit1 = 1;
-	    int digit2 = 1;
-	    int digit3 = 1;
+	    digit1 = 3;
 
-	    if ((mesh->periodic_length[0])->data[i] == 0)
-		digit1 = 1;
-	    else if ((mesh->periodic_length[0])->data[i] < 0)
-		digit1 = 2;
-	    else
-		digit1 = 3;
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] > 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
 
-	    if ((mesh->periodic_length[1])->data[i] == 0)
-		digit2 = 1;
-	    else if ((mesh->periodic_length[1])->data[i] < 0)
-		digit2 = 2;
-	    else
-		digit2 = 3;
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] > 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
 
-	    if ((mesh->periodic_length[2])->data[i] == 0)
-		digit3 = 1;
-	    else if ((mesh->periodic_length[2])->data[i] < 0)
-		digit3 = 2;
-	    else
-		digit1 = 3;
-
-	    tag1 = digit1 + 10*digit2 + 100*digit3;
-	    tag2 = tag1 + 1000;
-	    tag3 = tag1 + 2000;
-	    tag4 = tag1 + 3000;
-	    tag5 = tag1 + 4000;
-
-	}
+	tag1 = digit1 + 10*digit2 + 100*digit3;
+	tag2 = tag1 + 1000;
+	tag3 = tag1 + 2000;
+	tag4 = tag1 + 3000;
+	tag5 = tag1 + 4000;
 	
 	MPI_Isend(&(size_send[2*i]), 2, MPI_INT, dst, tag1, MPI_COMM_WORLD, &(send_req_list[i]));
 	MPI_Isend(ps_send[i], 3*size_send[2*i], MPI_DOUBLE, dst, tag2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp])); 
@@ -1794,39 +1755,34 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
     {
 	src = nb_proc->data[i];
 
-	int tagrecv = 1;
+	int tagrecv;
 
-	if (src != rank)
-	    tagrecv = 1;
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
+
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] < 0)
+	    digit1 = 2;
 	else
-	{
-	    int digit1 = 1;
-	    int digit2 = 1;
-	    int digit3 = 1;
+	    digit1 = 3;
 
-	    if ((mesh->periodic_length[0])->data[i] == 0)
-		digit1 = 1;
-	    else if ((mesh->periodic_length[0])->data[i] > 0)
-		digit1 = 2;
-	    else
-		digit1 = 3;
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] < 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
 
-	    if ((mesh->periodic_length[1])->data[i] == 0)
-		digit2 = 1;
-	    else if ((mesh->periodic_length[1])->data[i] > 0)
-		digit2 = 2;
-	    else
-		digit2 = 3;
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] < 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
 
-	    if ((mesh->periodic_length[2])->data[i] == 0)
-		digit3 = 1;
-	    else if ((mesh->periodic_length[2])->data[i] > 0)
-		digit3 = 2;
-	    else
-		digit1 = 3;
-
-	    tagrecv = digit1 + 10*digit2 + 100*digit3;
-	}	
+	tagrecv = digit1 + 10*digit2 + 100*digit3;
 
 	MPI_Irecv(&(size_recv[2*i]), 2, MPI_INT, src, tagrecv, MPI_COMM_WORLD, &(recv_req_list[i]));
     }
@@ -1856,51 +1812,39 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	source_id = recv_status1.MPI_SOURCE;
 
-	int tagrecv2 = 2;
-      	int tagrecv3 = 3;
-	int tagrecv4 = 4;
-	int tagrecv5 = 5;
+	int tagrecv2, tagrecv3, tagrecv4, tagrecv5;
 
-	if (source_id != rank)
-	{
-	    tagrecv2 = 2; tagrecv3 = 3; tagrecv4 = 4; tagrecv5 = 5;
-	}
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
+
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] < 0)
+	    digit1 = 2;
 	else
-	{
-	    int digit1 = 1;
-	    int digit2 = 1;
-	    int digit3 = 1;
+	    digit1 = 3;
 
-	    if ((mesh->periodic_length[0])->data[i] == 0)
-		digit1 = 1;
-	    else if ((mesh->periodic_length[0])->data[i] > 0)
-		digit1 = 2;
-	    else
-		digit1 = 3;
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] < 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
 
-	    if ((mesh->periodic_length[1])->data[i] == 0)
-		digit2 = 1;
-	    else if ((mesh->periodic_length[1])->data[i] > 0)
-		digit2 = 2;
-	    else
-		digit2 = 3;
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] < 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
 
-	    if ((mesh->periodic_length[2])->data[i] == 0)
-		digit3 = 1;
-	    else if ((mesh->periodic_length[2])->data[i] > 0)
-		digit3 = 2;
-	    else
-		digit1 = 3;
+	int tag_tmp = digit1 + 10*digit2 + 100*digit3;
 
-	    int tag_tmp = digit1 + 10*digit2 + 100*digit3;
-
-	    tagrecv2 = tag_tmp + 1000;
-	    tagrecv3 = tag_tmp + 2000;
-	    tagrecv4 = tag_tmp + 3000;
-	    tagrecv5 = tag_tmp + 4000;
-
-	}
-
+	tagrecv2 = tag_tmp + 1000;
+	tagrecv3 = tag_tmp + 2000;
+	tagrecv4 = tag_tmp + 3000;
+	tagrecv5 = tag_tmp + 4000;
 
 	ps_recv = (double *) calloc(3*size_recv[2*recv_index], sizeof(double));
 	ps_index_recv = (int *) calloc(size_recv[2*recv_index], sizeof(int));
@@ -3128,8 +3072,9 @@ void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 	    int next_node = ps_pinfo->head[I1dm(cur_ps_index)];
 	    while(next_node != -1)
 	    {
-		if (ps_pinfo->pdata[I1dm(next_node)].proc == target_proc_id)
-		    overlay_flag = 1;
+		if ( ps_pinfo->pdata[I1dm(next_node)].proc == target_proc_id &&
+		    ps_pinfo->pdata[I1dm(next_node)].lindex == cur_ps_index )
+		     overlay_flag = 1;
 
 		next_node = ps_pinfo->pdata[I1dm(next_node)].next;
 	    }
@@ -3181,9 +3126,11 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 				    emxArray_int32_T *tris_ring_proc,
 				    int **buffer_ps_pinfo_tag,
 				    int **buffer_ps_pinfo_lindex,
+				    int **buffer_ps_pinfo_pindex,
 				    int **buffer_ps_pinfo_proc,
 				    int **buffer_tris_pinfo_tag,
 				    int **buffer_tris_pinfo_lindex,
+				    int **buffer_tris_pinfo_pindex,
 				    int **buffer_tris_pinfo_proc)
 {
     /* Fill and build the temp pinfo information on each master processor 
@@ -3252,9 +3199,11 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
     /* Fill in the buffer_ps/tris_pinfo_lindex & buffer_ps/tris_pinfo_proc in order */
     {
 	(*buffer_ps_pinfo_lindex) = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
+	(*buffer_ps_pinfo_pindex) = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
 	(*buffer_ps_pinfo_proc) = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
 
 	(*buffer_tris_pinfo_lindex) = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
+	(*buffer_tris_pinfo_pindex) = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
 	(*buffer_tris_pinfo_proc) = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
 
 	int cur_ps_pinfo = 0;
@@ -4249,16 +4198,28 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 			   emxArray_real_T **buffer_ps, emxArray_int32_T **buffer_tris)
 {
     int i;
-    int num_nb_proc = mesh->nb_proc->size[0];
+    emxArray_int32_T *nb_proc = mesh->nb_proc;
+    int num_nb_proc = nb_proc->size[0];
 
-    /* Set up the MPI_Request list */
-    int num_all_send_rqst = 12*num_nb_proc;
+    /* Set up the MPI_Request list for send */
+    int num_all_send_rqst = 11*num_nb_proc;
 
     MPI_Request* send_rqst_list = (MPI_Request *) calloc(num_all_send_rqst, sizeof(MPI_Request));
     MPI_Status* send_status_list = (MPI_Status *) calloc(num_all_send_rqst, sizeof(MPI_Status));
 
     for (i = 0; i < num_all_send_rqst; i++)
 	send_rqst_list[i] = MPI_REQUEST_NULL;
+
+
+    /* Set up send size in the order of ps size, tris size */
+
+    int *size_send = (int *) calloc(2*num_nb_proc, sizeof(int));
+    for (i = 0; i < num_nb_proc; ++i)
+    {
+	size_send[2*i] = (buffer_ps[i])->size[0];
+	size_send[2*i+1] = (buffer_tris[i])->size[0];
+    }
+
 
     MPI_Request* recv_req_list = (MPI_Request *) calloc(num_nb_proc, sizeof(MPI_Request));
 
@@ -4277,17 +4238,6 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     int **buffer_tris_pinfo_pindex = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_tris_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
 
-    int tag_ps = 0;
-    int tag_tris = 10;
-
-    int tag_ps_pinfo1 = 50;
-    int tag_ps_pinfo2 = 51;
-    int tag_ps_pinfo3 = 52;
-
-    int tag_tris_pinfo1 = 60;
-    int tag_tris_pinfo2 = 61;
-    int tag_tris_pinfo3 = 62;
-
 
     for (i = 1; i <= num_nb_proc; i++)
     {
@@ -4299,9 +4249,11 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 	hpBuildGhostPsTrisPInfoForSend(mesh, i, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)],
 		&(buffer_ps_pinfo_tag[I1dm(i)]),
 		&(buffer_ps_pinfo_lindex[I1dm(i)]),
+		&(buffer_ps_pinfo_pindex[I1dm(i)]),
 		&(buffer_ps_pinfo_proc[I1dm(i)]),
 		&(buffer_tris_pinfo_tag[I1dm(i)]),
 		&(buffer_tris_pinfo_lindex[I1dm(i)]),
+		&(buffer_tris_pinfo_pindex[I1dm(i)]),
 		&(buffer_tris_pinfo_proc[I1dm(i)]));
 
     }
@@ -4316,59 +4268,182 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     free(tris_ring_proc);
 
     /* send all the information to different processors */
-    for (i = 1; i <= num_nb_proc; i++)
+    for (i = 0; i < num_nb_proc; ++i)
     {
+	int tag_size;
+	int tag_ps, tag_ps_tag, tag_ps_li, tag_ps_pi, tag_ps_proc;
+	int tag_tris, tag_tris_tag, tag_tris_li, tag_tris_pi, tag_tris_proc;
 
-	isend2D_real_T(buffer_ps[I1dm(i)], mesh->nb_proc->data[I1dm(i)],
-		       tag_ps, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst]), &(send_rqst_list[cur_rqst+1]));
-	cur_rqst += 2;
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
 
-	isend2D_int32_T(buffer_tris[I1dm(i)], mesh->nb_proc->data[I1dm(i)],
-		       tag_tris, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst]), &(send_rqst_list[cur_rqst+1]));
-	cur_rqst += 2;
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] > 0)
+	    digit1 = 2;
+	else
+	    digit1 = 3;
 
-	MPI_Isend(buffer_ps_pinfo_tag[I1dm(i)], (buffer_ps[I1dm(i)])->size[0]+1, MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo1, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_ps_pinfo_lindex[I1dm(i)], buffer_ps_pinfo_tag[I1dm(i)][(buffer_ps[I1dm(i)])->size[0]], MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo2, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_ps_pinfo_proc[I1dm(i)], buffer_ps_pinfo_tag[I1dm(i)][(buffer_ps[I1dm(i)])->size[0]], MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_ps_pinfo3, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] > 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
 
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] > 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
 
-	MPI_Isend(buffer_tris_pinfo_tag[I1dm(i)], (buffer_tris[I1dm(i)])->size[0]+1, MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo1, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_tris_pinfo_lindex[I1dm(i)], buffer_tris_pinfo_tag[I1dm(i)][(buffer_tris[I1dm(i)])->size[0]], MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo2, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_tris_pinfo_proc[I1dm(i)], buffer_tris_pinfo_tag[I1dm(i)][(buffer_tris[I1dm(i)])->size[0]], MPI_INT,
-		  mesh->nb_proc->data[I1dm(i)], tag_tris_pinfo3, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	tag_size = digit1 + 10*digit2 + 100*digit3;
+
+	tag_ps = tag_size + 1000;
+	tag_ps_tag = tag_size + 2000;
+	tag_ps_li = tag_size + 3000;
+	tag_ps_pi = tag_size + 4000;
+	tag_ps_proc = tag_size + 5000;
+
+	tag_tris = tag_size + 6000;
+	tag_tris_tag = tag_size + 7000;
+	tag_tris_li = tag_size + 8000;
+	tag_tris_pi = tag_size + 9000;
+	tag_tris_proc = tag_size + 10000;
+
+	MPI_Isend(&(size_send[2*i]), 2, MPI_INT, nb_proc->data[i], tag_size, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst]));
+	cur_rqst += 1;
+
+	MPI_Isend((buffer_ps[i])->data, 3*size_send[2*i], MPI_DOUBLE, nb_proc->data[i], tag_ps, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst]));
+	cur_rqst += 1;
+
+	MPI_Isend((buffer_tris[i])->data, 3*size_send[2*i+1], MPI_INT, nb_proc->data[i], tag_tris, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst]));
+	cur_rqst += 1;
+
+	MPI_Isend(buffer_ps_pinfo_tag[i], ((buffer_ps[i])->size[0])+1, MPI_INT,
+		  nb_proc->data[i], tag_ps_tag, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_ps_pinfo_lindex[i], buffer_ps_pinfo_tag[i][((buffer_ps[i])->size[0])], MPI_INT,
+		  nb_proc->data[i], tag_ps_li, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_ps_pinfo_pindex[i], buffer_ps_pinfo_tag[i][((buffer_ps[i])->size[0])], MPI_INT,
+		  nb_proc->data[i], tag_ps_pi, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_ps_pinfo_proc[i], buffer_ps_pinfo_tag[i][((buffer_ps[i])->size[0])], MPI_INT,
+		  nb_proc->data[i], tag_ps_proc, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+
+	MPI_Isend(buffer_tris_pinfo_tag[i], ((buffer_tris[i])->size[0])+1, MPI_INT,
+		  nb_proc->data[i], tag_tris_tag, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_tris_pinfo_lindex[i], buffer_tris_pinfo_tag[i][((buffer_tris[i])->size[0])], MPI_INT,
+		  nb_proc->data[i], tag_tris_li, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_tris_pinfo_pindex[i], buffer_tris_pinfo_tag[i][((buffer_tris[i])->size[0])], MPI_INT,
+		  nb_proc->data[i], tag_tris_pi, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
+	MPI_Isend(buffer_tris_pinfo_proc[i], buffer_tris_pinfo_tag[i][((buffer_tris[i])->size[0])], MPI_INT,
+		  nb_proc->data[i], tag_tris_proc, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
     }
-
-
 
     /* Receive buffer points and tris with temp pinfo */
 
-    for (i = 1; i <= num_nb_proc; i++)
-	MPI_Irecv(&(recv_size[2*I1dm(i)]), 2, MPI_INT, mesh->nb_proc->data[I1dm(i)], tag_ps+1, MPI_COMM_WORLD, &(recv_req_list[I1dm(i)]));
-
-    for (i = 1; i <= num_nb_proc; i++)
+    for (i = 0; i < num_nb_proc; i++)
     {
+	int tag_recv;
+
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
+
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] < 0)
+	    digit1 = 2;
+	else
+	    digit1 = 3;
+
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] < 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
+
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] < 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
+
+	tag_recv = digit1 + 10*digit2 + 100*digit3;
+
+	MPI_Irecv(&(recv_size[2*i]), 2, MPI_INT, nb_proc->data[i], tag_recv, MPI_COMM_WORLD, &(recv_req_list[i]));
+    }
+
+    for (i = 0; i < num_nb_proc; ++i)
+    {
+	int tag_tmp;
+
+	int tag_ps, tag_ps_tag, tag_ps_li, tag_ps_pi, tag_ps_proc;
+	int tag_tris, tag_tris_tag, tag_tris_li, tag_tris_pi, tag_tris_proc;
+
+	int digit1 = 1;
+	int digit2 = 1;
+	int digit3 = 1;
+
+	if ((mesh->periodic_length[0])->data[i] == 0)
+	    digit1 = 1;
+	else if ((mesh->periodic_length[0])->data[i] < 0)
+	    digit1 = 2;
+	else
+	    digit1 = 3;
+
+	if ((mesh->periodic_length[1])->data[i] == 0)
+	    digit2 = 1;
+	else if ((mesh->periodic_length[1])->data[i] < 0)
+	    digit2 = 2;
+	else
+	    digit2 = 3;
+
+	if ((mesh->periodic_length[2])->data[i] == 0)
+	    digit3 = 1;
+	else if ((mesh->periodic_length[2])->data[i] < 0)
+	    digit3 = 2;
+	else
+	    digit3 = 3;
+
+	tag_tmp = digit1 + 10*digit2 + 100*digit3;
+
+	tag_ps = tag_tmp + 1000;
+	tag_ps_tag = tag_tmp + 2000;
+	tag_ps_li = tag_tmp + 3000;
+	tag_ps_pi = tag_tmp + 4000;
+	tag_ps_proc = tag_tmp + 5000;
+
+	tag_tris = tag_tmp + 6000;
+	tag_tris_tag = tag_tmp + 7000;
+	tag_tris_li = tag_tmp + 8000;
+	tag_tris_pi = tag_tmp + 9000;
+	tag_tris_proc = tag_tmp + 10000;
+
+
 	emxArray_real_T *buffer_ps_recv;
 	emxArray_int32_T *buffer_tris_recv;
 
 	int *buf_ppinfo_tag_recv;
 	int *buf_ppinfo_lindex_recv;
+	int *buf_ppinfo_pindex_recv;
 	int *buf_ppinfo_proc_recv;
 
 	int *buf_tpinfo_tag_recv;
 	int *buf_tpinfo_lindex_recv;
+	int *buf_tpinfo_pindex_recv;
 	int *buf_tpinfo_proc_recv;
 
 	int num_buf_ps_recv, num_buf_tris_recv;
+
 	int num_buf_ps_pinfo_recv;
 	int num_buf_tris_pinfo_recv;
 
 	MPI_Status tmp_status;
-	MPI_Status recv_status1, recv_status2;
+	MPI_Status recv_status1;
 
 	int recv_index;
 	int proc_recv;
@@ -4376,11 +4451,13 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 	MPI_Waitany(num_nb_proc, recv_req_list, &recv_index, &recv_status1);
 	proc_recv = recv_status1.MPI_SOURCE;
 
-	buffer_ps_recv = emxCreate_real_T(recv_size[2*recv_index], recv_size[2*recv_index+1]);
+	buffer_ps_recv = emxCreate_real_T(recv_size[2*recv_index], 3);
 
-	MPI_Recv(buffer_ps_recv->data, recv_size[2*recv_index]*recv_size[2*recv_index+1], MPI_DOUBLE, proc_recv, tag_ps+2, MPI_COMM_WORLD, &recv_status2);
+	MPI_Recv(buffer_ps_recv->data, 3*recv_size[2*recv_index], MPI_DOUBLE, proc_recv, tag_ps, MPI_COMM_WORLD, &tmp_status);
 
-	recv2D_int32_T(&buffer_tris_recv, proc_recv, tag_tris, MPI_COMM_WORLD);
+	buffer_tris_recv = emxCreate_int32_T(recv_size[2*recv_index+1], 3);
+
+	MPI_Recv(buffer_tris_recv->data, 3*recv_size[2*recv_index+1], MPI_INT, proc_recv, tag_tris, MPI_COMM_WORLD, &tmp_status);
 
 	num_buf_ps_recv = buffer_ps_recv->size[0];
 	num_buf_tris_recv = buffer_tris_recv->size[0];
@@ -4389,47 +4466,55 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 	buf_ppinfo_tag_recv = (int *) calloc(num_buf_ps_recv+1, sizeof(int));
 
 	MPI_Recv(buf_ppinfo_tag_recv, num_buf_ps_recv+1, MPI_INT, proc_recv,
-		 tag_ps_pinfo1, MPI_COMM_WORLD, &tmp_status);
+		 tag_ps_tag, MPI_COMM_WORLD, &tmp_status);
 	
 	num_buf_ps_pinfo_recv = buf_ppinfo_tag_recv[num_buf_ps_recv];
 
 	buf_ppinfo_lindex_recv = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
+	buf_ppinfo_pindex_recv = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
 	buf_ppinfo_proc_recv = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
 
 	MPI_Recv(buf_ppinfo_lindex_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
-		 tag_ps_pinfo2, MPI_COMM_WORLD, &tmp_status);
+		 tag_ps_li, MPI_COMM_WORLD, &tmp_status);
+	MPI_Recv(buf_ppinfo_pindex_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
+		 tag_ps_pi, MPI_COMM_WORLD, &tmp_status);
 	MPI_Recv(buf_ppinfo_proc_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
-		 tag_ps_pinfo3, MPI_COMM_WORLD, &tmp_status);
+		 tag_ps_proc, MPI_COMM_WORLD, &tmp_status);
 
 	/* Recv tris pinfo */
 	buf_tpinfo_tag_recv = (int *) calloc(num_buf_tris_recv+1, sizeof(int));
 
 	MPI_Recv(buf_tpinfo_tag_recv, num_buf_tris_recv+1, MPI_INT, proc_recv,
-		 tag_tris_pinfo1, MPI_COMM_WORLD, &tmp_status);
+		 tag_tris_tag, MPI_COMM_WORLD, &tmp_status);
 	
 	num_buf_tris_pinfo_recv = buf_tpinfo_tag_recv[num_buf_tris_recv];
 
 	buf_tpinfo_lindex_recv = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
+	buf_tpinfo_pindex_recv = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
 	buf_tpinfo_proc_recv = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
 
 	MPI_Recv(buf_tpinfo_lindex_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
-		 tag_tris_pinfo2, MPI_COMM_WORLD, &tmp_status);
+		 tag_tris_li, MPI_COMM_WORLD, &tmp_status);
+	MPI_Recv(buf_tpinfo_pindex_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
+		 tag_tris_pi, MPI_COMM_WORLD, &tmp_status);
 	MPI_Recv(buf_tpinfo_proc_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
-		 tag_tris_pinfo3, MPI_COMM_WORLD, &tmp_status);
+		 tag_tris_proc, MPI_COMM_WORLD, &tmp_status);
 
 	hpAttachNRingGhostWithPInfo(mesh, proc_recv, buffer_ps_recv, buffer_tris_recv,
-		buf_ppinfo_tag_recv, buf_ppinfo_lindex_recv, buf_ppinfo_proc_recv,
-		buf_tpinfo_tag_recv, buf_tpinfo_lindex_recv, buf_tpinfo_proc_recv);
+		buf_ppinfo_tag_recv, buf_ppinfo_lindex_recv, buf_ppinfo_pindex_recv, buf_ppinfo_proc_recv,
+		buf_tpinfo_tag_recv, buf_tpinfo_lindex_recv, buf_tpinfo_pindex_recv, buf_tpinfo_proc_recv);
 
 	emxFree_real_T(&buffer_ps_recv);
 	emxFree_int32_T(&buffer_tris_recv);
 
 	free(buf_ppinfo_tag_recv);
 	free(buf_ppinfo_lindex_recv);
+	free(buf_ppinfo_pindex_recv);
 	free(buf_ppinfo_proc_recv);
 
 	free(buf_tpinfo_tag_recv);
 	free(buf_tpinfo_lindex_recv);
+	free(buf_tpinfo_pindex_recv);
 	free(buf_tpinfo_proc_recv);
     }
 
@@ -4444,28 +4529,33 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 
     free(send_rqst_list);
     free(send_status_list);
+    free(size_send);
 
-    for (i = 1; i <= num_nb_proc; i++)
+    for (i = 0; i < num_nb_proc; i++)
     {
-	emxFree_real_T(&(buffer_ps[I1dm(i)]));
-	emxFree_int32_T(&(buffer_tris[I1dm(i)]));
-	free(buffer_ps_pinfo_tag[I1dm(i)]);
-	free(buffer_ps_pinfo_lindex[I1dm(i)]);
-	free(buffer_ps_pinfo_proc[I1dm(i)]);
+	emxFree_real_T(&(buffer_ps[i]));
+	emxFree_int32_T(&(buffer_tris[i]));
+	free(buffer_ps_pinfo_tag[i]);
+	free(buffer_ps_pinfo_lindex[i]);
+	free(buffer_ps_pinfo_pindex[i]);
+	free(buffer_ps_pinfo_proc[i]);
 
-	free(buffer_tris_pinfo_tag[I1dm(i)]);
-	free(buffer_tris_pinfo_lindex[I1dm(i)]);
-	free(buffer_tris_pinfo_proc[I1dm(i)]);
+	free(buffer_tris_pinfo_tag[i]);
+	free(buffer_tris_pinfo_lindex[i]);
+	free(buffer_tris_pinfo_pindex[i]);
+	free(buffer_tris_pinfo_proc[i]);
     }
 
     free(buffer_ps);
     free(buffer_tris);
     free(buffer_ps_pinfo_tag);
     free(buffer_ps_pinfo_lindex);
+    free(buffer_ps_pinfo_pindex);
     free(buffer_ps_pinfo_proc);
 
     free(buffer_tris_pinfo_tag);
     free(buffer_tris_pinfo_lindex);
+    free(buffer_tris_pinfo_pindex);
     free(buffer_tris_pinfo_proc);
 
     /* Merge pinfo for ps/tris to get a fully updated pinfo list */
@@ -4530,9 +4620,11 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 				 emxArray_int32_T *btris,
 				 int *ppinfot,
 				 int *ppinfol,
+				 int *ppinfopi,
 				 int *ppinfop,
 				 int *tpinfot,
 				 int *tpinfol,
+				 int *tpinfopi,
 				 int *tpinfop)
 {
 
@@ -4876,7 +4968,7 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
 
     hpPInfoNode *tris_pdata = mesh->tris_pinfo->pdata;
     int *tris_phead = mesh->tris_pinfo->head;
-    int *nb_proc = mesh->nb_proc->data;
+    //int *nb_proc = mesh->nb_proc->data;
     emxArray_int32_T *tris = mesh->tris;
     int *tris_data = tris->data;
 

@@ -481,9 +481,11 @@ EXTERN_C void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   emxArray_int32_T *tris_ring_proc,
 					   int **buffer_ps_pinfo_tag,
 					   int **buffer_ps_pinfo_lindex,
+					   int **buffer_ps_pinfo_pindex,
 					   int **buffer_ps_pinfo_proc,
 					   int **buffer_tris_pinfo_tag,
 					   int **buffer_tris_pinfo_lindex,
+					   int **buffer_tris_pinfo_pindex,
 					   int **buffer_tris_pinfo_proc);
 
 EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
@@ -492,9 +494,11 @@ EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					emxArray_int32_T *btris,
 					int *ppinfot,
 					int *ppinfol,
+					int *ppinfopi,
 					int *ppinfop,
 					int *tpinfot,
 					int *tpinfol,
+					int *tpinfopi,
 					int *tpinfop);
 
 EXTERN_C void hpUpdatePInfo(hiPropMesh *mesh);
