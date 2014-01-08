@@ -80,9 +80,13 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->curv = (emxArray_real_T *) NULL;
 
     mesh->nb_proc = (emxArray_int32_T *) NULL;
+
     int i;
-    for (i = 0; i < 3; i++)
-	mesh->periodic_length[i] = (emxArray_real_T *) NULL;
+    for (i = 0; i < 3; ++i)
+    {
+	mesh->domain_len[i] = 0;
+	mesh->has_periodic_boundary[i] = false;
+    }
 
     mesh->part_bdry = (emxArray_int32_T *) NULL;
     mesh->ps_type = (emxArray_int32_T *) NULL;
@@ -148,14 +152,6 @@ void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
 
     if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->nb_proc));
-
-    int i;
-
-    for (i = 0; i < 3; i++)
-    {
-	if (pmesh->periodic_length[i] != ((emxArray_real_T *) NULL) )
-	    emxFree_real_T(&(pmesh->periodic_length[i]));
-    }
 
     if (pmesh->part_bdry != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->part_bdry));
@@ -515,32 +511,100 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
     free(in_all_bd_box);
 
-    int *nb_ptemp_est = (int *) calloc (num_proc-1, sizeof(int));
+    unsigned char *nb_ptemp_est = (unsigned char *) calloc (num_proc, sizeof(unsigned char));
     int num_nbp_est = 0;
 
+
+    double domain_len_x = mesh->domain_len[0];
+    double domain_len_y = mesh->domain_len[1];
+    double domain_len_z = mesh->domain_len[2];
 
     /* Use bounding box to get estimated neighbor */
 
     for (i = 0; i < num_proc; ++i)
     {
-	if (i == rank)
-	    continue;
+	int x_iter = 1;
+	int y_iter = 1;
+	int z_iter = 1;
 
-	double comxL = hpMax(bd_box[0], all_bd_box[i*6]);
-	double comxU = hpMin(bd_box[1], all_bd_box[i*6+1]);
-	double comyL = hpMax(bd_box[2], all_bd_box[i*6+2]);
-	double comyU = hpMin(bd_box[3], all_bd_box[i*6+3]);
-	double comzL = hpMax(bd_box[4], all_bd_box[i*6+4]);
-	double comzU = hpMin(bd_box[5], all_bd_box[i*6+5]);
+	if (mesh->has_periodic_boundary[0] == true)
+	    x_iter = 3;
+	if (mesh->has_periodic_boundary[1] == true)
+	    y_iter = 3;
+	if (mesh->has_periodic_boundary[2] == true)
+	    z_iter = 3;
 
-	if ( (comxL <= comxU) && (comyL <= comyU) && (comzL <= comzU) )
+	int j1, j2, j3;
+	double x_factor = 0.0;
+	double y_factor = 0.0;
+	double z_factor = 0.0;
+
+
+	for (j1 = 0; j1 < x_iter; j1++)
 	{
-	    nb_ptemp_est[num_nbp_est++] = i;
+	    if (j1 == 1)
+		x_factor = 1.0;
+	    else if (j1 == 2)
+		x_factor = -1.0;
+
+	    for (j2 = 0; j2 < y_iter; j2++)
+	    {
+		if (j2 == 1)
+		    y_factor = 1.0;
+		else if (j2 == 2)
+		    y_factor = -1.0;
+
+		for (j3 = 0; j3 < z_iter; j3++)
+		{
+		    if (j3 == 1)
+			z_factor = 1.0;
+		    else if (j3 == 2)
+			z_factor = -1.0;
+
+
+		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
+			continue;
+		    /* Actural loop starts here */
+
+		    double comxL = hpMax(bd_box[0] + x_factor*domain_len_x, all_bd_box[i*6]);
+		    double comxU = hpMin(bd_box[1] + x_factor*domain_len_x, all_bd_box[i*6+1]);
+		    double comyL = hpMax(bd_box[2] + y_factor*domain_len_y, all_bd_box[i*6+2]);
+		    double comyU = hpMin(bd_box[3] + y_factor*domain_len_y, all_bd_box[i*6+3]);
+		    double comzL = hpMax(bd_box[4] + z_factor*domain_len_z, all_bd_box[i*6+4]);
+		    double comzU = hpMin(bd_box[5] + z_factor*domain_len_z, all_bd_box[i*6+5]);
+
+		    if ( (comxL <= comxU) && (comyL <= comyU) && (comzL <= comzU) )
+		    {
+			if (nb_ptemp_est[i] == false)
+			{
+			    nb_ptemp_est[i] = true;
+			    num_nbp_est++;
+			}
+		    }
+
+		    /* Actural loop ends here */
+		}
+	    }
+
 	}
+
+
     }
 
+    int *nb_ptemp_iter = (int *) calloc(num_nbp_est, sizeof(int));
+    int nb_ptemp_cur = 0;
 
-    int *nb_ptemp = (int *) calloc (num_nbp_est, sizeof(int));
+    for (i = 0; i < num_proc; i++)
+    {
+	if (nb_ptemp_est[i] == true)
+	    nb_ptemp_iter[nb_ptemp_cur++] = i;
+    }
+
+    free(nb_ptemp_est);
+
+    printf("num_nbp_est = %d, nb_ptep_cur = %d\n", num_nbp_est, nb_ptemp_cur);
+
+    boolean_T *nb_ptemp = (boolean_T *) calloc (num_proc, sizeof(boolean_T));
     int num_nbp = 0;
 
     MPI_Request *send_req_list = (MPI_Request *) malloc (2*num_nbp_est*sizeof(MPI_Request) );
@@ -553,50 +617,142 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
     for (i = 0; i < num_nbp_est; ++i)
     {
+
 	num_ps_send[i] = 0;
-	int target_id = nb_ptemp_est[i];
-	double cur_bdbox_xL = all_bd_box[target_id*6];
-	double cur_bdbox_xU = all_bd_box[target_id*6+1];
-	double cur_bdbox_yL = all_bd_box[target_id*6+2];
-	double cur_bdbox_yU = all_bd_box[target_id*6+3];
-	double cur_bdbox_zL = all_bd_box[target_id*6+4];
-	double cur_bdbox_zU = all_bd_box[target_id*6+5];
+	int target_id = nb_ptemp_iter[i];
 
-	unsigned char *flag = (unsigned char *) calloc(ps->size[0], sizeof(unsigned char));
+	int x_iter = 1;
+	int y_iter = 1;
+	int z_iter = 1;
 
-	for (j = 1; j <= ps->size[0]; ++j)
+	if (mesh->has_periodic_boundary[0] == true)
+	    x_iter = 3;
+	if (mesh->has_periodic_boundary[1] == true)
+	    y_iter = 3;
+	if (mesh->has_periodic_boundary[2] == true)
+	    z_iter = 3;
+
+	int j1, j2, j3;
+	double x_factor = 0.0;
+	double y_factor = 0.0;
+	double z_factor = 0.0;
+
+
+	for (j1 = 0; j1 < x_iter; j1++)
 	{
-	    double cur_x = ps->data[I2dm(j,1,ps->size)];
-	    double cur_y = ps->data[I2dm(j,2,ps->size)];
-	    double cur_z = ps->data[I2dm(j,3,ps->size)];
+	    if (j1 == 1)
+		x_factor = 1.0;
+	    else if (j1 == 2)
+		x_factor = -1.0;
 
-	    if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
-		 (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
-		 (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
-	       )
+	    for (j2 = 0; j2 < y_iter; j2++)
 	    {
-		++(num_ps_send[i]);
-		flag[j-1] = 1;
+		if (j2 == 1)
+		    y_factor = 1.0;
+		else if (j2 == 2)
+		    y_factor = -1.0;
+
+		for (j3 = 0; j3 < z_iter; j3++)
+		{
+		    if (j3 == 1)
+			z_factor = 1.0;
+		    else if (j3 == 2)
+			z_factor = -1.0;
+
+
+		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
+			continue;
+		    /* Actural loop starts here */
+
+		    double cur_bdbox_xL = all_bd_box[target_id*6] + x_factor*domain_len_x;
+		    double cur_bdbox_xU = all_bd_box[target_id*6+1] + x_factor*domain_len_x;
+		    double cur_bdbox_yL = all_bd_box[target_id*6+2] + y_factor*domain_len_y;
+		    double cur_bdbox_yU = all_bd_box[target_id*6+3] + y_factor*domain_len_y;
+		    double cur_bdbox_zL = all_bd_box[target_id*6+4] + z_factor*domain_len_z;
+		    double cur_bdbox_zU = all_bd_box[target_id*6+5] + z_factor*domain_len_z;
+
+		    for (j = 1; j <= ps->size[0]; ++j)
+		    {
+			double cur_x = ps->data[I2dm(j,1,ps->size)];
+			double cur_y = ps->data[I2dm(j,2,ps->size)];
+			double cur_z = ps->data[I2dm(j,3,ps->size)];
+
+			if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
+				(cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
+				(cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
+			   )
+			{
+			    ++(num_ps_send[i]);
+			}
+		    }
+
+		    /* Actural loop ends here */
+		}
 	    }
 	}
-
 	ps_send[i] = (double *) calloc(3*num_ps_send[i], sizeof(double));
 	double *cur_ps_send = ps_send[i];
 
+	x_factor = 0.0;
+	y_factor = 0.0;
+	z_factor = 0.0;
 	k = 0;
 
-	for (j = 1; j <= ps->size[0]; ++j)
-	{
-	    if (flag[j-1] == 1)
-	    {
-		cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)];
-		cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)];
-		cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)];
 
+	for (j1 = 0; j1 < x_iter; j1++)
+	{
+	    if (j1 == 1)
+		x_factor = 1.0;
+	    else if (j1 == 2)
+		x_factor = -1.0;
+
+	    for (j2 = 0; j2 < y_iter; j2++)
+	    {
+		if (j2 == 1)
+		    y_factor = 1.0;
+		else if (j2 == 2)
+		    y_factor = -1.0;
+
+		for (j3 = 0; j3 < z_iter; j3++)
+		{
+		    if (j3 == 1)
+			z_factor = 1.0;
+		    else if (j3 == 2)
+			z_factor = -1.0;
+
+
+		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
+			continue;
+		    /* Actural loop starts here */
+
+		    double cur_bdbox_xL = all_bd_box[target_id*6] + x_factor*domain_len_x;
+		    double cur_bdbox_xU = all_bd_box[target_id*6+1] + x_factor*domain_len_x;
+		    double cur_bdbox_yL = all_bd_box[target_id*6+2] + y_factor*domain_len_y;
+		    double cur_bdbox_yU = all_bd_box[target_id*6+3] + y_factor*domain_len_y;
+		    double cur_bdbox_zL = all_bd_box[target_id*6+4] + z_factor*domain_len_z;
+		    double cur_bdbox_zU = all_bd_box[target_id*6+5] + z_factor*domain_len_z;
+
+		    for (j = 1; j <= ps->size[0]; ++j)
+		    {
+			double cur_x = ps->data[I2dm(j,1,ps->size)];
+			double cur_y = ps->data[I2dm(j,2,ps->size)];
+			double cur_z = ps->data[I2dm(j,3,ps->size)];
+
+			if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
+				(cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
+				(cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
+			   )
+			{
+			    cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)] - x_factor*domain_len_x;
+			    cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)] - y_factor*domain_len_y;
+			    cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)] - z_factor*domain_len_z;
+			}
+		    }
+
+		    /* Actural loop ends here */
+		}
 	    }
 	}
-
-	free(flag);
     }
 
     int *size_info = (int *) calloc(num_nbp_est, sizeof(int));
@@ -634,28 +790,76 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
 	unsigned char *flag = (unsigned char *) calloc (ps->size[0], sizeof (unsigned char));
 
-	double recv_bdbox_xL = all_bd_box[6*source_id];
-	double recv_bdbox_xU = all_bd_box[6*source_id+1];
-	double recv_bdbox_yL = all_bd_box[6*source_id+2];
-	double recv_bdbox_yU = all_bd_box[6*source_id+3];
-	double recv_bdbox_zL = all_bd_box[6*source_id+4];
-	double recv_bdbox_zU = all_bd_box[6*source_id+5];
+	int x_iter = 1;
+	int y_iter = 1;
+	int z_iter = 1;
+
+	if (mesh->has_periodic_boundary[0] == true)
+	    x_iter = 3;
+	if (mesh->has_periodic_boundary[1] == true)
+	    y_iter = 3;
+	if (mesh->has_periodic_boundary[2] == true)
+	    z_iter = 3;
+
+	int j1, j2, j3;
+	double x_factor = 0.0;
+	double y_factor = 0.0;
+	double z_factor = 0.0;
 
 
-	for (j = 1; j <= mesh->ps->size[0]; ++j)
+	for (j1 = 0; j1 < x_iter; j1++)
 	{
-	    double current_x = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
-	    double current_y = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
-	    double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
+	    if (j1 == 1)
+		x_factor = 1.0;
+	    else if (j1 == 2)
+		x_factor = -1.0;
 
-	    if ( (current_x >= recv_bdbox_xL) && (current_x <= recv_bdbox_xU) &&
-		 (current_y >= recv_bdbox_yL) && (current_y <= recv_bdbox_yU) &&
-		 (current_z >= recv_bdbox_zL) && (current_z <= recv_bdbox_zU)
-	       )
+	    for (j2 = 0; j2 < y_iter; j2++)
 	    {
-		flag[j-1] = 1;
+		if (j2 == 1)
+		    y_factor = 1.0;
+		else if (j2 == 2)
+		    y_factor = -1.0;
+
+		for (j3 = 0; j3 < z_iter; j3++)
+		{
+		    if (j3 == 1)
+			z_factor = 1.0;
+		    else if (j3 == 2)
+			z_factor = -1.0;
+
+
+		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
+			continue;
+		    /* Actural loop starts here */
+		    double recv_bdbox_xL = all_bd_box[6*source_id] + x_factor*domain_len_x;
+		    double recv_bdbox_xU = all_bd_box[6*source_id+1] + x_factor*domain_len_x;
+		    double recv_bdbox_yL = all_bd_box[6*source_id+2] + y_factor*domain_len_y;
+		    double recv_bdbox_yU = all_bd_box[6*source_id+3] + y_factor*domain_len_y;
+		    double recv_bdbox_zL = all_bd_box[6*source_id+4] + z_factor*domain_len_z;
+		    double recv_bdbox_zU = all_bd_box[6*source_id+5] + z_factor*domain_len_z;
+
+
+		    for (j = 1; j <= mesh->ps->size[0]; ++j)
+		    {
+			double current_x = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
+			double current_y = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
+			double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
+
+			if ( (current_x >= recv_bdbox_xL) && (current_x <= recv_bdbox_xU) &&
+				(current_y >= recv_bdbox_yL) && (current_y <= recv_bdbox_yU) &&
+				(current_z >= recv_bdbox_zL) && (current_z <= recv_bdbox_zU)
+			   )
+			{
+			    flag[j-1] = 1;
+			}
+		    }
+
+		    /* Actural loop ends here */
+		}
 	    }
 	}
+
 
 
 	for (j = 1; j <= mesh->ps->size[0]; j++)
@@ -673,7 +877,8 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			 (fabs(cur_z - ps_recv[k*3+2]) < eps)
 		       )
 		    {
-			nb_ptemp[num_nbp++] = source_id;
+			nb_ptemp[source_id] = true;
+			num_nbp++;
 			break;
 		    }
 		}
@@ -698,18 +903,20 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     free(num_ps_send);
     free(ps_send);
     free(all_bd_box);
-    free(nb_ptemp_est);
+    free(nb_ptemp_iter);
     
     int num_nb[1];
     num_nb[0] = num_nbp;
 
     mesh->nb_proc = emxCreateND_int32_T(1, num_nb);
-    for (i = 1; i <= num_nbp; i++)
-	mesh->nb_proc->data[I1dm(i)] = nb_ptemp[i-1];
+    int nb_cur = 0;
+    for (i = 0; i < num_proc; i++)
+    {
+	if (nb_ptemp[i] == true)
+	    mesh->nb_proc->data[nb_cur++] = i;
+    }
 
     free(nb_ptemp);
-    
-    hpInitPeriodicBoundaryInfo(mesh);
 }
 
 void hpGetNbProcListFromInput(hiPropMesh *mesh, const int in_num_nbp, const int *in_nb_proc)
@@ -956,66 +1163,28 @@ void hpGetNbProcListFromInput(hiPropMesh *mesh, const int in_num_nbp, const int 
 
     free(nb_ptemp);
 
-    hpInitPeriodicBoundaryInfo(mesh);
 }
 
-void hpInitPeriodicBoundaryInfo(hiPropMesh *pmesh)
+void hpInitDomainBoundaryInfo(hiPropMesh *pmesh)
 {
-    int i, j;
+    int i;
 
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < 3; ++i)
     {
-	if (pmesh->periodic_length[i] != ((emxArray_real_T *) NULL) )
-	    emxFree_real_T(&(pmesh->periodic_length[i]));
+	pmesh->domain_len[i] = 0;
+	pmesh->has_periodic_boundary[i] = false;
     }
 
-    int num_nb[1];
-    int new_num_nb[1];
 
-    num_nb[0] = pmesh->nb_proc->size[0];
+    /* User specify domain and periodic boundary information */
 
-    new_num_nb[0] = num_nb[0] + 8;
+    pmesh->domain_len[0] = 4;
+    pmesh->domain_len[1] = 4;
+    pmesh->domain_len[2] = 0;
 
-    emxArray_int32_T *new_nb_proc = emxCreateND_int32_T(1, new_num_nb);
-
-    for (i = 0; i < num_nb[0]; i++)
-	new_nb_proc->data[i] = pmesh->nb_proc->data[i];
-
-    for (j = 0; j < 8; j++)
-	new_nb_proc->data[num_nb[0]+j] = 0;
-
-    emxFree_int32_T(&(pmesh->nb_proc));
-    pmesh->nb_proc = new_nb_proc;
-
-    for (i = 0; i < 3; i++)
-    {
-	pmesh->periodic_length[i] = emxCreateND_real_T(1, new_num_nb);
-    }
-
-    emxArray_real_T *px = pmesh->periodic_length[0];
-    emxArray_real_T *py = pmesh->periodic_length[1];
-
-    px->data[0] = 4;
-    px->data[1] = -4;
-    px->data[2] = 0;
-    px->data[3] = 0;
-    px->data[4] = 4;
-    px->data[5] = -4;
-    px->data[6] = 4;
-    px->data[7] = -4;
-
-    py->data[0] = 0;
-    py->data[1] = 0;
-    py->data[2] = 4;
-    py->data[3] = -4;
-    py->data[4] = 4;
-    py->data[5] = -4;
-    py->data[6] = -4;
-    py->data[7] = 4;
-
-
-    
-    /* User specify periodic boundary information */
+    pmesh->has_periodic_boundary[0] = true;
+    pmesh->has_periodic_boundary[1] = true;
+    pmesh->has_periodic_boundary[2] = false;
 }
 
 void hpInitPInfo(hiPropMesh *mesh)

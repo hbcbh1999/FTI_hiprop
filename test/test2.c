@@ -135,9 +135,11 @@ int main(int argc, char* argv[])
 */
 
     start = time(0);
+    hpInitDomainBoundaryInfo(mesh);
     hpGetNbProcListAuto(mesh);
     printf("\n GetNbProcInfo passed, proc %d \n", rank);
     end = time(0);
+
     printf("Seconds used: %22.16g\n", difftime(end, start));
 
     printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);
@@ -147,8 +149,7 @@ int main(int argc, char* argv[])
 	printf("%d->", mesh->nb_proc->data[I1dm(i)]);
     }
     printf("\n");
-
-
+/*
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
@@ -169,7 +170,7 @@ int main(int argc, char* argv[])
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
     printf("\n After WriteUnstrMeshWithPInfo\n");
-
+*/
     /*
     start = time(0);
     hpCleanMeshByPinfo(mesh);
