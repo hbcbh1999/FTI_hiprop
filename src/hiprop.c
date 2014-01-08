@@ -543,35 +543,41 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	for (j1 = 0; j1 < x_iter; j1++)
 	{
 	    if (j1 == 1)
-		x_factor = 1.0;
+		x_factor = domain_len_x;
 	    else if (j1 == 2)
-		x_factor = -1.0;
+		x_factor = -domain_len_x;
+	    else
+		x_factor = 0.0;
 
 	    for (j2 = 0; j2 < y_iter; j2++)
 	    {
 		if (j2 == 1)
-		    y_factor = 1.0;
+		    y_factor = domain_len_y;
 		else if (j2 == 2)
-		    y_factor = -1.0;
+		    y_factor = -domain_len_y;
+		else
+		    y_factor = 0.0;
 
 		for (j3 = 0; j3 < z_iter; j3++)
 		{
 		    if (j3 == 1)
-			z_factor = 1.0;
+			z_factor = domain_len_z;
 		    else if (j3 == 2)
-			z_factor = -1.0;
+			z_factor = -domain_len_z;
+		    else
+			z_factor = 0.0;
 
 
 		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
 			continue;
 		    /* Actural loop starts here */
 
-		    double comxL = hpMax(bd_box[0] + x_factor*domain_len_x, all_bd_box[i*6]);
-		    double comxU = hpMin(bd_box[1] + x_factor*domain_len_x, all_bd_box[i*6+1]);
-		    double comyL = hpMax(bd_box[2] + y_factor*domain_len_y, all_bd_box[i*6+2]);
-		    double comyU = hpMin(bd_box[3] + y_factor*domain_len_y, all_bd_box[i*6+3]);
-		    double comzL = hpMax(bd_box[4] + z_factor*domain_len_z, all_bd_box[i*6+4]);
-		    double comzU = hpMin(bd_box[5] + z_factor*domain_len_z, all_bd_box[i*6+5]);
+		    double comxL = hpMax(bd_box[0] + x_factor, all_bd_box[i*6]);
+		    double comxU = hpMin(bd_box[1] + x_factor, all_bd_box[i*6+1]);
+		    double comyL = hpMax(bd_box[2] + y_factor, all_bd_box[i*6+2]);
+		    double comyU = hpMin(bd_box[3] + y_factor, all_bd_box[i*6+3]);
+		    double comzL = hpMax(bd_box[4] + z_factor, all_bd_box[i*6+4]);
+		    double comzU = hpMin(bd_box[5] + z_factor, all_bd_box[i*6+5]);
 
 		    if ( (comxL <= comxU) && (comyL <= comyU) && (comzL <= comzU) )
 		    {
@@ -602,8 +608,6 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
     free(nb_ptemp_est);
 
-    printf("num_nbp_est = %d, nb_ptep_cur = %d\n", num_nbp_est, nb_ptemp_cur);
-
     boolean_T *nb_ptemp = (boolean_T *) calloc (num_proc, sizeof(boolean_T));
     int num_nbp = 0;
 
@@ -617,7 +621,6 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
     for (i = 0; i < num_nbp_est; ++i)
     {
-
 	num_ps_send[i] = 0;
 	int target_id = nb_ptemp_iter[i];
 
@@ -641,35 +644,41 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	for (j1 = 0; j1 < x_iter; j1++)
 	{
 	    if (j1 == 1)
-		x_factor = 1.0;
+		x_factor = domain_len_x;
 	    else if (j1 == 2)
-		x_factor = -1.0;
+		x_factor = -domain_len_x;
+	    else
+		x_factor = 0.0;
 
 	    for (j2 = 0; j2 < y_iter; j2++)
 	    {
 		if (j2 == 1)
-		    y_factor = 1.0;
+		    y_factor = domain_len_y;
 		else if (j2 == 2)
-		    y_factor = -1.0;
+		    y_factor = -domain_len_y;
+		else
+		    y_factor = 0.0;
 
 		for (j3 = 0; j3 < z_iter; j3++)
 		{
 		    if (j3 == 1)
-			z_factor = 1.0;
+			z_factor = domain_len_z;
 		    else if (j3 == 2)
-			z_factor = -1.0;
+			z_factor = -domain_len_z;
+		    else
+			z_factor = 0.0;
 
 
 		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
 			continue;
 		    /* Actural loop starts here */
 
-		    double cur_bdbox_xL = all_bd_box[target_id*6] + x_factor*domain_len_x;
-		    double cur_bdbox_xU = all_bd_box[target_id*6+1] + x_factor*domain_len_x;
-		    double cur_bdbox_yL = all_bd_box[target_id*6+2] + y_factor*domain_len_y;
-		    double cur_bdbox_yU = all_bd_box[target_id*6+3] + y_factor*domain_len_y;
-		    double cur_bdbox_zL = all_bd_box[target_id*6+4] + z_factor*domain_len_z;
-		    double cur_bdbox_zU = all_bd_box[target_id*6+5] + z_factor*domain_len_z;
+		    double cur_bdbox_xL = all_bd_box[target_id*6] + x_factor;
+		    double cur_bdbox_xU = all_bd_box[target_id*6+1] + x_factor;
+		    double cur_bdbox_yL = all_bd_box[target_id*6+2] + y_factor;
+		    double cur_bdbox_yU = all_bd_box[target_id*6+3] + y_factor;
+		    double cur_bdbox_zL = all_bd_box[target_id*6+4] + z_factor;
+		    double cur_bdbox_zU = all_bd_box[target_id*6+5] + z_factor;
 
 		    for (j = 1; j <= ps->size[0]; ++j)
 		    {
@@ -678,8 +687,8 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			double cur_z = ps->data[I2dm(j,3,ps->size)];
 
 			if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
-				(cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
-				(cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
+			     (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
+			     (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
 			   )
 			{
 			    ++(num_ps_send[i]);
@@ -702,35 +711,41 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	for (j1 = 0; j1 < x_iter; j1++)
 	{
 	    if (j1 == 1)
-		x_factor = 1.0;
+		x_factor = domain_len_x;
 	    else if (j1 == 2)
-		x_factor = -1.0;
+		x_factor = -domain_len_x;
+	    else
+		x_factor = 0.0;
 
 	    for (j2 = 0; j2 < y_iter; j2++)
 	    {
 		if (j2 == 1)
-		    y_factor = 1.0;
+		    y_factor = domain_len_y;
 		else if (j2 == 2)
-		    y_factor = -1.0;
+		    y_factor = -domain_len_y;
+		else
+		    y_factor = 0.0;
 
 		for (j3 = 0; j3 < z_iter; j3++)
 		{
 		    if (j3 == 1)
-			z_factor = 1.0;
+			z_factor = domain_len_z;
 		    else if (j3 == 2)
-			z_factor = -1.0;
+			z_factor = -domain_len_z;
+		    else
+			z_factor = 0.0;
 
 
 		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
 			continue;
 		    /* Actural loop starts here */
 
-		    double cur_bdbox_xL = all_bd_box[target_id*6] + x_factor*domain_len_x;
-		    double cur_bdbox_xU = all_bd_box[target_id*6+1] + x_factor*domain_len_x;
-		    double cur_bdbox_yL = all_bd_box[target_id*6+2] + y_factor*domain_len_y;
-		    double cur_bdbox_yU = all_bd_box[target_id*6+3] + y_factor*domain_len_y;
-		    double cur_bdbox_zL = all_bd_box[target_id*6+4] + z_factor*domain_len_z;
-		    double cur_bdbox_zU = all_bd_box[target_id*6+5] + z_factor*domain_len_z;
+		    double cur_bdbox_xL = all_bd_box[target_id*6] + x_factor;
+		    double cur_bdbox_xU = all_bd_box[target_id*6+1] + x_factor;
+		    double cur_bdbox_yL = all_bd_box[target_id*6+2] + y_factor;
+		    double cur_bdbox_yU = all_bd_box[target_id*6+3] + y_factor;
+		    double cur_bdbox_zL = all_bd_box[target_id*6+4] + z_factor;
+		    double cur_bdbox_zU = all_bd_box[target_id*6+5] + z_factor;
 
 		    for (j = 1; j <= ps->size[0]; ++j)
 		    {
@@ -739,13 +754,13 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			double cur_z = ps->data[I2dm(j,3,ps->size)];
 
 			if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
-				(cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
-				(cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
+			     (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
+			     (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
 			   )
 			{
-			    cur_ps_send[k++] = ps->data[I2dm(j,1,ps->size)] - x_factor*domain_len_x;
-			    cur_ps_send[k++] = ps->data[I2dm(j,2,ps->size)] - y_factor*domain_len_y;
-			    cur_ps_send[k++] = ps->data[I2dm(j,3,ps->size)] - z_factor*domain_len_z;
+			    cur_ps_send[k++] = cur_x - x_factor;
+			    cur_ps_send[k++] = cur_y - y_factor;
+			    cur_ps_send[k++] = cur_z - z_factor;
 			}
 		    }
 
@@ -810,34 +825,40 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	for (j1 = 0; j1 < x_iter; j1++)
 	{
 	    if (j1 == 1)
-		x_factor = 1.0;
+		x_factor = domain_len_x;
 	    else if (j1 == 2)
-		x_factor = -1.0;
+		x_factor = -domain_len_x;
+	    else
+		x_factor = 0.0;
 
 	    for (j2 = 0; j2 < y_iter; j2++)
 	    {
 		if (j2 == 1)
-		    y_factor = 1.0;
+		    y_factor = domain_len_y;
 		else if (j2 == 2)
-		    y_factor = -1.0;
+		    y_factor = -domain_len_y;
+		else
+		    y_factor = 0.0;
 
 		for (j3 = 0; j3 < z_iter; j3++)
 		{
 		    if (j3 == 1)
-			z_factor = 1.0;
+			z_factor = domain_len_z;
 		    else if (j3 == 2)
-			z_factor = -1.0;
+			z_factor = -domain_len_z;
+		    else
+			z_factor = 0.0;
 
 
 		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
 			continue;
 		    /* Actural loop starts here */
-		    double recv_bdbox_xL = all_bd_box[6*source_id] + x_factor*domain_len_x;
-		    double recv_bdbox_xU = all_bd_box[6*source_id+1] + x_factor*domain_len_x;
-		    double recv_bdbox_yL = all_bd_box[6*source_id+2] + y_factor*domain_len_y;
-		    double recv_bdbox_yU = all_bd_box[6*source_id+3] + y_factor*domain_len_y;
-		    double recv_bdbox_zL = all_bd_box[6*source_id+4] + z_factor*domain_len_z;
-		    double recv_bdbox_zU = all_bd_box[6*source_id+5] + z_factor*domain_len_z;
+		    double recv_bdbox_xL = all_bd_box[6*source_id] + x_factor;
+		    double recv_bdbox_xU = all_bd_box[6*source_id+1] + x_factor;
+		    double recv_bdbox_yL = all_bd_box[6*source_id+2] + y_factor;
+		    double recv_bdbox_yU = all_bd_box[6*source_id+3] + y_factor;
+		    double recv_bdbox_zL = all_bd_box[6*source_id+4] + z_factor;
+		    double recv_bdbox_zU = all_bd_box[6*source_id+5] + z_factor;
 
 
 		    for (j = 1; j <= mesh->ps->size[0]; ++j)
@@ -847,8 +868,8 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
 
 			if ( (current_x >= recv_bdbox_xL) && (current_x <= recv_bdbox_xU) &&
-				(current_y >= recv_bdbox_yL) && (current_y <= recv_bdbox_yU) &&
-				(current_z >= recv_bdbox_zL) && (current_z <= recv_bdbox_zU)
+			     (current_y >= recv_bdbox_yL) && (current_y <= recv_bdbox_yU) &&
+			     (current_z >= recv_bdbox_zL) && (current_z <= recv_bdbox_zU)
 			   )
 			{
 			    flag[j-1] = 1;
