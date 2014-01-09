@@ -149,7 +149,6 @@ int main(int argc, char* argv[])
 	printf("%d->", mesh->nb_proc->data[I1dm(i)]);
     }
     printf("\n");
-/*
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
@@ -165,7 +164,7 @@ int main(int argc, char* argv[])
 
     hpPrint_pinfo(mesh);
 
-
+/*
     char debug_filename[200];
     sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
