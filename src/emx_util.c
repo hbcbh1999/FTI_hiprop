@@ -120,6 +120,26 @@ emxArray_char_T *emxCreateND_char_T(int32_T numDimensions, int32_T *size)
   return emx;
 }
 
+emxArray_int8_T *emxCreateND_int8_T(int32_T numDimensions, int32_T *size)
+{
+  emxArray_int8_T *emx;
+  int32_T numEl;
+  int32_T loop_ub;
+  int32_T i;
+  emxInit_int8_T(&emx, numDimensions);
+  numEl = 1;
+  loop_ub = numDimensions - 1;
+  for (i = 0; i <= loop_ub; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (int8_T *)calloc((uint32_T)numEl, sizeof(int8_T));
+  emx->numDimensions = numDimensions;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
 emxArray_int32_T *emxCreateND_int32_T(int32_T numDimensions, int32_T *size)
 {
   emxArray_int32_T *emx;

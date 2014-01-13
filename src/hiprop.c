@@ -439,7 +439,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     if (mesh->nb_proc != ((emxArray_int32_T *) NULL))
 	emxFree_int32_T(&(mesh->nb_proc));
 
-    int i, j, k;
+    int i, j, k, ki;
     int src, dst;
     int num_proc, rank;
     double eps = 1e-14;
@@ -448,8 +448,12 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    /* First get the bounding box 
-     * for each processor and reduce to all processor */
+    double domain_len_x = mesh->domain_len[0];
+    double domain_len_y = mesh->domain_len[1];
+    double domain_len_z = mesh->domain_len[2];
+
+    // First get the bounding box 
+    // for each processor and reduce to all processor
 
     double bd_box[6];
 
@@ -511,18 +515,15 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
     free(in_all_bd_box);
 
-    unsigned char *nb_ptemp_est = (unsigned char *) calloc (num_proc, sizeof(unsigned char));
+    // Use bounding box to get estimated neighbor 
+
+    boolean_T *nb_ptemp_est = (boolean_T *) calloc (num_proc, sizeof(boolean_T));
     int num_nbp_est = 0;
 
 
-    double domain_len_x = mesh->domain_len[0];
-    double domain_len_y = mesh->domain_len[1];
-    double domain_len_z = mesh->domain_len[2];
-
-    /* Use bounding box to get estimated neighbor */
-
     for (i = 0; i < num_proc; ++i)
     {
+	// Iterate all possible periodic boundary conditions 
 	int x_iter = 1;
 	int y_iter = 1;
 	int z_iter = 1;
@@ -570,7 +571,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
 		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
 			continue;
-		    /* Actural loop starts here */
+		    // Actural loop starts here
 
 		    double comxL = hpMax(bd_box[0] + x_factor, all_bd_box[i*6]);
 		    double comxU = hpMin(bd_box[1] + x_factor, all_bd_box[i*6+1]);
@@ -588,14 +589,15 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			}
 		    }
 
-		    /* Actural loop ends here */
+		    // Actural loop ends here 
 		}
 	    }
 
 	}
 
-
     }
+
+    /* Get estimated nb proc array and number of estimated nb proc */
 
     int *nb_ptemp_iter = (int *) calloc(num_nbp_est, sizeof(int));
     int nb_ptemp_cur = 0;
@@ -606,23 +608,35 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	    nb_ptemp_iter[nb_ptemp_cur++] = i;
     }
 
-    free(nb_ptemp_est);
+    // Allocate temporary storage for actual nb proc and nb proc shift array,
+    // largest storage should be <= num_nbp_est 
 
-    boolean_T *nb_ptemp = (boolean_T *) calloc (num_proc, sizeof(boolean_T));
+    int *nb_ptemp = (int *) calloc (num_nbp_est, sizeof(int));
+
+    for (j = 0; j < num_nbp_est; ++j)
+	nb_ptemp[j] = -1;
+
+    emxArray_int8_T **nb_shift_temp = (emxArray_int8_T **) calloc (num_nbp_est, sizeof(emxArray_int8_T *));
     int num_nbp = 0;
 
-    MPI_Request *send_req_list = (MPI_Request *) malloc (2*num_nbp_est*sizeof(MPI_Request) );
-    MPI_Status *send_status_list = (MPI_Status *) malloc(2*num_nbp_est*sizeof(MPI_Status) );
+    MPI_Request *send_req_list = (MPI_Request *) malloc (3*num_nbp_est*sizeof(MPI_Request) );
+    MPI_Status *send_status_list = (MPI_Status *) malloc(3*num_nbp_est*sizeof(MPI_Status) );
 
     MPI_Request *recv_req_list = (MPI_Request *) malloc(num_nbp_est*sizeof(MPI_Request) );
 
     int *num_ps_send = (int *) calloc(num_nbp_est, sizeof(int));
     double **ps_send = (double **) calloc(num_nbp_est, sizeof(double *));
+    int8_T **ps_shift_send = (int8_T **) calloc(num_nbp_est, sizeof(int8_T *));
+
+    // Iteration for each estimated nb proc
 
     for (i = 0; i < num_nbp_est; ++i)
     {
 	num_ps_send[i] = 0;
 	int target_id = nb_ptemp_iter[i];
+
+	// Using bounding box, iterate for each possible shift to get 
+	// the number of points for send 
 
 	int x_iter = 1;
 	int y_iter = 1;
@@ -671,14 +685,14 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
 		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
 			continue;
-		    /* Actural loop starts here */
+		    // Actural loop starts here
 
-		    double cur_bdbox_xL = all_bd_box[target_id*6] + x_factor;
-		    double cur_bdbox_xU = all_bd_box[target_id*6+1] + x_factor;
-		    double cur_bdbox_yL = all_bd_box[target_id*6+2] + y_factor;
-		    double cur_bdbox_yU = all_bd_box[target_id*6+3] + y_factor;
-		    double cur_bdbox_zL = all_bd_box[target_id*6+4] + z_factor;
-		    double cur_bdbox_zU = all_bd_box[target_id*6+5] + z_factor;
+		    double cur_bdbox_xL = all_bd_box[target_id*6] - x_factor;
+		    double cur_bdbox_xU = all_bd_box[target_id*6+1] - x_factor;
+		    double cur_bdbox_yL = all_bd_box[target_id*6+2] - y_factor;
+		    double cur_bdbox_yU = all_bd_box[target_id*6+3] - y_factor;
+		    double cur_bdbox_zL = all_bd_box[target_id*6+4] - z_factor;
+		    double cur_bdbox_zU = all_bd_box[target_id*6+5] - z_factor;
 
 		    for (j = 1; j <= ps->size[0]; ++j)
 		    {
@@ -695,17 +709,27 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			}
 		    }
 
-		    /* Actural loop ends here */
+		    // Actural loop ends here
 		}
 	    }
 	}
+
+
+	// Allocate storage for points and points shift for MPI send 
+
 	ps_send[i] = (double *) calloc(3*num_ps_send[i], sizeof(double));
+	ps_shift_send[i] = (int8_T *) calloc(3*num_ps_send[i], sizeof(int8_T));
+
 	double *cur_ps_send = ps_send[i];
+	int8_T *cur_ps_shift_send = ps_shift_send[i];
+
+	// Re-iterate all possible shift to fill up the ps_send and ps_shift_send
 
 	x_factor = 0.0;
 	y_factor = 0.0;
 	z_factor = 0.0;
 	k = 0;
+	ki = 0;
 
 
 	for (j1 = 0; j1 < x_iter; j1++)
@@ -738,14 +762,14 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
 		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
 			continue;
-		    /* Actural loop starts here */
+		    // Actural loop starts here 
 
-		    double cur_bdbox_xL = all_bd_box[target_id*6] + x_factor;
-		    double cur_bdbox_xU = all_bd_box[target_id*6+1] + x_factor;
-		    double cur_bdbox_yL = all_bd_box[target_id*6+2] + y_factor;
-		    double cur_bdbox_yU = all_bd_box[target_id*6+3] + y_factor;
-		    double cur_bdbox_zL = all_bd_box[target_id*6+4] + z_factor;
-		    double cur_bdbox_zU = all_bd_box[target_id*6+5] + z_factor;
+		    double cur_bdbox_xL = all_bd_box[target_id*6] - x_factor;
+		    double cur_bdbox_xU = all_bd_box[target_id*6+1] - x_factor;
+		    double cur_bdbox_yL = all_bd_box[target_id*6+2] - y_factor;
+		    double cur_bdbox_yU = all_bd_box[target_id*6+3] - y_factor;
+		    double cur_bdbox_zL = all_bd_box[target_id*6+4] - z_factor;
+		    double cur_bdbox_zU = all_bd_box[target_id*6+5] - z_factor;
 
 		    for (j = 1; j <= ps->size[0]; ++j)
 		    {
@@ -758,52 +782,69 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			     (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
 			   )
 			{
-			    cur_ps_send[k++] = cur_x - x_factor;
-			    cur_ps_send[k++] = cur_y - y_factor;
-			    cur_ps_send[k++] = cur_z - z_factor;
+			    cur_ps_send[k++] = cur_x + x_factor;
+			    cur_ps_send[k++] = cur_y + y_factor;
+			    cur_ps_send[k++] = cur_z + z_factor;
+			    cur_ps_shift_send[ki++] = (int8_T) j1;
+			    cur_ps_shift_send[ki++] = (int8_T) j2;
+			    cur_ps_shift_send[ki++] = (int8_T) j3;
 			}
 		    }
 
-		    /* Actural loop ends here */
+		    // Actural loop ends here
 		}
 	    }
 	}
     }
+  
+    // Size array for receiving data     
 
     int *size_info = (int *) calloc(num_nbp_est, sizeof(int));
 
     for (i = 0; i < num_nbp_est; ++i)
     {
-	dst = nb_ptemp_est[i];
+	dst = nb_ptemp_iter[i];
 	
 	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, 1, MPI_COMM_WORLD, &(send_req_list[i]));
 	MPI_Isend(ps_send[i],3*num_ps_send[i], MPI_DOUBLE, dst, 2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp_est])); 
+	MPI_Isend(ps_shift_send[i],3*num_ps_send[i], MPI_SIGNED_CHAR, dst, 3, MPI_COMM_WORLD, &(send_req_list[i+2*num_nbp_est])); 
     }
 
     for (i = 0; i < num_nbp_est; ++i)
     {
-	src = nb_ptemp_est[i];
+	src = nb_ptemp_iter[i];
 	MPI_Irecv(&(size_info[i]), 1, MPI_INT, src, 1, MPI_COMM_WORLD, &(recv_req_list[i]));
     }
 
     for (i = 0; i < num_nbp_est; ++i)
     {
 	double *ps_recv;
+	int8_T *ps_shift_recv;
 
 	MPI_Status recv_status1;
 	MPI_Status recv_status2;
+	MPI_Status recv_status3;
 
 	int recv_index;
 	int source_id;
+
+	// Receive any size info coming in next
 
 	MPI_Waitany(num_nbp_est, recv_req_list, &recv_index, &recv_status1);
 
 	source_id = recv_status1.MPI_SOURCE;
 
 	ps_recv = (double *) calloc(3*size_info[recv_index], sizeof(double));
-	MPI_Recv(ps_recv, 3*size_info[recv_index], MPI_DOUBLE, source_id, 2, MPI_COMM_WORLD, &recv_status2);
+	ps_shift_recv = (int8_T *) calloc(3*size_info[recv_index], sizeof(int8_T));
 
-	unsigned char *flag = (unsigned char *) calloc (ps->size[0], sizeof (unsigned char));
+	// Block receiving the following information 
+	MPI_Recv(ps_recv, 3*size_info[recv_index], MPI_DOUBLE, source_id, 2, MPI_COMM_WORLD, &recv_status2);
+	MPI_Recv(ps_shift_recv, 3*size_info[recv_index], MPI_SIGNED_CHAR, source_id, 3, MPI_COMM_WORLD, &recv_status3);
+
+	boolean_T *flag = (boolean_T *) calloc (ps->size[0], sizeof (boolean_T));
+
+	// Iterate all the points to get the possible overlapping points
+	// considering all shift
 
 	int x_iter = 1;
 	int y_iter = 1;
@@ -852,7 +893,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
 		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
 			continue;
-		    /* Actural loop starts here */
+		    // Actural loop starts here
 		    double recv_bdbox_xL = all_bd_box[6*source_id] + x_factor;
 		    double recv_bdbox_xU = all_bd_box[6*source_id+1] + x_factor;
 		    double recv_bdbox_yL = all_bd_box[6*source_id+2] + y_factor;
@@ -876,39 +917,93 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			}
 		    }
 
-		    /* Actural loop ends here */
+		    // Actural loop ends here
 		}
 	    }
 	}
 
+	// using flag to construct iterate array for possible overlapping
+	// points, free the flag array after use
 
+	int num_ps_iterate = 0;
+	for (j = 1; j <= mesh->ps->size[0]; ++j)
+	    num_ps_iterate++;
 
-	for (j = 1; j <= mesh->ps->size[0]; j++)
+	int *ps_iterate_id = (int *) calloc(num_ps_iterate, sizeof(int));
+	int cur_iter = 0;
+
+	for (j = 1; j <= mesh->ps->size[0]; ++j)
 	{
-	    double cur_x = ps->data[I2dm(j,1,ps->size)];
-	    double cur_y = ps->data[I2dm(j,2,ps->size)];
-	    double cur_z = ps->data[I2dm(j,3,ps->size)];
-
 	    if (flag[j-1] == 1)
+		ps_iterate_id[cur_iter++] = j;
+	}
+
+	free(flag);
+
+	boolean_T *shift_flag = (boolean_T *) calloc(223, sizeof(boolean_T));
+
+	for (k = 0; k < size_info[recv_index]; ++k)
+	{
+	    for (j = 0; j < num_ps_iterate; ++j)
 	    {
-		for (k = 0; k < size_info[recv_index]; ++k)
+		int cur_id = ps_iterate_id[j];
+		double cur_x = ps->data[I2dm(cur_id,1,ps->size)];
+		double cur_y = ps->data[I2dm(cur_id,2,ps->size)];
+		double cur_z = ps->data[I2dm(cur_id,3,ps->size)];
+		if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
+		     (fabs(cur_y - ps_recv[k*3+1]) < eps) &&
+		     (fabs(cur_z - ps_recv[k*3+2]) < eps)
+		   )
 		{
-		    if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
-		         (fabs(cur_y - ps_recv[k*3+1]) < eps) &&
-			 (fabs(cur_z - ps_recv[k*3+2]) < eps)
-		       )
+		    if (nb_ptemp[num_nbp] != source_id)
 		    {
-			nb_ptemp[source_id] = true;
+			nb_ptemp[num_nbp] = source_id;
 			num_nbp++;
-			break;
 		    }
-		}
-		if (k <= size_info[recv_index]-1)
+
+		    int hash_value = 100*ps_shift_recv[k*3+2] + 10*ps_shift_recv[k*3+1] + ps_shift_recv[k*3];
+
+		    shift_flag[hash_value] = 1;
+
 		    break;
+		}
 	    }
 	}
+
+	int num_shift_cur_proc = 0;
+
+	for (k = 0; k < 223; k++)
+	{
+	    if (shift_flag[k] == 1)
+		num_shift_cur_proc++;
+	}
+
+	int all_shift_len = 3*num_shift_cur_proc;
+
+	nb_shift_temp[num_nbp-1] = emxCreateND_int8_T(1, &all_shift_len);
+
+	emxArray_int8_T *cur_nb_shift = nb_shift_temp[num_nbp-1];
+
+	ki = 0;
+
+	for (k = 0; k < 223; k++)
+	{
+	    if (shift_flag[k] == 1)
+	    {
+		int cur_hash_value = k;
+		cur_nb_shift->data[ki++] = cur_hash_value % 10; // first digit
+		cur_hash_value /= 10;
+		cur_nb_shift->data[ki++] = cur_hash_value % 10; // second digit
+		cur_hash_value /= 10;
+		cur_nb_shift->data[ki++] = cur_hash_value;
+	    }
+	}
+
+	free(shift_flag);
+	free(ps_iterate_id);
+
 	free(ps_recv);
-	free(flag);
+	free(ps_shift_recv);
     }
 
     free(size_info);
@@ -930,14 +1025,16 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     num_nb[0] = num_nbp;
 
     mesh->nb_proc = emxCreateND_int32_T(1, num_nb);
-    int nb_cur = 0;
+    mesh->nb_proc_shift = (emxArray_int8_T **) calloc(num_nbp, sizeof(emxArray_int8_T *));
+
     for (i = 0; i < num_proc; i++)
     {
-	if (nb_ptemp[i] == true)
-	    mesh->nb_proc->data[nb_cur++] = i;
+	mesh->nb_proc->data[i] = nb_ptemp[i];
+	mesh->nb_proc_shift[i] = nb_shift_temp[i];
     }
 
     free(nb_ptemp);
+    free(nb_shift_temp);
 }
 
 void hpGetNbProcListFromInput(hiPropMesh *mesh, const int in_num_nbp, const int *in_nb_proc)

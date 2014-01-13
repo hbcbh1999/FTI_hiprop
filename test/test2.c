@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
 {
     time_t start, end;
     int i;
+    int j;
     //int j, k;
     int num_proc, rank;
    // int tag = 1;
@@ -146,15 +147,20 @@ int main(int argc, char* argv[])
     printf("nb_proc list:\n");
     for (i = 1; i <= mesh->nb_proc->size[0]; ++i)
     {
-	printf("%d->", mesh->nb_proc->data[I1dm(i)]);
+	printf("proc %d, shifting length %d\n", mesh->nb_proc->data[I1dm(i)], (mesh->nb_proc_shift[I1dm(i)]->size[0])/3 );
+	for (j = 0; j < (mesh->nb_proc_shift[I1dm(i)]->size[0])/3; j++)
+	{
+	    printf("Shifting %d: %d %d %d\n", j+1, mesh->nb_proc_shift[I1dm(i)]->data[j*3],
+		    mesh->nb_proc_shift[I1dm(i)]->data[j*3+1], mesh->nb_proc_shift[I1dm(i)]->data[j*3+2]);
+	}
+
     }
     printf("\n");
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
-
     fflush(stdout);
-
+/*
     start = time(0);
     hpBuildPInfoNoOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
@@ -163,6 +169,7 @@ int main(int argc, char* argv[])
 
 
     hpPrint_pinfo(mesh);
+*/
 
 /*
     char debug_filename[200];

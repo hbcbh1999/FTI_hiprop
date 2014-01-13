@@ -72,6 +72,14 @@ EXTERN_C void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
 EXTERN_C emxArray_char_T *emxCreateND_char_T(int32_T numDimensions, int32_T *size);
 
 /*!
+ * \brief Create a N-dimensional 8bit int array with initial value 0
+ * \param numDimensions number of dimensions
+ * \param size size for each dimention
+ * \return a pointer to the generated array
+ */
+EXTERN_C emxArray_int8_T *emxCreateND_int8_T(int32_T numDimensions, int32_T *size);
+
+/*!
  * \brief Create a N-dimensional 32bit int array with initial value 0
  * \param numDimensions number of dimensions
  * \param size size for each dimention

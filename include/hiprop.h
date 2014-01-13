@@ -23,7 +23,7 @@ typedef struct hpPInfoNode
 {
     int pindex;		/*!< processor index for local nb_proc list, different pindex could have same processor ID */
 
-    char shift[3];	/*!< shifting for periodic boundary, could be 1,-1 and 0*/
+    int8_T shift[3];	/*!< shifting for periodic boundary, could be 0, 1 and 2*/
     int proc;		/*!< processor ID */
     int lindex;		/*!< local index on the corresponding proc */
     int next;		/*!< index for the next node in the linked list, if next = -1, 
@@ -65,7 +65,10 @@ typedef struct hiPropMesh
     emxArray_real_T *curv;		/*!< point main curvatures, size num_ps */
 
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
+    emxArray_int8_T **nb_proc_shift;
+
     emxArray_real_T *periodic_length[3];/*!< periodic boundary length, if 0 then not periodic boundary */
+
     real_T domain_len[3];		/*!< domain size in x,y,z */
     boolean_T has_periodic_boundary[3];	/*!< flag for periodic boundary in x,y,z */
 
