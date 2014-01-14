@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
     fflush(stdout);
 
     start = getTimer();
-    hpBuildPInfoNoOverlappingTris(mesh);
+    hpBuildPInfoWithOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
     end = getTimer();
     printf("Build Pinfo seconds used: %22.16g\n", end-start);
