@@ -925,6 +925,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	// using flag to construct iterate array for possible overlapping
 	// points, free the flag array after use
 
+	/*
 	int num_ps_iterate = 0;
 	for (j = 1; j <= mesh->ps->size[0]; ++j)
 	    num_ps_iterate++;
@@ -939,11 +940,48 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	}
 
 	free(flag);
+	*/
 
 	boolean_T *shift_flag = (boolean_T *) calloc(223, sizeof(boolean_T));
 
-	for (k = 0; k < size_info[recv_index]; ++k)
+	unsigned char *recv_flag = (unsigned char *) calloc (size_info[recv_index], sizeof(unsigned char));
+
+	for (j = 1; j <= ps->size[0]; ++j) 
 	{
+	    if (flag[j-1] == 1)
+	    {
+		double cur_x = ps->data[I2dm(j,1,ps->size)];
+		double cur_y = ps->data[I2dm(j,2,ps->size)];
+		double cur_z = ps->data[I2dm(j,3,ps->size)];
+
+		for (k = 0; k < size_info[recv_index]; ++k)
+		{
+		    if (recv_flag[k] == 1)
+			continue;
+
+		    if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
+		         (fabs(cur_y - ps_recv[k*3+1]) < eps) &&
+			 (fabs(cur_z - ps_recv[k*3+2]) < eps)
+		       )
+		    {
+			if (nb_ptemp[num_nbp] != source_id)
+			{
+			    nb_ptemp[num_nbp] = source_id;
+			    num_nbp++;
+			}
+
+			int hash_value = 100*ps_shift_recv[k*3+2] + 10*ps_shift_recv[k*3+1] + ps_shift_recv[k*3];
+
+			shift_flag[hash_value] = 1;
+		    }
+		}
+	    }
+	}
+	free(recv_flag);
+
+	/*
+	 * for (k = 0; k < size_info[recv_index]; ++k)
+	 * {
 	    for (j = 0; j < num_ps_iterate; ++j)
 	    {
 		int cur_id = ps_iterate_id[j];
@@ -969,6 +1007,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 		}
 	    }
 	}
+	*/
 
 	int num_shift_cur_proc = 0;
 
@@ -1000,7 +1039,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	}
 
 	free(shift_flag);
-	free(ps_iterate_id);
+	free(flag);
 
 	free(ps_recv);
 	free(ps_shift_recv);
@@ -1377,7 +1416,7 @@ void hpEnsurePInfoCapacity(hpPInfoList *pinfo)
 
 void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 {
-    int i, j, k, ki;
+    int i, j, k, ki, ks, is;
     int src, dst;
     int num_proc, rank;
     double eps = 1e-14;
@@ -1390,8 +1429,12 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    /* First get the bounding box 
-     * for each processor and reduce to all processor */
+    double domain_len_x = mesh->domain_len[0];
+    double domain_len_y = mesh->domain_len[1];
+    double domain_len_z = mesh->domain_len[2];
+
+    // First get the bounding box 
+    // for each processor and reduce to all processor
 
     double bd_box[6];
 
@@ -1452,187 +1495,193 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
     free(in_all_bd_box);
 
-    MPI_Request *send_req_list = (MPI_Request *) malloc (6*num_nbp*sizeof(MPI_Request) );
-    MPI_Status *send_status_list = (MPI_Status *) malloc(6*num_nbp*sizeof(MPI_Status) );
+    MPI_Request *send_req_list = (MPI_Request *) malloc (4*num_nbp*sizeof(MPI_Request) );
+    MPI_Status *send_status_list = (MPI_Status *) malloc(4*num_nbp*sizeof(MPI_Status) );
 
     MPI_Request *recv_req_list = (MPI_Request *) malloc(num_nbp*sizeof(MPI_Request) );
 
     int *num_ps_send = (int *) calloc(num_nbp, sizeof(int));
     double **ps_send = (double **) calloc(num_nbp, sizeof(double *));
-    int **ps_index_send = (int **) calloc(num_nbp, sizeof(int *));
-    char **ps_shift_x_send = (char **) calloc(num_nbp, sizeof(char *));
-    char **ps_shift_y_send = (char **) calloc(num_nbp, sizeof(char *));
-    char **ps_shift_z_send = (char **) calloc(num_nbp, sizeof(char *));
 
-    double domain_len_x = mesh->domain_len[0];
-    double domain_len_y = mesh->domain_len[1];
-    double domain_len_z = mesh->domain_len[2];
+    int **ps_index_send = (int **) calloc(num_nbp, sizeof(int *));
+    int8_T **ps_shift_send = (int8_T **) calloc(num_nbp, sizeof(int8_T *));
 
     for (i = 0; i < num_nbp; ++i)
     {
 	num_ps_send[i] = 0;
 	int target_id = nb_proc->data[i];
-	int x_iter = 1;
-	int y_iter = 1;
-	int z_iter = 1;
+	emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[i];
 
-	if (mesh->has_periodic_boundary[0] == true)
-	    x_iter = 3;
-	if (mesh->has_periodic_boundary[1] == true)
-	    y_iter = 3;
-	if (mesh->has_periodic_boundary[2] == true)
-	    z_iter = 3;
+	int num_shifts = (nb_shift->size[0])/3;
 
-	int j1, j2, j3;
-	char x_factor = 0;
-	char y_factor = 0;
-	char z_factor = 0;
-
-
-	for (j1 = 0; j1 < x_iter; j1++)
+	// First get the number of points needed to be sent
+	for (is = 0; is < num_shifts; ++is)
 	{
-	    if (j1 == 1)
-		x_factor = 1;
-	    else if (j1 == 2)
-		x_factor = -1;
+	    double x_factor = 0.0;
+	    double y_factor = 0.0;
+	    double z_factor = 0.0;
+
+	    int8_T sx, sy, sz;
+
+	    sx = nb_shift->data[is*3];
+	    sy = nb_shift->data[is*3+1];
+	    sz = nb_shift->data[is*3+2];
+
+	    if (sx == 1)
+		x_factor = -domain_len_x;
+	    else if (sx == 2)
+		x_factor = domain_len_x;
 	    else
-		x_factor = 0;
+		x_factor = 0.0;
 
-	    for (j2 = 0; j2 < y_iter; j2++)
+	    if (sy == 1)
+		y_factor = -domain_len_y;
+	    else if (sy == 2)
+		y_factor = domain_len_y;
+	    else
+		y_factor = 0.0;
+
+
+	    if (sz == 1)
+		z_factor = -domain_len_z;
+	    else if (sz == 2)
+		z_factor = domain_len_z;
+	    else
+		z_factor = 0.0;
+
+	    double cur_bdbox_xL = all_bd_box[target_id*6] - x_factor;
+	    double cur_bdbox_xU = all_bd_box[target_id*6+1] - x_factor;
+	    double cur_bdbox_yL = all_bd_box[target_id*6+2] - y_factor;
+	    double cur_bdbox_yU = all_bd_box[target_id*6+3] - y_factor;
+	    double cur_bdbox_zL = all_bd_box[target_id*6+4] - z_factor;
+	    double cur_bdbox_zU = all_bd_box[target_id*6+5] - z_factor;
+
+	    for (j = 1; j <= ps->size[0]; ++j)
 	    {
-		if (j2 == 1)
-		    y_factor = 1;
-		else if (j2 == 2)
-		    y_factor = -1;
-		else
-		    y_factor = 0;
+		double cur_x = ps->data[I2dm(j,1,ps->size)];
+		double cur_y = ps->data[I2dm(j,2,ps->size)];
+		double cur_z = ps->data[I2dm(j,3,ps->size)];
 
-		for (j3 = 0; j3 < z_iter; j3++)
+		if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
+		     (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
+		     (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
+		   )
 		{
-		    if (j3 == 1)
-			z_factor = 1;
-		    else if (j3 == 2)
-			z_factor = -1;
-		    else
-			z_factor = 0;
-
-
-		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
-			continue;
-		    /* Actural loop starts here */
-
-		    double cur_bdbox_xL = all_bd_box[target_id*6] - ((double) x_factor)*domain_len_x;
-		    double cur_bdbox_xU = all_bd_box[target_id*6+1] - ((double) x_factor)*domain_len_x;
-		    double cur_bdbox_yL = all_bd_box[target_id*6+2] - ((double) y_factor)*domain_len_y;
-		    double cur_bdbox_yU = all_bd_box[target_id*6+3] - ((double) y_factor)*domain_len_y;
-		    double cur_bdbox_zL = all_bd_box[target_id*6+4] - ((double) z_factor)*domain_len_z;
-		    double cur_bdbox_zU = all_bd_box[target_id*6+5] - ((double) z_factor)*domain_len_z;
-
-		    for (j = 1; j <= ps->size[0]; ++j)
-		    {
-			double cur_x = ps->data[I2dm(j,1,ps->size)];
-			double cur_y = ps->data[I2dm(j,2,ps->size)];
-			double cur_z = ps->data[I2dm(j,3,ps->size)];
-
-			if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
-			     (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
-			     (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
-			   )
-			{
-			    ++(num_ps_send[i]);
-			}
-		    }
-
-		    /* Actural loop ends here */
+		    ++(num_ps_send[i]);
 		}
 	    }
+
 	}
+
+	printf("\n num of ps send = %d\n", num_ps_send[i]);
+
+	//Allocate storage for ps postions, ps indices and ps shifts to send
 
 	ps_send[i] = (double *) calloc(3*num_ps_send[i], sizeof(double));
 	ps_index_send[i] = (int *) calloc(num_ps_send[i], sizeof(int));
-	ps_shift_x_send[i] = (char *) calloc(num_ps_send[i], sizeof(char));
-	ps_shift_y_send[i] = (char *) calloc(num_ps_send[i], sizeof(char));
-	ps_shift_z_send[i] = (char *) calloc(num_ps_send[i], sizeof(char));
+	ps_shift_send[i] = (int8_T *) calloc(3*num_ps_send[i], sizeof(int8_T));
 
 	double *cur_ps_send = ps_send[i];
 	int *cur_ps_index_send = ps_index_send[i];
-	char *cur_shift_x_send = ps_shift_x_send[i];
-	char *cur_shift_y_send = ps_shift_y_send[i];
-	char *cur_shift_z_send = ps_shift_z_send[i];
+	int8_T *cur_ps_shift_send = ps_shift_send[i];
 
 	k = 0;
 	ki = 0;
+	ks = 0;
 
-	x_factor = 0;
-	y_factor = 0;
-	z_factor = 0;
-
-	for (j1 = 0; j1 < x_iter; j1++)
+	//Fill up the arrays for send
+	
+	for (is = 0; is < num_shifts; ++is)
 	{
-	    if (j1 == 1)
-		x_factor = 1;
-	    else if (j1 == 2)
-		x_factor = -1;
-	    else
-		x_factor = 0;
+	    double x_factor = 0.0;
+	    double y_factor = 0.0;
+	    double z_factor = 0.0;
 
-	    for (j2 = 0; j2 < y_iter; j2++)
+	    int8_T sx, sy, sz;
+	    int8_T sx_send, sy_send, sz_send;
+
+	    sx = nb_shift->data[is*3];
+	    sy = nb_shift->data[is*3+1];
+	    sz = nb_shift->data[is*3+2];
+
+	    if (sx == 1)
 	    {
-		if (j2 == 1)
-		    y_factor = 1;
-		else if (j2 == 2)
-		    y_factor = -1;
-		else
-		    y_factor = 0;
+		x_factor = -domain_len_x;
+		sx_send = 2;
+	    }
+	    else if (sx == 2)
+	    {
+		x_factor = domain_len_x;
+		sx_send = 1;
+	    }
+	    else
+	    {
+		x_factor = 0.0;
+		sx_send = 0;
+	    }
 
-		for (j3 = 0; j3 < z_iter; j3++)
+	    if (sy == 1)
+	    {
+		y_factor = -domain_len_y;
+		sy_send = 2;
+	    }
+	    else if (sy == 2)
+	    {
+		y_factor = domain_len_y;
+		sy_send = 1;
+	    }
+	    else
+	    {
+		y_factor = 0.0;
+		sy_send = 0;
+	    }
+
+
+	    if (sz == 1)
+	    {
+		z_factor = -domain_len_z;
+		sz_send = 2;
+	    }
+	    else if (sz == 2)
+	    {
+		z_factor = domain_len_z;
+		sz_send = 1;
+	    }
+	    else
+	    {
+		z_factor = 0.0;
+		sz_send = 0;
+	    }
+
+	    double cur_bdbox_xL = all_bd_box[target_id*6] - x_factor;
+	    double cur_bdbox_xU = all_bd_box[target_id*6+1] - x_factor;
+	    double cur_bdbox_yL = all_bd_box[target_id*6+2] - y_factor;
+	    double cur_bdbox_yU = all_bd_box[target_id*6+3] - y_factor;
+	    double cur_bdbox_zL = all_bd_box[target_id*6+4] - z_factor;
+	    double cur_bdbox_zU = all_bd_box[target_id*6+5] - z_factor;
+
+	    for (j = 1; j <= ps->size[0]; ++j)
+	    {
+		double cur_x = ps->data[I2dm(j,1,ps->size)];
+		double cur_y = ps->data[I2dm(j,2,ps->size)];
+		double cur_z = ps->data[I2dm(j,3,ps->size)];
+
+		if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
+		     (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
+		     (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
+		   )
 		{
-		    if (j3 == 1)
-			z_factor = 1;
-		    else if (j3 == 2)
-			z_factor = -1;
-		    else
-			z_factor = 0;
-
-
-		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
-			continue;
-		    /* Actural loop starts here */
-
-		    double cur_bdbox_xL = all_bd_box[target_id*6] - ((double) x_factor)*domain_len_x;
-		    double cur_bdbox_xU = all_bd_box[target_id*6+1] - ((double) x_factor)*domain_len_x;
-		    double cur_bdbox_yL = all_bd_box[target_id*6+2] - ((double) y_factor)*domain_len_y;
-		    double cur_bdbox_yU = all_bd_box[target_id*6+3] - ((double) y_factor)*domain_len_y;
-		    double cur_bdbox_zL = all_bd_box[target_id*6+4] - ((double) z_factor)*domain_len_z;
-		    double cur_bdbox_zU = all_bd_box[target_id*6+5] - ((double) z_factor)*domain_len_z;
-
-		    for (j = 1; j <= ps->size[0]; ++j)
-		    {
-			double cur_x = ps->data[I2dm(j,1,ps->size)];
-			double cur_y = ps->data[I2dm(j,2,ps->size)];
-			double cur_z = ps->data[I2dm(j,3,ps->size)];
-
-			if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
-			     (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
-			     (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
-			   )
-			{
-			    cur_ps_send[k++] = cur_x + ((double) x_factor)*domain_len_x;
-			    cur_ps_send[k++] = cur_y + ((double) y_factor)*domain_len_y;
-			    cur_ps_send[k++] = cur_z + ((double) z_factor)*domain_len_z;
-			    cur_ps_index_send[ki] = j;
-			    cur_shift_x_send[ki] = x_factor;
-			    cur_shift_y_send[ki] = y_factor;
-			    cur_shift_z_send[ki] = z_factor;
-			    ki++;
-			}
-		    }
-
-		    /* Actural loop ends here */
+		    cur_ps_send[k++] = cur_x + x_factor;
+		    cur_ps_send[k++] = cur_y + y_factor;
+		    cur_ps_send[k++] = cur_z + z_factor;
+		    cur_ps_index_send[ki++] = j;
+		    cur_ps_shift_send[ks++] = sx_send;
+		    cur_ps_shift_send[ks++] = sy_send;
+		    cur_ps_shift_send[ks++] = sz_send;
 		}
 	    }
-	}
 
+	}
     }
 
     int *size_info = (int *) calloc(num_nbp, sizeof(int));
@@ -1645,15 +1694,11 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	int tag2 = 2;
 	int tag3 = 3;
 	int tag4 = 4;
-	int tag5 = 5;
-	int tag6 = 6;
 
 	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, tag1, MPI_COMM_WORLD, &(send_req_list[i]));
 	MPI_Isend(ps_send[i], 3*num_ps_send[i], MPI_DOUBLE, dst, tag2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp])); 
 	MPI_Isend(ps_index_send[i], num_ps_send[i], MPI_INT, dst, tag3, MPI_COMM_WORLD, &(send_req_list[i+2*num_nbp])); 
-	MPI_Isend(ps_shift_x_send[i], num_ps_send[i], MPI_CHAR, dst, tag4, MPI_COMM_WORLD, &(send_req_list[i+3*num_nbp]));
-	MPI_Isend(ps_shift_y_send[i], num_ps_send[i], MPI_CHAR, dst, tag5, MPI_COMM_WORLD, &(send_req_list[i+4*num_nbp]));
-	MPI_Isend(ps_shift_z_send[i], num_ps_send[i], MPI_CHAR, dst, tag6, MPI_COMM_WORLD, &(send_req_list[i+5*num_nbp]));
+	MPI_Isend(ps_shift_send[i], 3*num_ps_send[i], MPI_SIGNED_CHAR, dst, tag4, MPI_COMM_WORLD, &(send_req_list[i+3*num_nbp]));
     }
 
     for (i = 0; i < num_nbp; ++i)
@@ -1667,16 +1712,12 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     {
 	double *ps_recv;
 	int *ps_index_recv;
-	char *ps_shift_x_recv;
-	char *ps_shift_y_recv;
-	char *ps_shift_z_recv;
+	int8_T *ps_shift_recv;
 
 	MPI_Status recv_status1;
 	MPI_Status recv_status2;
 	MPI_Status recv_status3;
 	MPI_Status recv_status4;
-	MPI_Status recv_status5;
-	MPI_Status recv_status6;
 
 	int recv_index;
 	int source_id;
@@ -1687,92 +1728,74 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	ps_recv = (double *) calloc(3*size_info[recv_index], sizeof(double));
 	ps_index_recv = (int *) calloc(size_info[recv_index], sizeof(int));
-	ps_shift_x_recv = (char *) calloc(size_info[recv_index], sizeof(char));
-	ps_shift_y_recv = (char *) calloc(size_info[recv_index], sizeof(char));
-	ps_shift_z_recv = (char *) calloc(size_info[recv_index], sizeof(char));
+	ps_shift_recv = (int8_T *) calloc(3*size_info[recv_index], sizeof(int8_T));
 
 	MPI_Recv(ps_recv, 3*size_info[recv_index], MPI_DOUBLE, source_id, 2, MPI_COMM_WORLD, &recv_status2);
 	MPI_Recv(ps_index_recv, size_info[recv_index], MPI_INT, source_id, 3, MPI_COMM_WORLD, &recv_status3);
-	MPI_Recv(ps_shift_x_recv, size_info[recv_index], MPI_CHAR, source_id, 4, MPI_COMM_WORLD, &recv_status4);
-	MPI_Recv(ps_shift_y_recv, size_info[recv_index], MPI_CHAR, source_id, 5, MPI_COMM_WORLD, &recv_status5);
-	MPI_Recv(ps_shift_z_recv, size_info[recv_index], MPI_CHAR, source_id, 6, MPI_COMM_WORLD, &recv_status6);
+	MPI_Recv(ps_shift_recv, 3*size_info[recv_index], MPI_SIGNED_CHAR, source_id, 4, MPI_COMM_WORLD, &recv_status4);
 
 	unsigned char *flag = (unsigned char *) calloc (ps->size[0], sizeof (unsigned char));
 
-	int x_iter = 1;
-	int y_iter = 1;
-	int z_iter = 1;
+	emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[i];
+	int num_shifts = (nb_shift->size[0])/3;
 
-	if (mesh->has_periodic_boundary[0] == true)
-	    x_iter = 3;
-	if (mesh->has_periodic_boundary[1] == true)
-	    y_iter = 3;
-	if (mesh->has_periodic_boundary[2] == true)
-	    z_iter = 3;
-
-	int j1, j2, j3;
-	double x_factor = 0.0;
-	double y_factor = 0.0;
-	double z_factor = 0.0;
-
-
-	for (j1 = 0; j1 < x_iter; j1++)
+	// First get the number of points needed to be sent
+	for (is = 0; is < num_shifts; ++is)
 	{
-	    if (j1 == 1)
-		x_factor = domain_len_x;
-	    else if (j1 == 2)
+	    double x_factor = 0.0;
+	    double y_factor = 0.0;
+	    double z_factor = 0.0;
+
+	    int8_T sx, sy, sz;
+
+	    sx = nb_shift->data[is*3];
+	    sy = nb_shift->data[is*3+1];
+	    sz = nb_shift->data[is*3+2];
+
+	    if (sx == 1)
 		x_factor = -domain_len_x;
+	    else if (sx == 2)
+		x_factor = domain_len_x;
 	    else
 		x_factor = 0.0;
 
-	    for (j2 = 0; j2 < y_iter; j2++)
+	    if (sy == 1)
+		y_factor = -domain_len_y;
+	    else if (sy == 2)
+		y_factor = domain_len_y;
+	    else
+		y_factor = 0.0;
+
+
+	    if (sz == 1)
+		z_factor = -domain_len_z;
+	    else if (sz == 2)
+		z_factor = domain_len_z;
+	    else
+		z_factor = 0.0;
+
+	    double cur_bdbox_xL = all_bd_box[source_id*6] - x_factor;
+	    double cur_bdbox_xU = all_bd_box[source_id*6+1] - x_factor;
+	    double cur_bdbox_yL = all_bd_box[source_id*6+2] - y_factor;
+	    double cur_bdbox_yU = all_bd_box[source_id*6+3] - y_factor;
+	    double cur_bdbox_zL = all_bd_box[source_id*6+4] - z_factor;
+	    double cur_bdbox_zU = all_bd_box[source_id*6+5] - z_factor;
+
+	    for (j = 1; j <= ps->size[0]; ++j)
 	    {
-		if (j2 == 1)
-		    y_factor = domain_len_y;
-		else if (j2 == 2)
-		    y_factor = -domain_len_y;
-		else
-		    y_factor = 0.0;
+		double cur_x = ps->data[I2dm(j,1,ps->size)];
+		double cur_y = ps->data[I2dm(j,2,ps->size)];
+		double cur_z = ps->data[I2dm(j,3,ps->size)];
 
-		for (j3 = 0; j3 < z_iter; j3++)
+		if ( (cur_x >= cur_bdbox_xL) && (cur_x <= cur_bdbox_xU) && 
+		     (cur_y >= cur_bdbox_yL) && (cur_y <= cur_bdbox_yU) &&
+		     (cur_z >= cur_bdbox_zL) && (cur_z <= cur_bdbox_zU) 
+		   )
 		{
-		    if (j3 == 1)
-			z_factor = domain_len_z;
-		    else if (j3 == 2)
-			z_factor = -domain_len_z;
-		    else
-			z_factor = 0.0;
-
-
-		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == rank)
-			continue;
-		    /* Actural loop starts here */
-		    double recv_bdbox_xL = all_bd_box[6*source_id] + x_factor;
-		    double recv_bdbox_xU = all_bd_box[6*source_id+1] + x_factor;
-		    double recv_bdbox_yL = all_bd_box[6*source_id+2] + y_factor;
-		    double recv_bdbox_yU = all_bd_box[6*source_id+3] + y_factor;
-		    double recv_bdbox_zL = all_bd_box[6*source_id+4] + z_factor;
-		    double recv_bdbox_zU = all_bd_box[6*source_id+5] + z_factor;
-
-
-		    for (j = 1; j <= mesh->ps->size[0]; ++j)
-		    {
-			double current_x = mesh->ps->data[I2dm(j,1,mesh->ps->size)];
-			double current_y = mesh->ps->data[I2dm(j,2,mesh->ps->size)];
-			double current_z = mesh->ps->data[I2dm(j,3,mesh->ps->size)];
-
-			if ( (current_x >= recv_bdbox_xL) && (current_x <= recv_bdbox_xU) &&
-			     (current_y >= recv_bdbox_yL) && (current_y <= recv_bdbox_yU) &&
-			     (current_z >= recv_bdbox_zL) && (current_z <= recv_bdbox_zU)
-			   )
-			{
-			    flag[j-1] = 1;
-			}
-		    }
-
-		    /* Actural loop ends here */
+		    flag[j-1] = 1;
 		}
 	    }
+
 	}
 
 	unsigned char *recv_flag = (unsigned char *) calloc (size_info[recv_index], sizeof(unsigned char));
@@ -1806,9 +1829,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 			    ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
-			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[0] = ps_shift_x_recv[k];
-			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[1] = ps_shift_y_recv[k];
-			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[2] = ps_shift_z_recv[k];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[0] = ps_shift_recv[k*3];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[1] = ps_shift_recv[k*3+1];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[2] = ps_shift_recv[k*3+2];
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
 			}
 			else if (source_id > cur_master_proc)
@@ -1816,9 +1839,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 			    ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
-			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[0] = ps_shift_x_recv[k];
-			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[1] = ps_shift_y_recv[k];
-			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[2] = ps_shift_z_recv[k];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[0] = ps_shift_recv[k*3];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[1] = ps_shift_recv[k*3+1];
+			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[2] = ps_shift_recv[k*3+2];
 
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 			    ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
@@ -1832,9 +1855,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 				ps_pinfo->head[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
-				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[0] = ps_shift_x_recv[k];
-				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[1] = ps_shift_y_recv[k];
-				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[2] = ps_shift_z_recv[k];
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[0] = ps_shift_recv[k*3];
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[1] = ps_shift_recv[k*3+1];
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[2] = ps_shift_recv[k*3+2];
 
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = cur_head;
 			    }
@@ -1843,9 +1866,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 				ps_pinfo->tail[I1dm(j)] = ps_pinfo->allocated_len;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].proc = source_id;
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].lindex = ps_index_recv[k];
-				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[0] = ps_shift_x_recv[k];
-			    	ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[1] = ps_shift_y_recv[k];
-			    	ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[2] = ps_shift_z_recv[k];
+				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[0] = ps_shift_recv[k*3];
+			    	ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[1] = ps_shift_recv[k*3+1];
+			    	ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].shift[2] = ps_shift_recv[k*3+2];
 
 				ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 				ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
@@ -1856,7 +1879,6 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 				exit(0);
 			    }
 			}
-			//break;
 		    }
 		}
 	    }
@@ -1864,16 +1886,14 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	free(recv_flag);
 	free(ps_recv);
 	free(ps_index_recv);
-	free(ps_shift_x_recv);
-	free(ps_shift_y_recv);
-	free(ps_shift_z_recv);
+	free(ps_shift_recv);
 	free(flag);
     }
 
     free(size_info);
     free(recv_req_list);
 
-    MPI_Waitall(6*num_nbp, send_req_list, send_status_list);
+    MPI_Waitall(4*num_nbp, send_req_list, send_status_list);
 
     free(send_req_list);
     free(send_status_list);
@@ -1882,10 +1902,12 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
     {
 	free(ps_send[i]);
 	free(ps_index_send[i]);
+	free(ps_shift_send[i]);
     }
     free(num_ps_send);
     free(ps_send);
     free(ps_index_send);
+    free(ps_shift_send);
     free(all_bd_box);
 
     mesh->nps_clean = mesh->ps->size[0];

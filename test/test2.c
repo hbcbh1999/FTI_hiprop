@@ -40,7 +40,7 @@ void find_Cartesian_coordinates(
 
 int main(int argc, char* argv[])
 {
-    time_t start, end;
+    double start, end;
     int i;
     int j;
     //int j, k;
@@ -135,14 +135,15 @@ int main(int argc, char* argv[])
 
 */
 
-    start = time(0);
+    start = getTimer();
     hpInitDomainBoundaryInfo(mesh);
     hpGetNbProcListAuto(mesh);
     printf("\n GetNbProcInfo passed, proc %d \n", rank);
-    end = time(0);
+    end = getTimer();
 
-    printf("Seconds used: %22.16g\n", difftime(end, start));
+    printf("Seconds used: %22.16g\n", end-start);
 
+    /*
     printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);
     printf("nb_proc list:\n");
     for (i = 1; i <= mesh->nb_proc->size[0]; ++i)
@@ -155,21 +156,22 @@ int main(int argc, char* argv[])
 	}
 
     }
+    */
     printf("\n");
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
     fflush(stdout);
-/*
-    start = time(0);
+
+    start = getTimer();
     hpBuildPInfoNoOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
-    end = time(0);
-    printf("Build Pinfo seconds used: %22.16g\n", difftime(end, start));
+    end = getTimer();
+    printf("Build Pinfo seconds used: %22.16g\n", end-start);
 
 
     hpPrint_pinfo(mesh);
-*/
+
 
 /*
     char debug_filename[200];

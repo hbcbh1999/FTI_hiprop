@@ -58,6 +58,8 @@
 	#define hpMin( a, b ) ( ((a) < (b)) ? (a) : (b) )
 #endif
 
+EXTERN_C double getTimer(void);
+
 /*!
  * \brief Transform an int number into string using certain number of digits
  * \param n int number that is being transformed

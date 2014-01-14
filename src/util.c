@@ -53,6 +53,16 @@ static void b_emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
 }
 */
 
+double getTimer(void)
+{
+    struct timespec cur_time;
+    clock_gettime(CLOCK_MONOTONIC, &cur_time);
+
+    return (((double) cur_time.tv_sec)*((double)1000000000) + ((double)cur_time.tv_nsec))/((double)1000000000);
+}
+
+
+
 void numIntoString(const int n, int ndigits, char *s)
 {
 	int i;
