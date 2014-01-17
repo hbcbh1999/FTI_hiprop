@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
     printf("Build Pinfo seconds used: %22.16g\n", end-start);
 
 
-    hpPrint_pinfo(mesh);
+    //hpPrint_pinfo(mesh);
 
 
 /*
@@ -187,28 +187,29 @@ int main(int argc, char* argv[])
     printf("CleanMeshByPInfo seconds used: %22.16g\n", difftime(end, start));
 */
 
-    /*
-    fflush(stdout);
 
-    start = time(0);
+    start = getTimer();
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
-    end = time(0);
+    end = getTimer();
     printf("Seconds used: %22.16g\n", difftime(end, start));
 
 
-    start = time(0);
+    start = getTimer();
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
-    end = time(0);
+    end = getTimer();
     printf("Seconds used: %22.16g\n", difftime(end, start));
 
-    start = time(0);
-    hpBuildNRingGhost(mesh, 4);
+
+    start = getTimer();
+    hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
-    end = time(0);
+    end = getTimer();
     printf("Build 2 Ring Seconds used: %22.16g\n", difftime(end, start));
 
+
+    /*
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 

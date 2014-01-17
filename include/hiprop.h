@@ -65,9 +65,7 @@ typedef struct hiPropMesh
     emxArray_real_T *curv;		/*!< point main curvatures, size num_ps */
 
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
-    emxArray_int8_T **nb_proc_shift;
-
-    emxArray_real_T *periodic_length[3];/*!< periodic boundary length, if 0 then not periodic boundary */
+    emxArray_int8_T **nb_proc_shift;	/*!< neighbour processor shift list */
 
     real_T domain_len[3];		/*!< domain size in x,y,z */
     boolean_T has_periodic_boundary[3];	/*!< flag for periodic boundary in x,y,z */
@@ -437,9 +435,13 @@ EXTERN_C void hpCommPsTrisWithPInfo(hiPropMesh *mesh,
 EXTERN_C void hpCollectNRingTris(const hiPropMesh *mesh,
 				 const int nb_proc_index,
 				 const emxArray_int32_T *in_psid,
+				 const emxArray_int8_T *in_ps_shift,
 				 const real_T num_ring,
 				 emxArray_int32_T **out_ps,
-				 emxArray_int32_T **out_tris);
+				 emxArray_int32_T **out_tris,
+				 emxArray_int8_T **out_ps_shift,
+				 emxArray_int8_T **out_tris_shift,
+				 emxArray_int32_T **out_tris_buffer);
 
 /*!
  * \brief This function is a subfunction for hpBuildNRingGhost.
@@ -454,7 +456,7 @@ EXTERN_C void hpCollectNRingTris(const hiPropMesh *mesh,
  * \param out_psid array of pointers to the overlaying point ids for neighboring
  * processors.
  */
-EXTERN_C void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
+EXTERN_C void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid, emxArray_int8_T **out_ps_shift);
 
 EXTERN_C void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh);
 
@@ -467,8 +469,11 @@ EXTERN_C void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 				      const int nb_proc_index,
 				      const real_T num_ring,
 				      emxArray_int32_T *psid_proc,
+				      emxArray_int8_T *ps_shift_proc,
 				      emxArray_int32_T **ps_ring_proc,
 				      emxArray_int32_T **tris_ring_proc,
+				      emxArray_int8_T **ps_shift_ring_proc,
+				      emxArray_int8_T **tris_shift_ring_proc,
 				      emxArray_real_T **buffer_ps,
 				      emxArray_int32_T **buffer_tris);
 
@@ -486,11 +491,9 @@ EXTERN_C void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   emxArray_int32_T *tris_ring_proc,
 					   int **buffer_ps_pinfo_tag,
 					   int **buffer_ps_pinfo_lindex,
-					   int **buffer_ps_pinfo_pindex,
 					   int **buffer_ps_pinfo_proc,
 					   int **buffer_tris_pinfo_tag,
 					   int **buffer_tris_pinfo_lindex,
-					   int **buffer_tris_pinfo_pindex,
 					   int **buffer_tris_pinfo_proc);
 
 EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
@@ -499,11 +502,9 @@ EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					emxArray_int32_T *btris,
 					int *ppinfot,
 					int *ppinfol,
-					int *ppinfopi,
 					int *ppinfop,
 					int *tpinfot,
 					int *tpinfol,
-					int *tpinfopi,
 					int *tpinfop);
 
 EXTERN_C void hpUpdatePInfo(hiPropMesh *mesh);

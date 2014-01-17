@@ -80,6 +80,7 @@ void hpInitMesh(hiPropMesh **pmesh)
     mesh->curv = (emxArray_real_T *) NULL;
 
     mesh->nb_proc = (emxArray_int32_T *) NULL;
+    mesh->nb_proc_shift = (emxArray_int8_T **) NULL;
 
     int i;
     for (i = 0; i < 3; ++i)
@@ -147,17 +148,28 @@ void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
 
 void hpFreeMeshParallelInfo(hiPropMesh *pmesh)
 {
+    int i;
     hpDeletePInfoList(&(pmesh->ps_pinfo));
     hpDeletePInfoList(&(pmesh->tris_pinfo));
-
-    if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
-	emxFree_int32_T(&(pmesh->nb_proc));
 
     if (pmesh->part_bdry != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->part_bdry));
 
     if (pmesh->ps_type != ((emxArray_int32_T *) NULL) )
 	emxFree_int32_T(&(pmesh->ps_type));
+
+    if (pmesh->nb_proc_shift != ((emxArray_int8_T **) NULL))
+    {
+	for (i = 0; i < pmesh->nb_proc->size[0]; ++i)
+	{
+	    if (pmesh->nb_proc_shift[i] != (emxArray_int8_T *) NULL)
+	    	emxFree_int8_T(&(pmesh->nb_proc_shift[i]));
+	}
+	free(pmesh->nb_proc_shift);
+    }
+
+    if (pmesh->nb_proc != ((emxArray_int32_T *) NULL) )
+	emxFree_int32_T(&(pmesh->nb_proc));
 }
 
 void hpFreeMeshBasicInfo(hiPropMesh *pmesh)
@@ -916,39 +928,20 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			    flag[j-1] = 1;
 			}
 		    }
-
-		    // Actural loop ends here
 		}
 	    }
 	}
 
-	// using flag to construct iterate array for possible overlapping
-	// points, free the flag array after use
-
-	/*
-	int num_ps_iterate = 0;
-	for (j = 1; j <= mesh->ps->size[0]; ++j)
-	    num_ps_iterate++;
-
-	int *ps_iterate_id = (int *) calloc(num_ps_iterate, sizeof(int));
-	int cur_iter = 0;
-
-	for (j = 1; j <= mesh->ps->size[0]; ++j)
-	{
-	    if (flag[j-1] == 1)
-		ps_iterate_id[cur_iter++] = j;
-	}
-
-	free(flag);
-	*/
-
+	// Hash table for shifting f(a, b, c) = 100*a + 10*b + c
 	boolean_T *shift_flag = (boolean_T *) calloc(223, sizeof(boolean_T));
 
-	unsigned char *recv_flag = (unsigned char *) calloc (size_info[recv_index], sizeof(unsigned char));
+	// Each received point only map to one point in ps, otherwise
+	// overlapping point exists in the original mesh
+	boolean_T *recv_flag = (boolean_T *) calloc (size_info[recv_index], sizeof(boolean_T));
 
 	for (j = 1; j <= ps->size[0]; ++j) 
 	{
-	    if (flag[j-1] == 1)
+	    if (flag[j-1] == 1) //If possible overlapping
 	    {
 		double cur_x = ps->data[I2dm(j,1,ps->size)];
 		double cur_y = ps->data[I2dm(j,2,ps->size)];
@@ -956,7 +949,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
 		for (k = 0; k < size_info[recv_index]; ++k)
 		{
-		    if (recv_flag[k] == 1)
+		    if (recv_flag[k] == 1) // If this received point has been mapped
 			continue;
 
 		    if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
@@ -978,36 +971,6 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	    }
 	}
 	free(recv_flag);
-
-	/*
-	 * for (k = 0; k < size_info[recv_index]; ++k)
-	 * {
-	    for (j = 0; j < num_ps_iterate; ++j)
-	    {
-		int cur_id = ps_iterate_id[j];
-		double cur_x = ps->data[I2dm(cur_id,1,ps->size)];
-		double cur_y = ps->data[I2dm(cur_id,2,ps->size)];
-		double cur_z = ps->data[I2dm(cur_id,3,ps->size)];
-		if ( (fabs(cur_x - ps_recv[k*3]) < eps) &&
-		     (fabs(cur_y - ps_recv[k*3+1]) < eps) &&
-		     (fabs(cur_z - ps_recv[k*3+2]) < eps)
-		   )
-		{
-		    if (nb_ptemp[num_nbp] != source_id)
-		    {
-			nb_ptemp[num_nbp] = source_id;
-			num_nbp++;
-		    }
-
-		    int hash_value = 100*ps_shift_recv[k*3+2] + 10*ps_shift_recv[k*3+1] + ps_shift_recv[k*3];
-
-		    shift_flag[hash_value] = 1;
-
-		    break;
-		}
-	    }
-	}
-	*/
 
 	int num_shift_cur_proc = 0;
 
@@ -1380,7 +1343,9 @@ void hpInitPInfo(hiPropMesh *mesh)
     {
 	(mesh->ps_pinfo->pdata[I1dm(i)]).proc = my_rank;
 	(mesh->ps_pinfo->pdata[I1dm(i)]).lindex = i;
-	(mesh->ps_pinfo->pdata[I1dm(i)]).pindex = 0;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).shift[0] = 0;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).shift[1] = 0;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).shift[2] = 0;
 	(mesh->ps_pinfo->pdata[I1dm(i)]).next = -1;
 	mesh->ps_pinfo->head[I1dm(i)] = i;
 	mesh->ps_pinfo->tail[I1dm(i)] = i;
@@ -1389,7 +1354,9 @@ void hpInitPInfo(hiPropMesh *mesh)
     {
 	(mesh->tris_pinfo->pdata[I1dm(i)]).proc = my_rank;
 	(mesh->tris_pinfo->pdata[I1dm(i)]).lindex = i;
-	(mesh->tris_pinfo->pdata[I1dm(i)]).pindex = 0;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).shift[0] = 0;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).shift[1] = 0;
+	(mesh->ps_pinfo->pdata[I1dm(i)]).shift[2] = 0;
 	(mesh->tris_pinfo->pdata[I1dm(i)]).next = -1;
 	mesh->tris_pinfo->head[I1dm(i)] = i;
 	mesh->tris_pinfo->tail[I1dm(i)] = i;
@@ -1732,11 +1699,13 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	MPI_Recv(ps_index_recv, size_info[recv_index], MPI_INT, source_id, 3, MPI_COMM_WORLD, &recv_status3);
 	MPI_Recv(ps_shift_recv, 3*size_info[recv_index], MPI_SIGNED_CHAR, source_id, 4, MPI_COMM_WORLD, &recv_status4);
 
+	// All possible points for floating point comparison
 	boolean_T *flag = (boolean_T *) calloc (ps->size[0], sizeof (boolean_T));
 
 	emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[i];
 	int num_shifts = (nb_shift->size[0])/3;
 
+	//Iterate all shifts
 	for (is = 0; is < num_shifts; ++is)
 	{
 	    double x_factor = 0.0;
@@ -1795,7 +1764,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	}
 
-	unsigned char *recv_flag = (unsigned char *) calloc (size_info[recv_index], sizeof(unsigned char));
+	// Each point received could only be mapped to one point in the original
+	// mesh
+	boolean_T *recv_flag = (boolean_T *) calloc (size_info[recv_index], sizeof(boolean_T));
 
 	for (j = 1; j <= ps->size[0]; ++j) 
 	{
@@ -1843,9 +1814,9 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 			    ps_pinfo->pdata[I1dm(ps_pinfo->allocated_len)].next = -1;
 			    ps_pinfo->pdata[I1dm(cur_tail)].next = ps_pinfo->allocated_len;
 			}
-			else
+			else // If two pinfo has same processor id, then use local index to
+			     // decide which one is master
 			{
-			    // Using local index to decide
 
 			    if (ps_pinfo->pdata[I1dm(cur_head)].lindex > ps_index_recv[k])
 			    {
@@ -2103,7 +2074,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	tris_index_send[i] = (int *) calloc(num_tris_send[i], sizeof(int));
 	tris_shift_send[i] = (int8_T *) calloc(3*num_tris_send[i], sizeof(int8_T));
 
-
+	// Fill up the arrays for send
 	double *cur_ps_send = ps_send[i];
 	int *cur_ps_index_send = ps_index_send[i];
 	int8_T * cur_ps_shift_send = ps_shift_send[i];
@@ -2122,6 +2093,9 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	for (is = 0; is < num_shifts; ++is)
 	{
+	    // ps_map maps the current ps id to ps id in the send array
+	    // same point could be sent several times with different shift
+
 	    int *ps_map = (int *) calloc(ps->size[0], sizeof(int));
 	    double x_factor = 0.0;
 	    double y_factor = 0.0;
@@ -2318,8 +2292,8 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	MPI_Recv(tris_index_recv, size_recv[2*recv_index+1], MPI_INT, source_id, 6, MPI_COMM_WORLD, &recv_status6);
 	MPI_Recv(tris_shift_recv, 3*size_recv[2*recv_index+1], MPI_SIGNED_CHAR, source_id, 7, MPI_COMM_WORLD, &recv_status7);
 
-	// Build up the ps_flag and tris_flag for the current processor 
-	// for comparing with ps and tris from source_id
+	// Build up the possible ps and tris for the current processor 
+	// for comparing with ps and tris received from source_id
 
 	boolean_T *ps_flag = (boolean_T *) calloc (ps->size[0], sizeof (boolean_T));
 	boolean_T *tris_flag = (boolean_T *) calloc (tris->size[0], sizeof (boolean_T));
@@ -3223,7 +3197,7 @@ void hpPrint_pinfo(hiPropMesh *mesh)
 }
 
 
-void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
+void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid, emxArray_int8_T **out_ps_shift)
 {
     hpPInfoList *ps_pinfo = mesh->ps_pinfo;
     int num_nb_proc = mesh->nb_proc->size[0];
@@ -3235,61 +3209,69 @@ void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 
     int *num_overlay_ps = (int *) calloc(num_nb_proc, sizeof(int));
 
-    /* nb proc mapping[i] stores the index for proc i in
-     * mesh->proc->data (starts from 0) */
-    /*
-    int *nb_proc_mapping = (int *) calloc(num_all_proc, sizeof(int));
-    */
+    // nb proc mapping[i] stores the index for proc i in
+    // mesh->proc->data (starts from 0) 
 
-    /* Initialize nb_proc_mapping, for non nb proc, map to -1 */
-    /*
+    int *nb_proc_mapping = (int *) calloc(num_all_proc, sizeof(int));
+
+    // Initialize nb_proc_mapping, for non nb proc, map to -1 
     for (i = 0; i < num_all_proc; i++)
 	nb_proc_mapping[i] = -1;
-    */
 
-    /* construct the nb proc mapping */
-    /*
+    // construct the nb proc mapping
     for (i = 1; i <= num_nb_proc; i++)
     {
 	int nb_proc_id = mesh->nb_proc->data[I1dm(i)];
 	nb_proc_mapping[nb_proc_id] = i-1;
     }
-    */
 
-
-    /* Traverse the ps_pinfo to fill num_overlay_ps */
+    // Traverse the ps_pinfo to fill num_overlay_ps
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
 	int next_node = ps_pinfo->head[I1dm(i)];
 	while (next_node != -1)
 	{
-	    int proc_index = ps_pinfo->pdata[I1dm(next_node)].pindex;
-	    if (proc_index != 0)
-		num_overlay_ps[I1dm(proc_index)]++;
+	    int proc_id = ps_pinfo->pdata[I1dm(next_node)].proc;
+	    int local_id = ps_pinfo->pdata[I1dm(next_node)].lindex;
+
+	    if ((proc_id != cur_proc) || (local_id != i) )
+		num_overlay_ps[nb_proc_mapping[proc_id]]++;
 	    next_node = ps_pinfo->pdata[I1dm(next_node)].next;
 	}
     }
     
-    /* Create out_psid[i] based on num_overlay_ps */
+    // Create out_psid[i] based on num_overlay_ps
     for (i = 0; i < num_nb_proc; i++)
+    {
 	out_psid[i] = emxCreateND_int32_T(1, &(num_overlay_ps[i]) );
+	int ps_shift_len = 3*num_overlay_ps[i];
+
+	out_ps_shift[i] = emxCreateND_int8_T(1, &ps_shift_len);
+    }
+
+
     
-    /* use this pointer to denote how many elements has been filled
-     * in out_psid[i] */
+    // use this pointer to denote how many elements has been filled
+    // in out_psid[i]
     int *cur_ps_index = (int *) calloc(num_nb_proc, sizeof(int));
 
-    /* Traverse the ps_pinfo to fill out_psid */
+    // Traverse the ps_pinfo to fill out_psid
     for (i = 1; i <= mesh->ps->size[0]; i++)
     {
 	int next_node = ps_pinfo->head[I1dm(i)];
 	while (next_node != -1)
 	{
-	    int proc_index = ps_pinfo->pdata[I1dm(next_node)].pindex;
-	    if (proc_index != 0)
+	    int proc_id = ps_pinfo->pdata[I1dm(next_node)].proc;
+	    int local_id = ps_pinfo->pdata[I1dm(next_node)].lindex;
+	    if ( (proc_id != cur_proc) || (local_id != i) )
 	    {
-		//int mapped_index = nb_proc_mapping[proc_id];
-		(out_psid[I1dm(proc_index)])->data[cur_ps_index[I1dm(proc_index)]] = i;
-		cur_ps_index[I1dm(proc_index)]++;
+		int mapped_index = nb_proc_mapping[proc_id];
+		int cur_iter = cur_ps_index[mapped_index];
+		(out_psid[mapped_index])->data[cur_iter] = i;
+		(out_ps_shift[mapped_index])->data[cur_iter*3] = ps_pinfo->pdata[I1dm(next_node)].shift[0];
+		(out_ps_shift[mapped_index])->data[cur_iter*3+1] = ps_pinfo->pdata[I1dm(next_node)].shift[1];
+		(out_ps_shift[mapped_index])->data[cur_iter*3+2] = ps_pinfo->pdata[I1dm(next_node)].shift[2];
+		cur_ps_index[mapped_index]++;
 	    }
 	    next_node = ps_pinfo->pdata[I1dm(next_node)].next;
 	}
@@ -3297,7 +3279,7 @@ void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid)
 
     free(cur_ps_index);
     free(num_overlay_ps);
-    //free(nb_proc_mapping);
+    free(nb_proc_mapping);
 
 }
 
@@ -3496,76 +3478,85 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 			       const int nb_proc_index,
 			       const real_T num_ring,
 			       emxArray_int32_T *psid_proc,
+			       emxArray_int8_T *ps_shift_proc,
 			       emxArray_int32_T **ps_ring_proc,
 			       emxArray_int32_T **tris_ring_proc,
+			       emxArray_int8_T **ps_shift_ring_proc,
+			       emxArray_int8_T **tris_shift_ring_proc,
 			       emxArray_real_T **buffer_ps,
 			       emxArray_int32_T **buffer_tris)
 {
-    /* Get nring nb between current proc and all nb processors  
-     *
-     * Point positions stored in k_i*3 double matrices buffer_ps[i] where
-     * k = # of points in the n-ring buffer for mesh->nb_proc->data[i].
-     * Triangle indices mapped to the index for buffer_ps[i] and stored
-     * in buffer_tris[i];
-     */
-    int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
+    // Get nring nb between current proc and all nb processors  
+    //
+    // Point positions stored in k_i*3 double matrices buffer_ps[i] where
+    // k_i = # of points in the n-ring buffer for mesh->nb_proc->data[i].
+    // Triangle indices mapped to the index for buffer_ps[i] and stored
+    // in buffer_tris[i];
+
     int j;
 
-    double domain_x = (mesh->periodic_length[0])->data[I1dm(nb_proc_index)];
-    double domain_y = (mesh->periodic_length[1])->data[I1dm(nb_proc_index)];
-    double domain_z = (mesh->periodic_length[2])->data[I1dm(nb_proc_index)];
+    double domain_len_x = mesh->domain_len[0];
+    double domain_len_y = mesh->domain_len[1];
+    double domain_len_z = mesh->domain_len[2];
 
+    hpCollectNRingTris(mesh, nb_proc_index, psid_proc, ps_shift_proc, num_ring,
+	    ps_ring_proc, tris_ring_proc, ps_shift_ring_proc, tris_shift_ring_proc, buffer_tris);
+
+    int num_ps_buffer = (*ps_ring_proc)->size[0];
+
+    (*buffer_ps) = emxCreate_real_T(num_ps_buffer, 3);
+
+    for (j = 1; j <= num_ps_buffer; j++)
     {
-	hpCollectNRingTris(mesh, nb_proc_index, psid_proc, num_ring,
-			   ps_ring_proc, tris_ring_proc);
+	int cur_buf_ps_index = (*ps_ring_proc)->data[I1dm(j)];
 
-	int num_ps_buffer = (*ps_ring_proc)->size[0];
-	int num_tris_buffer = (*tris_ring_proc)->size[0];
+	double shift_x, shift_y, shift_z;
 
-	
-	(*buffer_ps) = emxCreate_real_T(num_ps_buffer, 3);
-	(*buffer_tris) = emxCreate_int32_T(num_tris_buffer, 3);
+	if ((*ps_shift_ring_proc)->data[3*(j-1)] == 1)
+	    shift_x = -domain_len_x;
+	else if((*ps_shift_ring_proc)->data[3*(j-1)] == 2)
+	    shift_x = domain_len_x;
+	else
+	    shift_x = 0.0;
 
-	for (j = 1; j <= num_ps_buffer; j++)
-	{
-	    int cur_buf_ps_index = (*ps_ring_proc)->data[I1dm(j)];
-	    (*buffer_ps)->data[I2dm(j,1,(*buffer_ps)->size)] =
-		mesh->ps->data[I2dm(cur_buf_ps_index,1,mesh->ps->size)] + domain_x;
-	    (*buffer_ps)->data[I2dm(j,2,(*buffer_ps)->size)] =
-		mesh->ps->data[I2dm(cur_buf_ps_index,2,mesh->ps->size)] + domain_y;
-	    (*buffer_ps)->data[I2dm(j,3,(*buffer_ps)->size)] =
-		mesh->ps->data[I2dm(cur_buf_ps_index,3,mesh->ps->size)] + domain_z;
+	if ((*ps_shift_ring_proc)->data[3*(j-1)+1] == 1)
+	    shift_y = -domain_len_y;
+	else if((*ps_shift_ring_proc)->data[3*(j-1)+1] == 2)
+	    shift_y = domain_len_y;
+	else
+	    shift_y = 0.0;
 
-	    ps_mapping[I1dm(cur_buf_ps_index)] = j;
-	}
-	for (j = 1; j <= num_tris_buffer; j++)
-	{
-	    int cur_buf_tris_index = (*tris_ring_proc)->data[I1dm(j)];
-	    (*buffer_tris)->data[I2dm(j,1,(*buffer_tris)->size)] =
-		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,1,mesh->tris->size)]-1];
-	    (*buffer_tris)->data[I2dm(j,2,(*buffer_tris)->size)] =
-		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,2,mesh->tris->size)]-1];
-	    (*buffer_tris)->data[I2dm(j,3,(*buffer_tris)->size)] =
-		ps_mapping[mesh->tris->data[I2dm(cur_buf_tris_index,3,mesh->tris->size)]-1];
-	}
-	/************* Debugging output **********************************
-	char rank_str[5];
-	char nb_rank_str[5];
-	numIntoString(cur_proc,4,rank_str);
-	numIntoString(mesh->nb_proc->data[I1dm(i)], 4, nb_rank_str);
-	char debug_out_name[250];
-	sprintf(debug_out_name, "debugout-p%s-to-p%s.vtk", rank_str, nb_rank_str);
-	hpDebugOutput(mesh, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)], debug_out_name);
-	******************************************************************/
+	if ((*ps_shift_ring_proc)->data[3*(j-1)+2] == 1)
+	    shift_z = -domain_len_z;
+	else if((*ps_shift_ring_proc)->data[3*(j-1)+2] == 2)
+	    shift_z = domain_len_z;
+	else
+	    shift_z = 0.0;
+
+	(*buffer_ps)->data[I2dm(j,1,(*buffer_ps)->size)] =
+	    mesh->ps->data[I2dm(cur_buf_ps_index,1,mesh->ps->size)] + shift_x;
+	(*buffer_ps)->data[I2dm(j,2,(*buffer_ps)->size)] =
+	    mesh->ps->data[I2dm(cur_buf_ps_index,2,mesh->ps->size)] + shift_y;
+	(*buffer_ps)->data[I2dm(j,3,(*buffer_ps)->size)] =
+	    mesh->ps->data[I2dm(cur_buf_ps_index,3,mesh->ps->size)] + shift_z;
+
     }
-    free(ps_mapping);
 
+    /************* Debugging output **********************************
+     * char rank_str[5];
+     * char nb_rank_str[5];
+     * numIntoString(cur_proc,4,rank_str);
+     * numIntoString(mesh->nb_proc->data[I1dm(i)], 4, nb_rank_str);
+     * char debug_out_name[250];
+     * sprintf(debug_out_name, "debugout-p%s-to-p%s.vtk", rank_str, nb_rank_str);
+     * hpDebugOutput(mesh, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)], debug_out_name);
+     * ******************************************************************/
 }
 
 void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
-				 const int nb_proc_index,
-				 emxArray_int32_T *ps_ring_proc,
-				 emxArray_int32_T *tris_ring_proc)
+	const int nb_proc_index,
+	emxArray_int32_T *ps_ring_proc,
+	emxArray_int32_T *tris_ring_proc)
 {
 
      /* Fill and build the temp pinfo information on each master processor 
@@ -3645,11 +3636,9 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 				    emxArray_int32_T *tris_ring_proc,
 				    int **buffer_ps_pinfo_tag,
 				    int **buffer_ps_pinfo_lindex,
-				    int **buffer_ps_pinfo_pindex,
 				    int **buffer_ps_pinfo_proc,
 				    int **buffer_tris_pinfo_tag,
 				    int **buffer_tris_pinfo_lindex,
-				    int **buffer_tris_pinfo_pindex,
 				    int **buffer_tris_pinfo_proc)
 {
     /* Fill and build the temp pinfo information on each master processor 
@@ -3718,11 +3707,9 @@ void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
     /* Fill in the buffer_ps/tris_pinfo_lindex & buffer_ps/tris_pinfo_proc in order */
     {
 	(*buffer_ps_pinfo_lindex) = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
-	(*buffer_ps_pinfo_pindex) = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
 	(*buffer_ps_pinfo_proc) = (int *) calloc(buffer_ps_pinfo_length, sizeof(int));
 
 	(*buffer_tris_pinfo_lindex) = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
-	(*buffer_tris_pinfo_pindex) = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
 	(*buffer_tris_pinfo_proc) = (int *) calloc(buffer_tris_pinfo_length, sizeof(int));
 
 	int cur_ps_pinfo = 0;
@@ -4749,12 +4736,10 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     /* Build n-ring neighborhood and send*/
     int **buffer_ps_pinfo_tag = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_ps_pinfo_lindex = (int **) calloc(num_nb_proc, sizeof(int *));
-    int **buffer_ps_pinfo_pindex = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_ps_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
 
     int **buffer_tris_pinfo_tag = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_tris_pinfo_lindex = (int **) calloc(num_nb_proc, sizeof(int *));
-    int **buffer_tris_pinfo_pindex = (int **) calloc(num_nb_proc, sizeof(int *));
     int **buffer_tris_pinfo_proc = (int **) calloc(num_nb_proc, sizeof(int *));
 
 
@@ -4768,11 +4753,9 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 	hpBuildGhostPsTrisPInfoForSend(mesh, i, ps_ring_proc[I1dm(i)], tris_ring_proc[I1dm(i)],
 		&(buffer_ps_pinfo_tag[I1dm(i)]),
 		&(buffer_ps_pinfo_lindex[I1dm(i)]),
-		&(buffer_ps_pinfo_pindex[I1dm(i)]),
 		&(buffer_ps_pinfo_proc[I1dm(i)]),
 		&(buffer_tris_pinfo_tag[I1dm(i)]),
 		&(buffer_tris_pinfo_lindex[I1dm(i)]),
-		&(buffer_tris_pinfo_pindex[I1dm(i)]),
 		&(buffer_tris_pinfo_proc[I1dm(i)]));
 
     }
@@ -4790,47 +4773,8 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     for (i = 0; i < num_nb_proc; ++i)
     {
 	int tag_size;
-	int tag_ps, tag_ps_tag, tag_ps_li, tag_ps_pi, tag_ps_proc;
-	int tag_tris, tag_tris_tag, tag_tris_li, tag_tris_pi, tag_tris_proc;
-
-	int digit1 = 1;
-	int digit2 = 1;
-	int digit3 = 1;
-
-	if ((mesh->periodic_length[0])->data[i] == 0)
-	    digit1 = 1;
-	else if ((mesh->periodic_length[0])->data[i] > 0)
-	    digit1 = 2;
-	else
-	    digit1 = 3;
-
-	if ((mesh->periodic_length[1])->data[i] == 0)
-	    digit2 = 1;
-	else if ((mesh->periodic_length[1])->data[i] > 0)
-	    digit2 = 2;
-	else
-	    digit2 = 3;
-
-	if ((mesh->periodic_length[2])->data[i] == 0)
-	    digit3 = 1;
-	else if ((mesh->periodic_length[2])->data[i] > 0)
-	    digit3 = 2;
-	else
-	    digit3 = 3;
-
-	tag_size = digit1 + 10*digit2 + 100*digit3;
-
-	tag_ps = tag_size + 1000;
-	tag_ps_tag = tag_size + 2000;
-	tag_ps_li = tag_size + 3000;
-	tag_ps_pi = tag_size + 4000;
-	tag_ps_proc = tag_size + 5000;
-
-	tag_tris = tag_size + 6000;
-	tag_tris_tag = tag_size + 7000;
-	tag_tris_li = tag_size + 8000;
-	tag_tris_pi = tag_size + 9000;
-	tag_tris_proc = tag_size + 10000;
+	int tag_ps, tag_ps_tag, tag_ps_li, tag_ps_proc;
+	int tag_tris, tag_tris_tag, tag_tris_li, tag_tris_proc;
 
 	MPI_Isend(&(size_send[2*i]), 2, MPI_INT, nb_proc->data[i], tag_size, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst]));
 	cur_rqst += 1;
@@ -4845,8 +4789,6 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 		  nb_proc->data[i], tag_ps_tag, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
 	MPI_Isend(buffer_ps_pinfo_lindex[i], buffer_ps_pinfo_tag[i][((buffer_ps[i])->size[0])], MPI_INT,
 		  nb_proc->data[i], tag_ps_li, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_ps_pinfo_pindex[i], buffer_ps_pinfo_tag[i][((buffer_ps[i])->size[0])], MPI_INT,
-		  nb_proc->data[i], tag_ps_pi, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
 	MPI_Isend(buffer_ps_pinfo_proc[i], buffer_ps_pinfo_tag[i][((buffer_ps[i])->size[0])], MPI_INT,
 		  nb_proc->data[i], tag_ps_proc, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
 
@@ -4854,8 +4796,6 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 		  nb_proc->data[i], tag_tris_tag, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
 	MPI_Isend(buffer_tris_pinfo_lindex[i], buffer_tris_pinfo_tag[i][((buffer_tris[i])->size[0])], MPI_INT,
 		  nb_proc->data[i], tag_tris_li, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
-	MPI_Isend(buffer_tris_pinfo_pindex[i], buffer_tris_pinfo_tag[i][((buffer_tris[i])->size[0])], MPI_INT,
-		  nb_proc->data[i], tag_tris_pi, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
 	MPI_Isend(buffer_tris_pinfo_proc[i], buffer_tris_pinfo_tag[i][((buffer_tris[i])->size[0])], MPI_INT,
 		  nb_proc->data[i], tag_tris_proc, MPI_COMM_WORLD, &(send_rqst_list[cur_rqst++]));
     }
@@ -4866,94 +4806,23 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     {
 	int tag_recv;
 
-	int digit1 = 1;
-	int digit2 = 1;
-	int digit3 = 1;
-
-	if ((mesh->periodic_length[0])->data[i] == 0)
-	    digit1 = 1;
-	else if ((mesh->periodic_length[0])->data[i] < 0)
-	    digit1 = 2;
-	else
-	    digit1 = 3;
-
-	if ((mesh->periodic_length[1])->data[i] == 0)
-	    digit2 = 1;
-	else if ((mesh->periodic_length[1])->data[i] < 0)
-	    digit2 = 2;
-	else
-	    digit2 = 3;
-
-	if ((mesh->periodic_length[2])->data[i] == 0)
-	    digit3 = 1;
-	else if ((mesh->periodic_length[2])->data[i] < 0)
-	    digit3 = 2;
-	else
-	    digit3 = 3;
-
-	tag_recv = digit1 + 10*digit2 + 100*digit3;
-
 	MPI_Irecv(&(recv_size[2*i]), 2, MPI_INT, nb_proc->data[i], tag_recv, MPI_COMM_WORLD, &(recv_req_list[i]));
     }
 
     for (i = 0; i < num_nb_proc; ++i)
     {
-	int tag_tmp;
-
-	int tag_ps, tag_ps_tag, tag_ps_li, tag_ps_pi, tag_ps_proc;
-	int tag_tris, tag_tris_tag, tag_tris_li, tag_tris_pi, tag_tris_proc;
-
-	int digit1 = 1;
-	int digit2 = 1;
-	int digit3 = 1;
-
-	if ((mesh->periodic_length[0])->data[i] == 0)
-	    digit1 = 1;
-	else if ((mesh->periodic_length[0])->data[i] < 0)
-	    digit1 = 2;
-	else
-	    digit1 = 3;
-
-	if ((mesh->periodic_length[1])->data[i] == 0)
-	    digit2 = 1;
-	else if ((mesh->periodic_length[1])->data[i] < 0)
-	    digit2 = 2;
-	else
-	    digit2 = 3;
-
-	if ((mesh->periodic_length[2])->data[i] == 0)
-	    digit3 = 1;
-	else if ((mesh->periodic_length[2])->data[i] < 0)
-	    digit3 = 2;
-	else
-	    digit3 = 3;
-
-	tag_tmp = digit1 + 10*digit2 + 100*digit3;
-
-	tag_ps = tag_tmp + 1000;
-	tag_ps_tag = tag_tmp + 2000;
-	tag_ps_li = tag_tmp + 3000;
-	tag_ps_pi = tag_tmp + 4000;
-	tag_ps_proc = tag_tmp + 5000;
-
-	tag_tris = tag_tmp + 6000;
-	tag_tris_tag = tag_tmp + 7000;
-	tag_tris_li = tag_tmp + 8000;
-	tag_tris_pi = tag_tmp + 9000;
-	tag_tris_proc = tag_tmp + 10000;
-
+	int tag_ps, tag_ps_tag, tag_ps_li, tag_ps_proc;
+	int tag_tris, tag_tris_tag, tag_tris_li, tag_tris_proc;
 
 	emxArray_real_T *buffer_ps_recv;
 	emxArray_int32_T *buffer_tris_recv;
 
 	int *buf_ppinfo_tag_recv;
 	int *buf_ppinfo_lindex_recv;
-	int *buf_ppinfo_pindex_recv;
 	int *buf_ppinfo_proc_recv;
 
 	int *buf_tpinfo_tag_recv;
 	int *buf_tpinfo_lindex_recv;
-	int *buf_tpinfo_pindex_recv;
 	int *buf_tpinfo_proc_recv;
 
 	int num_buf_ps_recv, num_buf_tris_recv;
@@ -4990,13 +4859,10 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 	num_buf_ps_pinfo_recv = buf_ppinfo_tag_recv[num_buf_ps_recv];
 
 	buf_ppinfo_lindex_recv = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
-	buf_ppinfo_pindex_recv = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
 	buf_ppinfo_proc_recv = (int *) calloc(num_buf_ps_pinfo_recv, sizeof(int));
 
 	MPI_Recv(buf_ppinfo_lindex_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
 		 tag_ps_li, MPI_COMM_WORLD, &tmp_status);
-	MPI_Recv(buf_ppinfo_pindex_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
-		 tag_ps_pi, MPI_COMM_WORLD, &tmp_status);
 	MPI_Recv(buf_ppinfo_proc_recv, num_buf_ps_pinfo_recv, MPI_INT, proc_recv,
 		 tag_ps_proc, MPI_COMM_WORLD, &tmp_status);
 
@@ -5009,31 +4875,26 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 	num_buf_tris_pinfo_recv = buf_tpinfo_tag_recv[num_buf_tris_recv];
 
 	buf_tpinfo_lindex_recv = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
-	buf_tpinfo_pindex_recv = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
 	buf_tpinfo_proc_recv = (int *) calloc(num_buf_tris_pinfo_recv, sizeof(int));
 
 	MPI_Recv(buf_tpinfo_lindex_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
 		 tag_tris_li, MPI_COMM_WORLD, &tmp_status);
-	MPI_Recv(buf_tpinfo_pindex_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
-		 tag_tris_pi, MPI_COMM_WORLD, &tmp_status);
 	MPI_Recv(buf_tpinfo_proc_recv, num_buf_tris_pinfo_recv, MPI_INT, proc_recv,
 		 tag_tris_proc, MPI_COMM_WORLD, &tmp_status);
 
 	hpAttachNRingGhostWithPInfo(mesh, proc_recv, buffer_ps_recv, buffer_tris_recv,
-		buf_ppinfo_tag_recv, buf_ppinfo_lindex_recv, buf_ppinfo_pindex_recv, buf_ppinfo_proc_recv,
-		buf_tpinfo_tag_recv, buf_tpinfo_lindex_recv, buf_tpinfo_pindex_recv, buf_tpinfo_proc_recv);
+		buf_ppinfo_tag_recv, buf_ppinfo_lindex_recv,  buf_ppinfo_proc_recv,
+		buf_tpinfo_tag_recv, buf_tpinfo_lindex_recv,  buf_tpinfo_proc_recv);
 
 	emxFree_real_T(&buffer_ps_recv);
 	emxFree_int32_T(&buffer_tris_recv);
 
 	free(buf_ppinfo_tag_recv);
 	free(buf_ppinfo_lindex_recv);
-	free(buf_ppinfo_pindex_recv);
 	free(buf_ppinfo_proc_recv);
 
 	free(buf_tpinfo_tag_recv);
 	free(buf_tpinfo_lindex_recv);
-	free(buf_tpinfo_pindex_recv);
 	free(buf_tpinfo_proc_recv);
     }
 
@@ -5056,12 +4917,10 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
 	emxFree_int32_T(&(buffer_tris[i]));
 	free(buffer_ps_pinfo_tag[i]);
 	free(buffer_ps_pinfo_lindex[i]);
-	free(buffer_ps_pinfo_pindex[i]);
 	free(buffer_ps_pinfo_proc[i]);
 
 	free(buffer_tris_pinfo_tag[i]);
 	free(buffer_tris_pinfo_lindex[i]);
-	free(buffer_tris_pinfo_pindex[i]);
 	free(buffer_tris_pinfo_proc[i]);
     }
 
@@ -5069,12 +4928,10 @@ void hpCommPsTrisWithPInfo(hiPropMesh *mesh, emxArray_int32_T **ps_ring_proc, em
     free(buffer_tris);
     free(buffer_ps_pinfo_tag);
     free(buffer_ps_pinfo_lindex);
-    free(buffer_ps_pinfo_pindex);
     free(buffer_ps_pinfo_proc);
 
     free(buffer_tris_pinfo_tag);
     free(buffer_tris_pinfo_lindex);
-    free(buffer_tris_pinfo_pindex);
     free(buffer_tris_pinfo_proc);
 
     /* Merge pinfo for ps/tris to get a fully updated pinfo list */
@@ -5096,40 +4953,111 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
     emxArray_int32_T **psid_proc = (emxArray_int32_T **)
 	calloc(num_nb_proc, sizeof(emxArray_int32_T *));
 
-    /* Get the overlapping points for building up n-ring neighborhood */
-    hpCollectAllSharedPs(mesh, psid_proc);
+    emxArray_int8_T **ps_shift_proc = (emxArray_int8_T **)
+	calloc(num_nb_proc, sizeof(emxArray_int8_T *));
 
-    /* Build n-ring neighborhood and send*/
+    // Get the overlapping points with shift for building up n-ring neighborhood
+    hpCollectAllSharedPs(mesh, psid_proc, ps_shift_proc);
+
+    // Build n-ring neighborhood and send
     emxArray_int32_T **ps_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
     emxArray_int32_T **tris_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+
+    emxArray_int8_T **ps_shift_ring_proc = (emxArray_int8_T **) calloc(num_nb_proc, sizeof(emxArray_int8_T *));
+    emxArray_int8_T **tris_shift_ring_proc = (emxArray_int8_T **) calloc(num_nb_proc, sizeof(emxArray_int8_T *));
+
     emxArray_real_T **buffer_ps = (emxArray_real_T **) calloc(num_nb_proc, sizeof(emxArray_real_T *));
     emxArray_int32_T **buffer_tris = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
 
     for (i = 1; i <= num_nb_proc; i++)
     {
-	hpBuildGhostPsTrisForSend(mesh, i, num_ring, psid_proc[I1dm(i)],
+	hpBuildGhostPsTrisForSend(mesh, i, num_ring, psid_proc[I1dm(i)], ps_shift_proc[I1dm(i)],
 				  &(ps_ring_proc[I1dm(i)]),
-				  &(tris_ring_proc[I1dm(i)]), 
+				  &(tris_ring_proc[I1dm(i)]),
+				  &(ps_shift_ring_proc[I1dm(i)]),
+				  &(tris_shift_ring_proc[I1dm(i)]), 
 				  &(buffer_ps[I1dm(i)]), &(buffer_tris[I1dm(i)]));
     }
 
-    /* Free the psid_proc, ps_ring_proc, tris_ring_proc, buffer_ps, buffer_tris
-     * are freed in the hpCommPsTrisWithPInfo function */
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+	emxFree_int32_T(&(psid_proc[I1dm(i)]));
+	emxFree_int8_T(&(ps_shift_proc[I1dm(i)]));
+    }
+    free(psid_proc);
+    free(ps_shift_proc);
+
+    //////////////////Send debug test
+    /*
+    int j;
+    for (j = 1 ; j <= num_nb_proc; j++)
+    {
+	char test_filename[256];
+	sprintf(test_filename, "send_debug_%d.vtk", j);
+	FILE* file = fopen(test_filename, "w");
+	int i;
+	emxArray_real_T* points = buffer_ps[I1dm(j)];
+	emxArray_int32_T* triangles = buffer_tris[I1dm(j)];
+
+	fprintf(file, "# vtk DataFile Version 3.0\n");
+	fprintf(file, "Mesh output by hiProp\n");
+	fprintf(file, "ASCII\n");
+	fprintf(file, "DATASET UNSTRUCTURED_GRID\n");
+
+	int num_points = points->size[0];
+	int num_tris = triangles->size[0]/3;
+
+	fprintf(file, "POINTS %d double\n", num_points);
+	for (i = 1; i <= num_points; i++)
+	    fprintf(file, "%22.16lg %22.16lg %22.16lg\n",
+		    points->data[I2dm(i,1,points->size)],
+		    points->data[I2dm(i,2,points->size)],
+		    points->data[I2dm(i,3,points->size)]);
+
+	fprintf(file, "CELLS %d %d\n", num_tris, 4*num_tris);
+	for (i = 1; i <= num_tris; i++)
+	    fprintf(file, "3 %d %d %d\n",
+		    triangles->data[3*(i-1)]-1,
+		    triangles->data[3*(i-1)+1]-1,
+		    triangles->data[3*(i-1)+2]-1);
+
+	fprintf(file, "CELL_TYPES %d\n", num_tris);
+	for (i = 0; i<num_tris; i++)
+	    fprintf(file, "5\n");
+	fclose(file);
+    }
+    */
+    //////////////////
+
+    // Build and communicate the ghost based on ps_ring_proc, tris_ring_proc,
+    // buffer_ps, buffer_tris
+
+    //hpCommPsTrisWithPInfo(mesh, ps_ring_proc, tris_ring_proc, ps_shift_ring_proc, tris_shift_ring_proc, buffer_ps, buffer_tris);
 
     for (i = 1; i <= num_nb_proc; i++)
-	emxFree_int32_T(&(psid_proc[I1dm(i)]));
-    free(psid_proc);
+    {
+	emxFree_int32_T(&(ps_ring_proc[I1dm(i)]));
+	emxFree_int32_T(&(tris_ring_proc[I1dm(i)]));
 
-    /* Build and communicate the ghost based on ps_ring_proc, tris_ring_proc,
-     * buffer_ps, buffer_tris */
+	emxFree_int8_T(&(ps_shift_ring_proc[I1dm(i)]));
+	emxFree_int8_T(&(tris_shift_ring_proc[I1dm(i)]));
 
-    hpCommPsTrisWithPInfo(mesh, ps_ring_proc, tris_ring_proc, buffer_ps, buffer_tris);
+	emxFree_real_T(&(buffer_ps[I1dm(i)]));
+	emxFree_int32_T(&(buffer_tris[I1dm(i)]));
+    }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    free(ps_ring_proc);
+    free(tris_ring_proc);
+    free(ps_shift_ring_proc);
+    free(tris_shift_ring_proc);
+    free(buffer_ps);
+    free(buffer_tris);
 
-    hpUpdatePInfo(mesh);
+    //MPI_Barrier(MPI_COMM_WORLD);
 
-    hpUpdateNbWithPInfo(mesh);
+    //hpUpdatePInfo(mesh);
+
+    //hpUpdateNbWithPInfo(mesh);
 }
 
 
@@ -5139,11 +5067,9 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 				 emxArray_int32_T *btris,
 				 int *ppinfot,
 				 int *ppinfol,
-				 int *ppinfopi,
 				 int *ppinfop,
 				 int *tpinfot,
 				 int *tpinfol,
-				 int *tpinfopi,
 				 int *tpinfop)
 {
 
@@ -5474,152 +5400,284 @@ void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 void hpCollectNRingTris(const hiPropMesh *mesh,
 			const int nb_proc_index,
 			const emxArray_int32_T *in_psid,
+			const emxArray_int8_T *in_ps_shift,
 			const real_T num_ring,
 			emxArray_int32_T **out_ps,
-			emxArray_int32_T **out_tris)
+			emxArray_int32_T **out_tris,
+			emxArray_int8_T **out_ps_shift,
+			emxArray_int8_T **out_tris_shift,
+			emxArray_int32_T **out_tris_buffer)
 {
-    int i, j;
+    int i, j, is;
+
+    int target_proc = mesh->nb_proc->data[I1dm(nb_proc_index)];
 
     int num_ps = mesh->ps->size[0];
     int num_tris = mesh->tris->size[0];
     int max_b_numps = 128;
     int max_b_numtris = 256;
 
+    emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[nb_proc_index-1];
+    int num_shifts = (nb_shift->size[0])/3;
+
     hpPInfoNode *tris_pdata = mesh->tris_pinfo->pdata;
+
     int *tris_phead = mesh->tris_pinfo->head;
-    //int *nb_proc = mesh->nb_proc->data;
     emxArray_int32_T *tris = mesh->tris;
     int *tris_data = tris->data;
 
+    // num of points/tris in each n-ring
+    int num_ps_ring, num_tris_ring;
 
-    /* For denote whether each ps and tris belongs to the 2-ring buffer for
-     * in_psid. If ps_flag[I1dm(i)] = true, then point i is in the 2-ring
-     * buffer, if tris_flag[I1dm(j)] = true, then triangle j is in the 2-ring
-     * buffer */
-    emxArray_boolean_T *ps_flag = emxCreateND_boolean_T(1, &num_ps);
-    emxArray_boolean_T *tris_flag = emxCreateND_boolean_T(1, &num_tris);
-
-    /* Used for obtain_nring_surf, initialized as false */
+    // Used for obtain_nring_surf, initialized as false
     emxArray_boolean_T *in_vtags = emxCreateND_boolean_T(1, &num_ps);
     emxArray_boolean_T *in_ftags = emxCreateND_boolean_T(1, &num_tris);
 
-    /* Used for storing outputs of obtain_nring_surf */
+    /// Used for storing outputs of obtain_nring_surf 
     emxArray_int32_T *in_ngbvs = emxCreateND_int32_T(1, &max_b_numps);
     emxArray_int32_T *in_ngbfs = emxCreateND_int32_T(1, &max_b_numtris);
 
-    int num_ps_ring, num_tris_ring;
 
-    for (i = 1; i <= in_psid->size[0]; i++)
-    {
-	int cur_ps = in_psid->data[I1dm(i)];
+    int **ps_id_temp = (int **) calloc(num_shifts, sizeof(int *));
+    int **tris_id_temp = (int **) calloc(num_shifts, sizeof(int *));
 
-	obtain_nring_surf(cur_ps, num_ring, 0, mesh->tris, mesh->opphe,
-			  mesh->inhe, in_ngbvs, in_vtags, in_ftags, 
-			  in_ngbfs, &num_ps_ring, &num_tris_ring);
+    int **tris_buffer_temp = (int **) calloc(num_shifts, sizeof(int *));
 
-       	/*cur_ps itself in the list */
-	/*
-	ps_flag->data[I1dm(cur_ps)] = true;
-	*/
-
-	/*
-	for (j = 1; j <= num_ps_ring; j++)
-	{
-	    int ps_buf_index = in_ngbvs->data[I1dm(j)];
-	    ps_flag->data[I1dm(ps_buf_index)] = true;
-	}
-	*/
-
-	for (j = 1; j <= num_tris_ring; j++)
-	{
-	    /* Only send the triangles which does not exists on the nb proc */
-	    int tris_buf_index = in_ngbfs->data[I1dm(j)];
-	    tris_flag->data[I1dm(tris_buf_index)] = true;
-
-	    int next_node = tris_phead[I1dm(tris_buf_index)];
-	    while(next_node != -1)
-	    {
-		//int proc_id = tris_pdata[I1dm(next_node)].proc;
-		int proc_index = tris_pdata[I1dm(next_node)].pindex;
-		/* If also exists on other processor, do not send it */
-		if (proc_index == nb_proc_index)
-		{
-		    tris_flag->data[I1dm(tris_buf_index)] = false;
-		    break;
-		}
-		else
-		    next_node = tris_pdata[I1dm(next_node)].next;
-	    }
-	}
-    }
-
-    /* Set the points needed to be send based on tris */
-
-    for (i = 1; i <= num_tris; i++)
-    {
-	if (tris_flag->data[I1dm(i)] == true)
-	{
-	    int bufpi[3];
-	    bufpi[0] = tris_data[I2dm(i,1,tris->size)];
-	    bufpi[1] = tris_data[I2dm(i,2,tris->size)];
-	    bufpi[2] = tris_data[I2dm(i,3,tris->size)];
-	    ps_flag->data[I1dm(bufpi[0])] = true;
-	    ps_flag->data[I1dm(bufpi[1])] = true;
-	    ps_flag->data[I1dm(bufpi[2])] = true;
-	}
-    }
-
-
-    /* Get total number of ps and tris in n-ring nb */
+    int *num_ps_ring_shift = (int *) calloc(num_shifts, sizeof(int));
+    int *num_tris_ring_shift = (int *) calloc(num_shifts, sizeof(int));
 
     int num_ps_ring_all = 0;
     int num_tris_ring_all = 0;
 
-    for (i = 1; i <= num_ps; i++)
+    for (is = 0; is < num_shifts; ++is)
     {
-	if (ps_flag->data[I1dm(i)] == true)
-	    num_ps_ring_all++;
+	int num_ol_pt_cur_shift = 0;
+	int num_ol_pt = in_psid->size[0];
+
+	//The overlapping points related to current shift
+	boolean_T *shift_flag = (boolean_T *) calloc(num_ol_pt, sizeof(boolean_T));
+
+	//The n-ring points/tris related to current shift
+	boolean_T *ps_flag = (boolean_T *) calloc(num_ps, sizeof(boolean_T));
+	boolean_T *tris_flag = (boolean_T *) calloc(num_tris, sizeof(boolean_T));
+
+	int *ps_map = (int *) calloc(num_ps, sizeof(int));
+
+	int8_T sx, sy, sz;
+
+	sx = nb_shift->data[is*3];
+	sy = nb_shift->data[is*3+1];
+	sz = nb_shift->data[is*3+2];
+
+	// First flag the overlapping points related to current shift
+	for (i = 0; i < num_ol_pt; i++)
+	{
+	    if ( (sx == in_ps_shift->data[i*3]) &&
+		 (sy == in_ps_shift->data[i*3+1]) &&
+		 (sz == in_ps_shift->data[i*3+2]) )
+	    {
+		shift_flag[i] = 1;
+		num_ol_pt_cur_shift++;
+	    }
+
+	}
+
+	// Get n-ring neighbor for each point, go through the 
+	// pinfo for all the triangles on the n-ring of each point
+	// to decide whether it need to be sent
+
+	for (i = 0; i < num_ol_pt; i++)
+	{
+	    if (shift_flag[i]) //If it is related to current shift
+	    {
+		int cur_ps = in_psid->data[i];
+		obtain_nring_surf(cur_ps, num_ring, 0, mesh->tris, mesh->opphe,
+			mesh->inhe, in_ngbvs, in_vtags, in_ftags, 
+			in_ngbfs, &num_ps_ring, &num_tris_ring);
+
+		for (j = 0; j < num_tris_ring; j++)
+		{
+		    // Only send the triangles which does not exists on the nb proc
+		    int tris_buf_index = in_ngbfs->data[j];
+		    tris_flag[I1dm(tris_buf_index)] = 1;
+
+		    int next_node = tris_phead[I1dm(tris_buf_index)];
+		    while(next_node != -1)
+		    {
+			// If also exists on other processor, do not send it
+
+			if ( (tris_pdata[I1dm(next_node)].proc == target_proc) &&
+			     (sx == tris_pdata[I1dm(next_node)].shift[0]) &&
+			     (sy == tris_pdata[I1dm(next_node)].shift[1]) &&
+			     (sz == tris_pdata[I1dm(next_node)].shift[2]) )
+			{
+			    tris_flag[I1dm(tris_buf_index)] = 0;
+			    break;
+			}
+			else
+			    next_node = tris_pdata[I1dm(next_node)].next;
+		    }
+		}
+	    }
+
+	}
+
+	// Decide which points to be sent based on tris
+	for (i = 1; i <= num_tris; i++)
+	{
+	    if (tris_flag[i-1])
+	    {
+		int bufpi_x = tris_data[I2dm(i,1,tris->size)];
+		int bufpi_y = tris_data[I2dm(i,2,tris->size)];
+		int bufpi_z = tris_data[I2dm(i,3,tris->size)];
+		ps_flag[I1dm(bufpi_x)] = 1;
+		ps_flag[I1dm(bufpi_y)] = 1;
+		ps_flag[I1dm(bufpi_z)] = 1;
+	    }
+	}
+
+	for (i = 1; i <= num_ps; i++)
+	{
+	    if (ps_flag[I1dm(i)])
+	    {
+		(num_ps_ring_shift[is])++;
+		num_ps_ring_all++;
+
+		ps_map[I1dm(i)] = num_ps_ring_all;
+	    }
+	}
+
+	for (i = 1; i <= num_tris; i++)
+	{
+	    if (tris_flag[I1dm(i)])
+	    {
+		(num_tris_ring_shift[is])++;
+		num_tris_ring_all++;
+	    }
+	}
+
+	ps_id_temp[is] = (int *) calloc(num_ps_ring_shift[is], sizeof(int));
+	tris_id_temp[is] = (int *) calloc(num_tris_ring_shift[is], sizeof(int));
+
+	tris_buffer_temp[is] = (int *) calloc(3*num_tris_ring_shift[is], sizeof(int));
+
+	int *cur_ps_id_temp = ps_id_temp[is];
+	int *cur_tris_id_temp = tris_id_temp[is];
+	int *cur_tris_buffer_temp = tris_buffer_temp[is];
+
+	int ps_iter = 0;
+	int tris_iter = 0;
+
+	for (i = 1; i <= num_ps; i++)
+	{
+	    if (ps_flag[I1dm(i)])
+		cur_ps_id_temp[ps_iter++] = i;
+	}
+
+	for (i = 1; i <= num_tris; i++)
+	{
+	    if (tris_flag[I1dm(i)])
+	    {
+		cur_tris_id_temp[tris_iter] = i;
+
+		cur_tris_buffer_temp[tris_iter*3] = ps_map[I1dm(tris_data[I2dm(i,1,tris->size)])];
+		cur_tris_buffer_temp[tris_iter*3+1] = ps_map[I1dm(tris_data[I2dm(i,2,tris->size)])];
+		cur_tris_buffer_temp[tris_iter*3+2] = ps_map[I1dm(tris_data[I2dm(i,3,tris->size)])];
+
+		tris_iter++;
+	    }
+	}
+
+	free(shift_flag);
+	free(ps_flag);
+	free(tris_flag);
+	free(ps_map);
+
     }
 
-    for (i = 1; i <= num_tris; i++)
-    {
-	if (tris_flag->data[I1dm(i)] == true)
-	    num_tris_ring_all++;
-    }
+    // Combine ps_ring and tris_ring for each shift to get final array
 
-    /* Create n-ring ps and tris for output */
+    int num_ps_ring_shift_all = 3*num_ps_ring_all;
+    int num_tris_ring_shift_all = 3*num_tris_ring_all;
+    int num_tris_ring_buffer_all = 3*num_tris_ring_all;
+
     (*out_ps) = emxCreateND_int32_T(1, &num_ps_ring_all);
     (*out_tris) = emxCreateND_int32_T(1, &num_tris_ring_all);
 
-    /* Fill the out_ps and out_tris based on the flags */
-    j = 1;
-    for (i = 1; i <= num_ps; i++)
+    (*out_tris_buffer) = emxCreateND_int32_T(1, &num_tris_ring_buffer_all);
+
+    (*out_ps_shift) = emxCreateND_int8_T(1, &num_ps_ring_shift_all);
+    (*out_tris_shift) = emxCreateND_int8_T(1, &num_tris_ring_shift_all);
+
+    int ps_iter = 0;
+    int tris_iter = 0;
+
+    emxArray_int32_T *result_ps = *out_ps;
+    emxArray_int32_T *result_tris = *out_tris;
+
+    emxArray_int32_T *result_tris_buffer = *out_tris_buffer;
+
+    emxArray_int8_T *result_ps_shift = *out_ps_shift;
+    emxArray_int8_T *result_tris_shift = *out_tris_shift;
+
+    for (is = 0; is < num_shifts; is++)
     {
-	if (ps_flag->data[I1dm(i)] == true)
+	int8_T sx, sy, sz;
+
+	sx = nb_shift->data[is*3];
+	sy = nb_shift->data[is*3+1];
+	sz = nb_shift->data[is*3+2];
+
+	int num_ps_ring_cur_shift = num_ps_ring_shift[is];
+	int num_tris_ring_cur_shift = num_tris_ring_shift[is];
+
+	int *ps_ring_cur_shift = ps_id_temp[is];
+	int *tris_ring_cur_shift = tris_id_temp[is];
+	int *tris_buffer_ring_cur_shift = tris_buffer_temp[is];
+
+	for (i = 0; i < num_ps_ring_cur_shift; i++)
 	{
-	    (*out_ps)->data[I1dm(j)] = i;
-	    j++;
+	    result_ps->data[ps_iter] = ps_ring_cur_shift[i];
+	    result_ps_shift->data[ps_iter*3] = sx;
+	    result_ps_shift->data[ps_iter*3+1] = sy;
+	    result_ps_shift->data[ps_iter*3+2] = sz;
+	    ps_iter++;
+	}
+
+	for (i = 0; i < num_tris_ring_cur_shift; i++)
+	{
+	    result_tris->data[tris_iter] = tris_ring_cur_shift[i];
+	    result_tris_shift->data[tris_iter*3] = sx;
+	    result_tris_shift->data[tris_iter*3+1] = sy;
+	    result_tris_shift->data[tris_iter*3+2] = sz;
+
+	    result_tris_buffer->data[tris_iter*3] = tris_buffer_ring_cur_shift[i*3];
+	    result_tris_buffer->data[tris_iter*3+1] = tris_buffer_ring_cur_shift[i*3+1];
+	    result_tris_buffer->data[tris_iter*3+2] = tris_buffer_ring_cur_shift[i*3+2];
+
+	    tris_iter++;
 	}
     }
 
-    j = 1;
-    for (i = 1; i <= num_tris; i++)
+    for (is = 0; is < num_shifts; is++)
     {
-	if (tris_flag->data[I1dm(i)] == true)
-	{
-	    (*out_tris)->data[I1dm(j)] = i;
-	    j++;
-	}
+	free(ps_id_temp[is]);
+	free(tris_id_temp[is]);
+	free(tris_buffer_temp[is]);
     }
+
+    free(ps_id_temp);
+    free(tris_id_temp);
+    free(tris_buffer_temp);
+    free(num_ps_ring_shift);
+    free(num_tris_ring_shift);
+
 
     emxFree_int32_T(&in_ngbvs);
     emxFree_int32_T(&in_ngbfs);
 
     emxFree_boolean_T(&in_vtags);
     emxFree_boolean_T(&in_ftags);
-
-    emxFree_boolean_T(&ps_flag);
-    emxFree_boolean_T(&tris_flag);
 }
 
 
