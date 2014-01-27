@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
 
 
     start = getTimer();
-    hpBuildNRingGhost(mesh, 2);
+    hpBuildNRingGhost(mesh, 1);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
     end = getTimer();
     printf("Build 2 Ring Seconds used: %22.16g\n", difftime(end, start));

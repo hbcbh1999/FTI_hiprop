@@ -418,6 +418,8 @@ EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
 EXTERN_C void hpCommPsTrisWithPInfo(hiPropMesh *mesh,
 				    emxArray_int32_T **ps_ring_proc,
 				    emxArray_int32_T **tris_ring_proc,
+				    emxArray_int8_T **ps_shift_ring_proc,
+				    emxArray_int8_T **tris_shift_ring_proc,
 				    emxArray_real_T **buffer_ps,
 				    emxArray_int32_T **buffer_tris);
 /*!
@@ -492,9 +494,11 @@ EXTERN_C void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   int **buffer_ps_pinfo_tag,
 					   int **buffer_ps_pinfo_lindex,
 					   int **buffer_ps_pinfo_proc,
+					   int8_T **buffer_ps_pinfo_shift,
 					   int **buffer_tris_pinfo_tag,
 					   int **buffer_tris_pinfo_lindex,
-					   int **buffer_tris_pinfo_proc);
+					   int **buffer_tris_pinfo_proc,
+					   int8_T **buffer_tris_pinfo_shift);
 
 EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					const int rcv_id,
@@ -503,9 +507,11 @@ EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					int *ppinfot,
 					int *ppinfol,
 					int *ppinfop,
+					int8_T *ppinfos,
 					int *tpinfot,
 					int *tpinfol,
-					int *tpinfop);
+					int *tpinfop,
+					int8_T *tpinfos);
 
 EXTERN_C void hpUpdatePInfo(hiPropMesh *mesh);
 
@@ -517,7 +523,9 @@ EXTERN_C void hpUpdateNbWithPInfo(hiPropMesh *mesh);
 EXTERN_C void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 					const int nb_proc_index,
 					emxArray_int32_T *ps_ring_proc,
-					emxArray_int32_T *tris_ring_proc);
+					emxArray_int32_T *tris_ring_proc,
+					emxArray_int8_T *ps_shift_ring_proc,
+					emxArray_int8_T *tris_shift_ring_proc);
 
 EXTERN_C void hpCollectAllGhostPs(hiPropMesh *mesh,
 			 	const int nbp_index,
