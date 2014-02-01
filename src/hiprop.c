@@ -609,7 +609,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
     }
 
-    /* Get estimated nb proc array and number of estimated nb proc */
+    // Get estimated nb proc array and number of estimated nb proc 
 
     int *nb_ptemp_iter = (int *) calloc(num_nbp_est, sizeof(int));
     int nb_ptemp_cur = 0;
@@ -619,6 +619,8 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	if (nb_ptemp_est[i] == true)
 	    nb_ptemp_iter[nb_ptemp_cur++] = i;
     }
+
+    free (nb_ptemp_est);
 
     // Allocate temporary storage for actual nb proc and nb proc shift array,
     // largest storage should be <= num_nbp_est 
@@ -966,6 +968,8 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 			int hash_value = 100*ps_shift_recv[k*3+2] + 10*ps_shift_recv[k*3+1] + ps_shift_recv[k*3];
 
 			shift_flag[hash_value] = 1;
+			
+			recv_flag[k] = 1;
 		    }
 		}
 	    }
@@ -980,24 +984,38 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 		num_shift_cur_proc++;
 	}
 
-	int all_shift_len = 3*num_shift_cur_proc;
-
-	nb_shift_temp[num_nbp-1] = emxCreateND_int8_T(1, &all_shift_len);
+	nb_shift_temp[num_nbp-1] = emxCreate_int8_T(num_shift_cur_proc, 3);
 
 	emxArray_int8_T *cur_nb_shift = nb_shift_temp[num_nbp-1];
 
-	ki = 0;
+	ki = 1;
 
 	for (k = 0; k < 223; k++)
 	{
 	    if (shift_flag[k] == 1)
 	    {
 		int cur_hash_value = k;
-		cur_nb_shift->data[ki++] = cur_hash_value % 10; // first digit
+		int first_digit = cur_hash_value % 10;
+		if (first_digit == 2)
+		    cur_nb_shift->data[I2dm(ki,1,cur_nb_shift->size)] = -1;
+		else
+		    cur_nb_shift->data[I2dm(ki,1,cur_nb_shift->size)] = (int8_T) first_digit;
+
 		cur_hash_value /= 10;
-		cur_nb_shift->data[ki++] = cur_hash_value % 10; // second digit
+		int second_digit = cur_hash_value % 10;
+		if (second_digit == 2)
+		    cur_nb_shift->data[I2dm(ki,2,cur_nb_shift->size)] = -1;
+		else
+		    cur_nb_shift->data[I2dm(ki,2,cur_nb_shift->size)] = (int8_T) second_digit;
+
 		cur_hash_value /= 10;
-		cur_nb_shift->data[ki++] = cur_hash_value;
+		int third_digit = cur_hash_value;
+		if (third_digit == 2)
+		    cur_nb_shift->data[I2dm(ki,3,cur_nb_shift->size)] = -1;
+		else
+		    cur_nb_shift->data[I2dm(ki,3,cur_nb_shift->size)] = (int8_T) third_digit;
+
+		ki++;
 	    }
 	}
 
@@ -1017,19 +1035,20 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     free(send_status_list);
 
     for (i = 0; i < num_nbp_est; ++i)
+    {
 	free(ps_send[i]);
+	free(ps_shift_send[i]);
+    }
     free(num_ps_send);
     free(ps_send);
+    free(ps_shift_send);
     free(all_bd_box);
     free(nb_ptemp_iter);
     
-    int num_nb[1];
-    num_nb[0] = num_nbp;
-
-    mesh->nb_proc = emxCreateND_int32_T(1, num_nb);
+    mesh->nb_proc = emxCreateND_int32_T(1, &num_nbp);
     mesh->nb_proc_shift = (emxArray_int8_T **) calloc(num_nbp, sizeof(emxArray_int8_T *));
 
-    for (i = 0; i < num_proc; i++)
+    for (i = 0; i < num_nbp; i++)
     {
 	mesh->nb_proc->data[i] = nb_ptemp[i];
 	mesh->nb_proc_shift[i] = nb_shift_temp[i];
@@ -1479,10 +1498,10 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	int target_id = nb_proc->data[i];
 	emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[i];
 
-	int num_shifts = (nb_shift->size[0])/3;
+	int num_shifts = nb_shift->size[0];
 
 	// First get the number of points needed to be sent
-	for (is = 0; is < num_shifts; ++is)
+	for (is = 1; is <= num_shifts; ++is)
 	{
 	    double x_factor = 0.0;
 	    double y_factor = 0.0;
@@ -1490,10 +1509,15 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	    int8_T sx, sy, sz;
 
-	    sx = nb_shift->data[is*3];
-	    sy = nb_shift->data[is*3+1];
-	    sz = nb_shift->data[is*3+2];
+	    sx = nb_shift->data[I2dm(is,1,nb_shift->size)];
+	    sy = nb_shift->data[I2dm(is,2,nb_shift->size)];
+	    sz = nb_shift->data[I2dm(is,3,nb_shift->size)];
 
+	    x_factor = ((double) -sx) * domain_len_x;
+	    y_factor = ((double) -sy) * domain_len_y;
+	    z_factor = ((double) -sz) * domain_len_z;
+
+	    /*
 	    if (sx == 1)
 		x_factor = -domain_len_x;
 	    else if (sx == 2)
@@ -1515,7 +1539,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 		z_factor = domain_len_z;
 	    else
 		z_factor = 0.0;
-
+*/
 	    double cur_bdbox_xL = all_bd_box[target_id*6] - x_factor;
 	    double cur_bdbox_xU = all_bd_box[target_id*6+1] - x_factor;
 	    double cur_bdbox_yL = all_bd_box[target_id*6+2] - y_factor;
@@ -1556,7 +1580,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	//Fill up the arrays for send
 	
-	for (is = 0; is < num_shifts; ++is)
+	for (is = 1; is <= num_shifts; ++is)
 	{
 	    double x_factor = 0.0;
 	    double y_factor = 0.0;
@@ -1565,10 +1589,19 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	    int8_T sx, sy, sz;
 	    int8_T sx_send, sy_send, sz_send;
 
-	    sx = nb_shift->data[is*3];
-	    sy = nb_shift->data[is*3+1];
-	    sz = nb_shift->data[is*3+2];
+	    sx = nb_shift->data[I2dm(is,1,nb_shift->size)];
+	    sy = nb_shift->data[I2dm(is,2,nb_shift->size)];
+	    sz = nb_shift->data[I2dm(is,3,nb_shift->size)];
 
+	    sx_send = -sx;
+	    sy_send = -sy;
+	    sz_send = -sz;
+
+	    x_factor = ((double) -sx)*domain_len_x;
+	    y_factor = ((double) -sy)*domain_len_y;
+	    z_factor = ((double) -sz)*domain_len_z;
+
+	    /*
 	    if (sx == 1)
 	    {
 		x_factor = -domain_len_x;
@@ -1617,6 +1650,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 		z_factor = 0.0;
 		sz_send = 0;
 	    }
+	    */
 
 	    double cur_bdbox_xL = all_bd_box[target_id*6] - x_factor;
 	    double cur_bdbox_xU = all_bd_box[target_id*6+1] - x_factor;
@@ -1703,10 +1737,10 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 	boolean_T *flag = (boolean_T *) calloc (ps->size[0], sizeof (boolean_T));
 
 	emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[i];
-	int num_shifts = (nb_shift->size[0])/3;
+	int num_shifts = nb_shift->size[0];
 
 	//Iterate all shifts
-	for (is = 0; is < num_shifts; ++is)
+	for (is = 1; is <= num_shifts; ++is)
 	{
 	    double x_factor = 0.0;
 	    double y_factor = 0.0;
@@ -1714,10 +1748,15 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 
 	    int8_T sx, sy, sz;
 
-	    sx = nb_shift->data[is*3];
-	    sy = nb_shift->data[is*3+1];
-	    sz = nb_shift->data[is*3+2];
+	    sx = nb_shift->data[I2dm(is,1,nb_shift->size)];
+	    sy = nb_shift->data[I2dm(is,2,nb_shift->size)];
+	    sz = nb_shift->data[I2dm(is,3,nb_shift->size)];
 
+	    x_factor = ((double) -sx)*domain_len_x;
+	    y_factor = ((double) -sy)*domain_len_y;
+	    z_factor = ((double) -sz)*domain_len_z;
+
+	    /*
 	    if (sx == 1)
 		x_factor = -domain_len_x;
 	    else if (sx == 2)
@@ -1739,6 +1778,7 @@ void hpBuildPInfoNoOverlappingTris(hiPropMesh *mesh)
 		z_factor = domain_len_z;
 	    else
 		z_factor = 0.0;
+		*/
 
 	    double cur_bdbox_xL = all_bd_box[source_id*6] - x_factor;
 	    double cur_bdbox_xU = all_bd_box[source_id*6+1] - x_factor;
@@ -1991,10 +2031,10 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	int target_id = nb_proc->data[i];
 
 	emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[i];
-	int num_shifts = (nb_shift->size[0])/3;
+	int num_shifts = nb_shift->size[0];
 
 	//First get num_ps_send and num_tris_send
-	for (is = 0; is < num_shifts; ++is)
+	for (is = 1; is <= num_shifts; ++is)
 	{
 	    boolean_T *ps_flag = (boolean_T *) calloc(ps->size[0], sizeof(boolean_T));
 	    double x_factor = 0.0;
@@ -2003,10 +2043,15 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	    int8_T sx, sy, sz;
 
-	    sx = nb_shift->data[is*3];
-	    sy = nb_shift->data[is*3+1];
-	    sz = nb_shift->data[is*3+2];
+	    sx = nb_shift->data[I2dm(is,1,nb_shift->size)];
+	    sy = nb_shift->data[I2dm(is,2,nb_shift->size)];
+	    sz = nb_shift->data[I2dm(is,3,nb_shift->size)];
 
+	    x_factor = ((double) -sx)*domain_len_x;
+	    y_factor = ((double) -sy)*domain_len_y;
+	    z_factor = ((double) -sz)*domain_len_z;
+
+	    /*
 	    if (sx == 1)
 		x_factor = -domain_len_x;
 	    else if (sx == 2)
@@ -2028,7 +2073,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 		z_factor = domain_len_z;
 	    else
 		z_factor = 0.0;
-
+		*/
 	    double cur_bdbox_xL = all_bd_box[target_id*6] - x_factor;
 	    double cur_bdbox_xU = all_bd_box[target_id*6+1] - x_factor;
 	    double cur_bdbox_yL = all_bd_box[target_id*6+2] - y_factor;
@@ -2091,7 +2136,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	int ki_tris = 0;
 	int ks_tris = 0;
 
-	for (is = 0; is < num_shifts; ++is)
+	for (is = 1; is <= num_shifts; ++is)
 	{
 	    // ps_map maps the current ps id to ps id in the send array
 	    // same point could be sent several times with different shift
@@ -2104,10 +2149,19 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	    int8_T sx, sy, sz;
 	    int8_T sx_send, sy_send, sz_send;
 
-	    sx = nb_shift->data[is*3];
-	    sy = nb_shift->data[is*3+1];
-	    sz = nb_shift->data[is*3+2];
+	    sx = nb_shift->data[I2dm(is,1,nb_shift->size)];
+	    sy = nb_shift->data[I2dm(is,2,nb_shift->size)];
+	    sz = nb_shift->data[I2dm(is,3,nb_shift->size)];
 
+	    sx_send = -sx;
+	    sy_send = -sy;
+	    sz_send = -sz;
+
+	    x_factor = ((double) -sx)*domain_len_x;
+	    y_factor = ((double) -sy)*domain_len_y;
+	    z_factor = ((double) -sz)*domain_len_z;
+
+	    /*
 	    if (sx == 1)
 	    {
 		x_factor = -domain_len_x;
@@ -2156,6 +2210,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 		z_factor = 0.0;
 		sz_send = 0;
 	    }
+	    */
 
 	    double cur_bdbox_xL = all_bd_box[target_id*6] - x_factor;
 	    double cur_bdbox_xU = all_bd_box[target_id*6+1] - x_factor;
@@ -2299,9 +2354,9 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 	boolean_T *tris_flag = (boolean_T *) calloc (tris->size[0], sizeof (boolean_T));
 
 	emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[i];
-	int num_shifts = (nb_shift->size[0])/3;
+	int num_shifts = nb_shift->size[0];
 
-	for (is = 0; is < num_shifts; ++is)
+	for (is = 1; is <= num_shifts; ++is)
 	{
 	    double x_factor = 0.0;
 	    double y_factor = 0.0;
@@ -2309,10 +2364,15 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 
 	    int8_T sx, sy, sz;
 
-	    sx = nb_shift->data[is*3];
-	    sy = nb_shift->data[is*3+1];
-	    sz = nb_shift->data[is*3+2];
+	    sx = nb_shift->data[I2dm(is,1,nb_shift->size)];
+	    sy = nb_shift->data[I2dm(is,2,nb_shift->size)];
+	    sz = nb_shift->data[I2dm(is,3,nb_shift->size)];
 
+	    x_factor = ((double) -sx)*domain_len_x;
+	    y_factor = ((double) -sy)*domain_len_y;
+	    z_factor = ((double) -sz)*domain_len_z;
+
+	    /*
 	    if (sx == 1)
 		x_factor = -domain_len_x;
 	    else if (sx == 2)
@@ -2334,6 +2394,7 @@ void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh)
 		z_factor = domain_len_z;
 	    else
 		z_factor = 0.0;
+		*/
 
 	    double cur_bdbox_xL = all_bd_box[source_id*6] - x_factor;
 	    double cur_bdbox_xU = all_bd_box[source_id*6+1] - x_factor;
@@ -3493,6 +3554,8 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
     // Triangle indices mapped to the index for buffer_ps[i] and stored
     // in buffer_tris[i];
 
+    emxArray_real_T *ps = mesh->ps;
+
     int j;
 
     double domain_len_x = mesh->domain_len[0];
@@ -3512,6 +3575,16 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 
 	double shift_x, shift_y, shift_z;
 
+	int8_T sx, sy, sz;
+
+	sx = (*ps_shift_ring_proc)->data[3*(j-1)];
+	sy = (*ps_shift_ring_proc)->data[3*(j-1)+1];
+	sz = (*ps_shift_ring_proc)->data[3*(j-1)+2];
+
+	shift_x = ((double) -sx)*domain_len_x;
+	shift_y = ((double) -sy)*domain_len_y;
+	shift_z = ((double) -sz)*domain_len_z;
+/*
 	if ((*ps_shift_ring_proc)->data[3*(j-1)] == 1)
 	    shift_x = -domain_len_x;
 	else if((*ps_shift_ring_proc)->data[3*(j-1)] == 2)
@@ -3532,13 +3605,13 @@ void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 	    shift_z = domain_len_z;
 	else
 	    shift_z = 0.0;
-
+*/
 	(*buffer_ps)->data[I2dm(j,1,(*buffer_ps)->size)] =
-	    mesh->ps->data[I2dm(cur_buf_ps_index,1,mesh->ps->size)] + shift_x;
+	    ps->data[I2dm(cur_buf_ps_index,1,ps->size)] + shift_x;
 	(*buffer_ps)->data[I2dm(j,2,(*buffer_ps)->size)] =
-	    mesh->ps->data[I2dm(cur_buf_ps_index,2,mesh->ps->size)] + shift_y;
+	    ps->data[I2dm(cur_buf_ps_index,2,ps->size)] + shift_y;
 	(*buffer_ps)->data[I2dm(j,3,(*buffer_ps)->size)] =
-	    mesh->ps->data[I2dm(cur_buf_ps_index,3,mesh->ps->size)] + shift_z;
+	    ps->data[I2dm(cur_buf_ps_index,3,ps->size)] + shift_z;
 
     }
 
@@ -5529,7 +5602,7 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
     int max_b_numtris = 256;
 
     emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[nb_proc_index-1];
-    int num_shifts = (nb_shift->size[0])/3;
+    int num_shifts = nb_shift->size[0];
 
     hpPInfoNode *tris_pdata = mesh->tris_pinfo->pdata;
 
@@ -5560,7 +5633,7 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
     int num_ps_ring_all = 0;
     int num_tris_ring_all = 0;
 
-    for (is = 0; is < num_shifts; ++is)
+    for (is = 1; is <= num_shifts; ++is)
     {
 	int num_ol_pt_cur_shift = 0;
 	int num_ol_pt = in_psid->size[0];
@@ -5576,9 +5649,9 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
 
 	int8_T sx, sy, sz;
 
-	sx = nb_shift->data[is*3];
-	sy = nb_shift->data[is*3+1];
-	sz = nb_shift->data[is*3+2];
+	sx = nb_shift->data[I2dm(is,1,nb_shift->size)];
+	sy = nb_shift->data[I2dm(is,2,nb_shift->size)];
+	sz = nb_shift->data[I2dm(is,3,nb_shift->size)];
 
 	// First flag the overlapping points related to current shift
 	for (i = 0; i < num_ol_pt; i++)
@@ -5730,13 +5803,13 @@ void hpCollectNRingTris(const hiPropMesh *mesh,
     emxArray_int8_T *result_ps_shift = *out_ps_shift;
     emxArray_int8_T *result_tris_shift = *out_tris_shift;
 
-    for (is = 0; is < num_shifts; is++)
+    for (is = 1; is <= num_shifts; is++)
     {
 	int8_T sx, sy, sz;
 
-	sx = nb_shift->data[is*3];
-	sy = nb_shift->data[is*3+1];
-	sz = nb_shift->data[is*3+2];
+	sx = nb_shift->data[I2dm(is,1,nb_shift->size)];
+	sy = nb_shift->data[I2dm(is,2,nb_shift->size)];
+	sz = nb_shift->data[I2dm(is,3,nb_shift->size)];
 
 	int num_ps_ring_cur_shift = num_ps_ring_shift[is];
 	int num_tris_ring_cur_shift = num_tris_ring_shift[is];

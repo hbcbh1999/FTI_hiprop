@@ -395,6 +395,28 @@ emxArray_char_T *emxCreate_char_T(int32_T rows, int32_T cols)
   return emx;
 }
 
+emxArray_int8_T *emxCreate_int8_T(int32_T rows, int32_T cols)
+{
+  emxArray_int8_T *emx;
+  int32_T size[2];
+  int32_T numEl;
+  int32_T i;
+  size[0] = rows;
+  size[1] = cols;
+  emxInit_int8_T(&emx, 2);
+  numEl = 1;
+  for (i = 0; i < 2; i++) {
+    numEl *= size[i];
+    emx->size[i] = size[i];
+  }
+
+  emx->data = (int8_T *)calloc((uint32_T)numEl, sizeof(int8_T));
+  emx->numDimensions = 2;
+  emx->allocatedSize = numEl;
+  return emx;
+}
+
+
 emxArray_int32_T *emxCreate_int32_T(int32_T rows, int32_T cols)
 {
   emxArray_int32_T *emx;

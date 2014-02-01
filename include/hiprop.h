@@ -21,8 +21,6 @@
 
 typedef struct hpPInfoNode
 {
-    int pindex;		/*!< processor index for local nb_proc list, different pindex could have same processor ID */
-
     int8_T shift[3];	/*!< shifting for periodic boundary, could be 0, 1 and 2*/
     int proc;		/*!< processor ID */
     int lindex;		/*!< local index on the corresponding proc */

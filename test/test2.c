@@ -143,34 +143,32 @@ int main(int argc, char* argv[])
 
     printf("Seconds used: %22.16g\n", end-start);
 
-    /*
     printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);
     printf("nb_proc list:\n");
     for (i = 1; i <= mesh->nb_proc->size[0]; ++i)
     {
-	printf("proc %d, shifting length %d\n", mesh->nb_proc->data[I1dm(i)], (mesh->nb_proc_shift[I1dm(i)]->size[0])/3 );
-	for (j = 0; j < (mesh->nb_proc_shift[I1dm(i)]->size[0])/3; j++)
+	printf("proc %d, shifting length %d\n", mesh->nb_proc->data[I1dm(i)], (mesh->nb_proc_shift[I1dm(i)]->size[0]));
+	for (j = 1; j <= (mesh->nb_proc_shift[I1dm(i)]->size[0]); j++)
 	{
-	    printf("Shifting %d: %d %d %d\n", j+1, mesh->nb_proc_shift[I1dm(i)]->data[j*3],
-		    mesh->nb_proc_shift[I1dm(i)]->data[j*3+1], mesh->nb_proc_shift[I1dm(i)]->data[j*3+2]);
+	    printf("Shifting %d: %d %d %d\n", j, 
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,1,mesh->nb_proc_shift[I1dm(i)]->size)],
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,2,mesh->nb_proc_shift[I1dm(i)]->size)],
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,3,mesh->nb_proc_shift[I1dm(i)]->size)]);
 	}
 
     }
-    */
     printf("\n");
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
 
     fflush(stdout);
-
     start = getTimer();
-    hpBuildPInfoWithOverlappingTris(mesh);
+    hpBuildPInfoNoOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
     end = getTimer();
     printf("Build Pinfo seconds used: %22.16g\n", end-start);
 
-
-    //hpPrint_pinfo(mesh);
+    hpPrint_pinfo(mesh);
 
 
 /*
@@ -187,7 +185,7 @@ int main(int argc, char* argv[])
     printf("CleanMeshByPInfo seconds used: %22.16g\n", difftime(end, start));
 */
 
-
+/*
     start = getTimer();
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
@@ -208,7 +206,7 @@ int main(int argc, char* argv[])
     end = getTimer();
     printf("Build 2 Ring Seconds used: %22.16g\n", difftime(end, start));
 
-
+*/
     /*
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);

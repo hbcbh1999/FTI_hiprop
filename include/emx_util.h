@@ -118,6 +118,14 @@ EXTERN_C emxArray_char_T *emxCreate_char_T(int32_T rows, int32_T cols);
  * \return a pointer to the generated array
  */
 EXTERN_C emxArray_int32_T *emxCreate_int32_T(int32_T rows, int32_T cols);
+/*!
+ * \brief Create a 2D 8bit int array with initial value 0
+ * \param rows number of rows
+ * \param cols number of columns
+ * \return a pointer to the generated array
+ */
+
+EXTERN_C emxArray_int8_T *emxCreate_int8_T(int32_T rows, int32_T cols);
 
 /*!
  * \brief Create a 2D 64bit double array with initial value 0
