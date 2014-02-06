@@ -74,7 +74,8 @@ int main(int argc, char* argv[])
     //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
     //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
-    sprintf(in_filename, "data/serial/periodic_test.vtk");
+    //sprintf(in_filename, "data/serial/periodic_test.vtk");
+    sprintf(in_filename, "data/parallel/periodic_test-p%s.vtk", rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
@@ -142,7 +143,6 @@ int main(int argc, char* argv[])
     end = getTimer();
 
     printf("Seconds used: %22.16g\n", end-start);
-
     printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);
     printf("nb_proc list:\n");
     for (i = 1; i <= mesh->nb_proc->size[0]; ++i)
@@ -160,16 +160,14 @@ int main(int argc, char* argv[])
     printf("\n");
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
-
     fflush(stdout);
     start = getTimer();
-    hpBuildPInfoNoOverlappingTris(mesh);
+    hpBuildPInfoWithOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
     end = getTimer();
     printf("Build Pinfo seconds used: %22.16g\n", end-start);
 
     hpPrint_pinfo(mesh);
-
 
 /*
     char debug_filename[200];

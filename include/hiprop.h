@@ -13,7 +13,7 @@
 
 
 #include "stdafx.h"
-/* #include "metis.h" */
+//#include "metis.h"
 
 /*!
  * \brief Parallel information element for each point/triangle in hiPropMesh
