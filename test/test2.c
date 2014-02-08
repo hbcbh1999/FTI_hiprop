@@ -74,8 +74,8 @@ int main(int argc, char* argv[])
     //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
     //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
-    //sprintf(in_filename, "data/serial/periodic_test.vtk");
-    sprintf(in_filename, "data/parallel/periodic_test-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/serial/%s.vtk", argv[1]);
+    sprintf(in_filename, "data/parallel/%s-p%s.vtk",argv[1], rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
@@ -167,14 +167,12 @@ int main(int argc, char* argv[])
     end = getTimer();
     printf("Build Pinfo seconds used: %22.16g\n", end-start);
 
-    hpPrint_pinfo(mesh);
+    char debugname0[256];
 
-/*
-    char debug_filename[200];
-    sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
-    hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
-    printf("\n After WriteUnstrMeshWithPInfo\n");
-*/
+    sprintf(debugname0, "debugout_init-p%s.vtk", rank_str);
+
+    hpWriteUnstrMeshWithPInfo(debugname0, mesh);
+
     /*
     start = time(0);
     hpCleanMeshByPinfo(mesh);
@@ -183,7 +181,6 @@ int main(int argc, char* argv[])
     printf("CleanMeshByPInfo seconds used: %22.16g\n", difftime(end, start));
 */
 
-/*
     start = getTimer();
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
@@ -199,12 +196,19 @@ int main(int argc, char* argv[])
 
 
     start = getTimer();
-    hpBuildNRingGhost(mesh, 1);
+    hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
     end = getTimer();
     printf("Build 2 Ring Seconds used: %22.16g\n", difftime(end, start));
 
-*/
+    char debugname[256];
+
+    sprintf(debugname, "debugout-p%s.vtk", rank_str);
+
+    hpWriteUnstrMeshWithPInfo(debugname, mesh);
+
+    hpPrint_pinfo(mesh);
+
     /*
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);

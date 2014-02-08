@@ -254,7 +254,7 @@ EXTERN_C void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
  * automatically increase itself by 10% to include more elements
  * \param pinfo A parallel information list
  */
-EXTERN_C void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
+EXTERN_C boolean_T hpEnsurePInfoCapacity(hpPInfoList *pinfo);
 
 /*!
  * \brief Build the partition boundary information for a "clean" hiProp mesh
@@ -489,6 +489,8 @@ EXTERN_C void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   const int nb_proc_index,
 					   emxArray_int32_T *ps_ring_proc,
 					   emxArray_int32_T *tris_ring_proc,
+					   emxArray_int8_T *ps_shift_ring_proc,
+					   emxArray_int8_T *tris_shift_ring_proc,
 					   int **buffer_ps_pinfo_tag,
 					   int **buffer_ps_pinfo_lindex,
 					   int **buffer_ps_pinfo_proc,
