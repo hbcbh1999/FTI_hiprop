@@ -40,11 +40,13 @@ void find_Cartesian_coordinates(
 
 int main(int argc, char* argv[])
 {
-    time_t start, end;
-    int i, j, k;
+    double start, end;
+    int i;
+    int j;
+    //int j, k;
     int num_proc, rank;
-    int tag = 1;
-    int root = 0;
+   // int tag = 1;
+    // int root = 0;
 
 
     MPI_Init(&argc, &argv);
@@ -69,9 +71,11 @@ int main(int argc, char* argv[])
     char in_filename[200];
     //sprintf(in_filename, "data/parallel/s19560-64p/hpmesh-t0019560-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
-    sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
     //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/serial/%s.vtk", argv[1]);
+    sprintf(in_filename, "data/parallel/%s-p%s.vtk",argv[1], rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
 	printf("Reading fail!\n");
@@ -132,39 +136,42 @@ int main(int argc, char* argv[])
 
 */
 
-    start = time(0);
+    start = getTimer();
+    hpInitDomainBoundaryInfo(mesh);
     hpGetNbProcListAuto(mesh);
     printf("\n GetNbProcInfo passed, proc %d \n", rank);
-    end = time(0);
-    printf("Secons used: %22.16g\n", difftime(end, start));
+    end = getTimer();
 
+    printf("Seconds used: %22.16g\n", end-start);
     printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);
     printf("nb_proc list:\n");
     for (i = 1; i <= mesh->nb_proc->size[0]; ++i)
     {
-	printf("%d->", mesh->nb_proc->data[I1dm(i)]);
+	printf("proc %d, shifting length %d\n", mesh->nb_proc->data[I1dm(i)], (mesh->nb_proc_shift[I1dm(i)]->size[0]));
+	for (j = 1; j <= (mesh->nb_proc_shift[I1dm(i)]->size[0]); j++)
+	{
+	    printf("Shifting %d: %d %d %d\n", j, 
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,1,mesh->nb_proc_shift[I1dm(i)]->size)],
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,2,mesh->nb_proc_shift[I1dm(i)]->size)],
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,3,mesh->nb_proc_shift[I1dm(i)]->size)]);
+	}
+
     }
     printf("\n");
-
-
     hpInitPInfo(mesh);
     printf("\n InitPInfo passed, proc %d \n", rank);
-
     fflush(stdout);
-
-    start = time(0);
+    start = getTimer();
     hpBuildPInfoWithOverlappingTris(mesh);
     printf("\n BuildPInfo passed, proc %d \n", rank);
-    end = time(0);
-    printf("Build Pinfo seconds used: %22.16g\n", difftime(end, start));
+    end = getTimer();
+    printf("Build Pinfo seconds used: %22.16g\n", end-start);
 
+    char debugname0[256];
 
+    sprintf(debugname0, "debugout_init-p%s.vtk", rank_str);
 
-    char debug_filename[200];
-    sprintf(debug_filename, "debugout-p%s.vtk", rank_str);
-    hpWriteUnstrMeshWithPInfo(debug_filename, mesh);
-    printf("\n After WriteUnstrMeshWithPInfo\n");
-
+    hpWriteUnstrMeshWithPInfo(debugname0, mesh);
 
     /*
     start = time(0);
@@ -173,108 +180,54 @@ int main(int argc, char* argv[])
     end = time(0);
     printf("CleanMeshByPInfo seconds used: %22.16g\n", difftime(end, start));
 */
-    fflush(stdout);
 
-    start = time(0);
+    start = getTimer();
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
-    end = time(0);
+    end = getTimer();
     printf("Seconds used: %22.16g\n", difftime(end, start));
 
 
-    start = time(0);
+    start = getTimer();
     hpBuildIncidentHalfEdge(mesh);
     printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
-    end = time(0);
+    end = getTimer();
     printf("Seconds used: %22.16g\n", difftime(end, start));
 
-    start = time(0);
+
+    start = getTimer();
     hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
-    end = time(0);
+    end = getTimer();
     printf("Build 2 Ring Seconds used: %22.16g\n", difftime(end, start));
 
+    char debugname[256];
+
+    sprintf(debugname, "debugout-p%s.vtk", rank_str);
+
+    hpWriteUnstrMeshWithPInfo(debugname, mesh);
+
+    hpPrint_pinfo(mesh);
+
+    /*
     hpBuildPUpdateInfo(mesh);
     printf("\n BuildPUpdateInfo passed, proc %d \n", rank);
 
     char debug_filename2[200];
-    sprintf(debug_filename2, "cleandebug-p%s.vtk", rank_str);
+    sprintf(debug_filename2, "2ringdebug-p%s.vtk", rank_str);
     hpWriteUnstrMeshWithPInfo(debug_filename2, mesh);
     printf("\n After WriteUnstrMeshWithPInfo2\n");
 
-/*
-    int num_old_ps = mesh->nps_clean;
-    printf("num of old ps = %d\n", num_old_ps);
-    
-    char ptid_filename[200];
-    sprintf(ptid_filename, "data/parallel/sphere_nonuni_psid-p%s.data", rank_str);
-    FILE *ptinfile = fopen(ptid_filename, "r");
-
-    int *ptid = (int *) calloc(num_old_ps, sizeof(int));
-
-    for (i = 0; i < num_old_ps; i++)
-	fscanf(ptinfile, "%d", &(ptid[i]));
-    fclose(ptinfile);
-
-    hpMeshSmoothing(mesh, 2);
+    hpMeshSmoothing(mesh, 2, "CMF");
 
     printf("\n hpMeshSmoothing passed, proc %d \n", rank);
 
-    int num_all_pt = 0;
 
-    for (i = 1; i <= mesh->ps->size[0]; i++)
-    {
-	int head = mesh->ps_pinfo->head[I1dm(i)];
-	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
-	    num_all_pt++;
-    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
-    int out_num_all_pt = 0;
+    hpDebugParallelToSerialOutput(mesh, mesh->ps, "compdebug.out");
 
-    MPI_Allreduce(&num_all_pt, &out_num_all_pt, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-    printf("\n Num of all pts = %d \n", out_num_all_pt);
-
-    double *inps1 = (double *) calloc(out_num_all_pt, sizeof(double));
-    double *inps2 = (double *) calloc(out_num_all_pt, sizeof(double));
-    double *inps3 = (double *) calloc(out_num_all_pt, sizeof(double));
-
-    double *outps1 = (double *) calloc(out_num_all_pt, sizeof(double));
-    double *outps2 = (double *) calloc(out_num_all_pt, sizeof(double));
-    double *outps3 = (double *) calloc(out_num_all_pt, sizeof(double));
-
-
-    for (i = 1; i <= mesh->ps->size[0]; i++)
-    {
-	int head = mesh->ps_pinfo->head[I1dm(i)];
-	if (mesh->ps_pinfo->pdata[I1dm(head)].proc == rank)
-	{
-	    inps1[ptid[i-1]-1] = mesh->ps->data[I2dm(i,1,mesh->ps->size)];
-	    inps2[ptid[i-1]-1] = mesh->ps->data[I2dm(i,2,mesh->ps->size)];
-	    inps3[ptid[i-1]-1] = mesh->ps->data[I2dm(i,3,mesh->ps->size)];
-	}
-    }
-
-    MPI_Allreduce(inps1, outps1, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(inps2, outps2, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(inps3, outps3, out_num_all_pt, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-
-    if (rank == 0)
-    {
-	char ncfilename[200];
-	sprintf(ncfilename, "debug_smooth.out");
-	FILE *diffout = fopen(ncfilename, "w");
-
-	for (i = 0; i < out_num_all_pt; i++)
-	    fprintf(diffout, "%22.16g %22.16g %22.16g \n",
-		    outps1[i], outps2[i], outps3[i]);
-    }
-
-    free(ptid);
-    free(inps1); free(inps2); free(inps3);
-    free(outps1); free(outps2); free(outps3);
-*/
+    */
     hpDeleteMesh(&mesh);
 
     printf("Success processor %d\n", rank);

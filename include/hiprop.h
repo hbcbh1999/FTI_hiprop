@@ -13,7 +13,7 @@
 
 
 #include "stdafx.h"
-/* #include "metis.h" */
+//#include "metis.h"
 
 /*!
  * \brief Parallel information element for each point/triangle in hiPropMesh
@@ -21,6 +21,7 @@
 
 typedef struct hpPInfoNode
 {
+    int8_T shift[3];	/*!< shifting for periodic boundary, could be 0, 1 and 2*/
     int proc;		/*!< processor ID */
     int lindex;		/*!< local index on the corresponding proc */
     int next;		/*!< index for the next node in the linked list, if next = -1, 
@@ -62,6 +63,11 @@ typedef struct hiPropMesh
     emxArray_real_T *curv;		/*!< point main curvatures, size num_ps */
 
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
+    emxArray_int8_T **nb_proc_shift;	/*!< neighbour processor shift list */
+
+    real_T domain_len[3];		/*!< domain size in x,y,z */
+    boolean_T has_periodic_boundary[3];	/*!< flag for periodic boundary in x,y,z */
+
     emxArray_int32_T *part_bdry;	/*!< partition boundary points*/
     emxArray_int32_T *ps_type;		/*!< point type, 0 INTERIOR, 1 OVERLAY, 2 GHOST, size num_ps */
 
@@ -80,9 +86,12 @@ typedef struct hiPropMesh
     int32_T npspi_clean;		/*!< number of ps pinfo for the clean mesh (with no overlapping triangles) */
     boolean_T is_clean;			/*!< flag to denote whether current mesh is clean,
 					     0 with overlapping triangles, 1 without overlapping triangles */
+
     
 } hiPropMesh;
 
+
+EXTERN_C void hpInitDomainBoundaryInfo(hiPropMesh *pmesh);
 
 /*!
  * \brief Initialize a hiProp mesh and set the initial pointer to be NULL
@@ -245,7 +254,7 @@ EXTERN_C void hpBuildPInfoWithOverlappingTris(hiPropMesh *mesh);
  * automatically increase itself by 10% to include more elements
  * \param pinfo A parallel information list
  */
-EXTERN_C void hpEnsurePInfoCapacity(hpPInfoList *pinfo);
+EXTERN_C boolean_T hpEnsurePInfoCapacity(hpPInfoList *pinfo);
 
 /*!
  * \brief Build the partition boundary information for a "clean" hiProp mesh
@@ -261,7 +270,7 @@ EXTERN_C void hpBuildPartitionBoundary(hiPropMesh *mesh);
 
 /*!
  * \brief Build the point type information for a hiProp mesh
- * \detail Before calling this function, a parallel hiProp mesh with parrallel
+ * \detail Before calling this function, a parallel hiProp mesh with parallel
  * info is required. The result is output to the boolean array mesh->ps_type.
  * Point type = 0: INTERIOR point, only exists to current processor.
  * Point type = 1: OVERLAY point, owned by current processor and exists on other
@@ -407,6 +416,8 @@ EXTERN_C void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box);
 EXTERN_C void hpCommPsTrisWithPInfo(hiPropMesh *mesh,
 				    emxArray_int32_T **ps_ring_proc,
 				    emxArray_int32_T **tris_ring_proc,
+				    emxArray_int8_T **ps_shift_ring_proc,
+				    emxArray_int8_T **tris_shift_ring_proc,
 				    emxArray_real_T **buffer_ps,
 				    emxArray_int32_T **buffer_tris);
 /*!
@@ -424,9 +435,13 @@ EXTERN_C void hpCommPsTrisWithPInfo(hiPropMesh *mesh,
 EXTERN_C void hpCollectNRingTris(const hiPropMesh *mesh,
 				 const int nb_proc_index,
 				 const emxArray_int32_T *in_psid,
+				 const emxArray_int8_T *in_ps_shift,
 				 const real_T num_ring,
 				 emxArray_int32_T **out_ps,
-				 emxArray_int32_T **out_tris);
+				 emxArray_int32_T **out_tris,
+				 emxArray_int8_T **out_ps_shift,
+				 emxArray_int8_T **out_tris_shift,
+				 emxArray_int32_T **out_tris_buffer);
 
 /*!
  * \brief This function is a subfunction for hpBuildNRingGhost.
@@ -441,7 +456,7 @@ EXTERN_C void hpCollectNRingTris(const hiPropMesh *mesh,
  * \param out_psid array of pointers to the overlaying point ids for neighboring
  * processors.
  */
-EXTERN_C void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid);
+EXTERN_C void hpCollectAllSharedPs(const hiPropMesh *mesh, emxArray_int32_T **out_psid, emxArray_int8_T **out_ps_shift);
 
 EXTERN_C void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh);
 
@@ -454,8 +469,11 @@ EXTERN_C void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
 				      const int nb_proc_index,
 				      const real_T num_ring,
 				      emxArray_int32_T *psid_proc,
+				      emxArray_int8_T *ps_shift_proc,
 				      emxArray_int32_T **ps_ring_proc,
 				      emxArray_int32_T **tris_ring_proc,
+				      emxArray_int8_T **ps_shift_ring_proc,
+				      emxArray_int8_T **tris_shift_ring_proc,
 				      emxArray_real_T **buffer_ps,
 				      emxArray_int32_T **buffer_tris);
 
@@ -471,12 +489,16 @@ EXTERN_C void hpBuildGhostPsTrisPInfoForSend(const hiPropMesh *mesh,
 					   const int nb_proc_index,
 					   emxArray_int32_T *ps_ring_proc,
 					   emxArray_int32_T *tris_ring_proc,
+					   emxArray_int8_T *ps_shift_ring_proc,
+					   emxArray_int8_T *tris_shift_ring_proc,
 					   int **buffer_ps_pinfo_tag,
 					   int **buffer_ps_pinfo_lindex,
 					   int **buffer_ps_pinfo_proc,
+					   int8_T **buffer_ps_pinfo_shift,
 					   int **buffer_tris_pinfo_tag,
 					   int **buffer_tris_pinfo_lindex,
-					   int **buffer_tris_pinfo_proc);
+					   int **buffer_tris_pinfo_proc,
+					   int8_T **buffer_tris_pinfo_shift);
 
 EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					const int rcv_id,
@@ -485,9 +507,11 @@ EXTERN_C void hpAttachNRingGhostWithPInfo(hiPropMesh *mesh,
 					int *ppinfot,
 					int *ppinfol,
 					int *ppinfop,
+					int8_T *ppinfos,
 					int *tpinfot,
 					int *tpinfol,
-					int *tpinfop);
+					int *tpinfop,
+					int8_T *tpinfos);
 
 EXTERN_C void hpUpdatePInfo(hiPropMesh *mesh);
 
@@ -499,42 +523,50 @@ EXTERN_C void hpUpdateNbWithPInfo(hiPropMesh *mesh);
 EXTERN_C void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 					const int nb_proc_index,
 					emxArray_int32_T *ps_ring_proc,
-					emxArray_int32_T *tris_ring_proc);
+					emxArray_int32_T *tris_ring_proc,
+					emxArray_int8_T *ps_shift_ring_proc,
+					emxArray_int8_T *tris_shift_ring_proc);
 
 EXTERN_C void hpCollectAllGhostPs(hiPropMesh *mesh,
 			 	const int nbp_index,
 				int *size_send,
-				int **ppinfol);
+				int **ppinfol,
+				int8_T **ppinfos);
 
 EXTERN_C void hpCollectAllGhostTris(hiPropMesh *mesh,
 			 	  const int nbp_index,
 				  int *size_send,
-				  int **tpinfol);
+				  int **tpinfol,
+				  int8_T **tpinfos);
 
 
 EXTERN_C void hpMergeOverlayPsPInfo(hiPropMesh *mesh,
 			   	  const int rcv_id,
 				  int nump,
-				  int *ppinfol);
+				  int *ppinfol,
+				  int8_T *ppinfos);
 
 EXTERN_C void hpMergeOverlayTrisPInfo(hiPropMesh *mesh,
 			     	    const int rcv_id,
 				    int numt,
-				    int *tpinfol);
+				    int *tpinfol,
+				    int8_T *tpinfos);
 
 EXTERN_C void hpCollectAllOverlayPs(hiPropMesh *mesh,
 				  const int nbp_index,
 				  int *size_send,
 				  int **ppinfot,
 				  int **ppinfol,
-				  int **ppinfop);
+				  int **ppinfop,
+				  int8_T **ppinfos);
 
 EXTERN_C void hpCollectAllOverlayTris(hiPropMesh *mesh,
 				    const int nbp_index,
 				    int *size_send,
 				    int **tpinfot,
 				    int **tpinfol,
-				    int **tpinfop);
+				    int **tpinfop,
+				    int8_T **tpinfos);
 
 
 EXTERN_C void hpMergeGhostPsPInfo(hiPropMesh *mesh,
@@ -542,14 +574,16 @@ EXTERN_C void hpMergeGhostPsPInfo(hiPropMesh *mesh,
 				int nump,
 				int *ppinfot,
 				int *ppinfol,
-				int *ppinfop);
+				int *ppinfop,
+				int8_T *ppinfos);
 
 EXTERN_C void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 			     	  const int rcv_id,
 				  int numt,
 				  int *tpinfot,
 				  int *tpinfol,
-				  int *tpinfop);
+				  int *tpinfop,
+				  int8_T *tpinfos);
 /*!
  * \brief Calculates the high-order normal and curvature
  * \detail The unit normal of each point output to mesh->nor, the 2 main
@@ -628,11 +662,22 @@ EXTERN_C void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolea
 
 EXTERN_C void hpAdaptiveBuildGhost(hiPropMesh *mesh, const int32_T in_degree);
 
-EXTERN_C void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree);
+/*!
+ * \brief Function for redistribute the points on the high order surface in
+ * parallel.
+ * \param mesh Mesh pointer to hiprop mesh
+ * \param in_degree The degree of fitting for high order projection
+ * \param method Projection method needed to be used in fitting, could be "CMF"
+ * or "WALF"
+ */
+
+EXTERN_C void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method);
 /*!
  * \brief Small function to print the pinfo of points and triangles to stdout
  * used for debugging
- * \aram mesh mesh pointer to a hiProp mesh
+ * \param mesh mesh pointer to a hiProp mesh
  */
 EXTERN_C void hpPrint_pinfo(hiPropMesh *mesh);
+
+EXTERN_C void hpDebugParallelToSerialOutput(hiPropMesh *mesh, emxArray_real_T *array, const char *outname);
 #endif

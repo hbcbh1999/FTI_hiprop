@@ -18,6 +18,16 @@
 #include "stdafx.h"
 
 /*!
+ * \brief Initialization of a char array
+ * 
+ * Does not allocate memory for data
+ * \param pEmxArray address of a char array pointer
+ * \param numDimensions number of dimensions
+ */
+EXTERN_C void emxInit_char_T(emxArray_char_T **pEmxArray, int32_T numDimensions);
+
+
+/*!
  * \brief Initialization of a boolean array
  * 
  * Does not allocate memory for data
@@ -54,6 +64,22 @@ EXTERN_C void emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimension
 EXTERN_C void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 
 /*!
+ * \brief Create a N-dimensional 8bit char array with initial value 0
+ * \param numDimensions number of dimensions
+ * \param size size for each dimention
+ * \return a pointer to the generated array
+ */
+EXTERN_C emxArray_char_T *emxCreateND_char_T(int32_T numDimensions, int32_T *size);
+
+/*!
+ * \brief Create a N-dimensional 8bit int array with initial value 0
+ * \param numDimensions number of dimensions
+ * \param size size for each dimention
+ * \return a pointer to the generated array
+ */
+EXTERN_C emxArray_int8_T *emxCreateND_int8_T(int32_T numDimensions, int32_T *size);
+
+/*!
  * \brief Create a N-dimensional 32bit int array with initial value 0
  * \param numDimensions number of dimensions
  * \param size size for each dimention
@@ -78,12 +104,28 @@ EXTERN_C emxArray_real_T *emxCreateND_real_T(int32_T numDimensions, int32_T *siz
 EXTERN_C emxArray_boolean_T *emxCreateND_boolean_T(int32_T numDimensions, int32_T *size);
 
 /*!
+ * \brief Create a 2D 8bit char array with initial value 0
+ * \param rows number of rows
+ * \param cols number of columns
+ * \return a pointer to the generated array
+ */
+EXTERN_C emxArray_char_T *emxCreate_char_T(int32_T rows, int32_T cols);
+
+/*!
  * \brief Create a 2D 32bit int array with initial value 0
  * \param rows number of rows
  * \param cols number of columns
  * \return a pointer to the generated array
  */
 EXTERN_C emxArray_int32_T *emxCreate_int32_T(int32_T rows, int32_T cols);
+/*!
+ * \brief Create a 2D 8bit int array with initial value 0
+ * \param rows number of rows
+ * \param cols number of columns
+ * \return a pointer to the generated array
+ */
+
+EXTERN_C emxArray_int8_T *emxCreate_int8_T(int32_T rows, int32_T cols);
 
 /*!
  * \brief Create a 2D 64bit double array with initial value 0
@@ -100,6 +142,17 @@ EXTERN_C emxArray_real_T *emxCreate_real_T(int32_T rows, int32_T cols);
  * \return a pointer to the generated array
  */
 EXTERN_C emxArray_boolean_T *emxCreate_boolean_T(int32_T rows, int32_T cols);
+
+/*!
+ * \brief Create a wrapper for an N-dimensional 8bit char array 
+ *
+ * The data being wrapped could not be freed by calling #emxFree_char_T
+ * \param data data stored in a 1D array
+ * \param numDimensions number of dimensions
+ * \param size size for each dimension
+ * \return a pointer to the generated array
+ */
+EXTERN_C emxArray_char_T *emxCreateWrapperND_char_T(char_T *data, int32_T numDimensions, int32_T *size);
 
 /*!
  * \brief Create a wrapper for an N-dimensional 32bit int array 
@@ -135,6 +188,17 @@ EXTERN_C emxArray_real_T *emxCreateWrapperND_real_T(real_T *data, int32_T numDim
 EXTERN_C emxArray_boolean_T *emxCreateWrapperND_boolean_T(boolean_T *data, int32_T numDimensions, int32_T *size);
 
 /*!
+ * \brief Create a wrapper for an 2D 8bit char array 
+ *
+ * The data being wrapped could not be freed by calling #emxFree_char_T
+ * \param data data stored in a 1D array
+ * \param rows number of rows
+ * \param cols number of columns
+ * \return a pointer to the generated array
+ */
+EXTERN_C emxArray_char_T *emxCreateWrapper_char_T(char_T *data, int32_T rows, int32_T cols);
+
+/*!
  * \brief Create a wrapper for an 2D 32bit int array 
  *
  * The data being wrapped could not be freed by calling #emxFree_int32_T
@@ -166,6 +230,13 @@ EXTERN_C emxArray_real_T *emxCreateWrapper_real_T(real_T *data, int32_T rows, in
  * \return a pointer to the generated array
  */
 EXTERN_C emxArray_boolean_T *emxCreateWrapper_boolean_T(boolean_T *data, int32_T rows, int32_T cols);
+
+/*!
+ * \brief Deallocate the memory of a 8bit char array
+ *
+ * \param pEmxArray address of the array being deallocated
+ */
+EXTERN_C void emxFree_char_T(emxArray_char_T **pEmxArray);
 
 /*!
  * \brief Deallocate the memory of a 8bit boolean array
@@ -204,6 +275,13 @@ EXTERN_C void emxFree_real_T(emxArray_real_T **pEmxArray);
  * \param elementSize size of each element
  */
 EXTERN_C void emxEnsureCapacity(emxArray__common *emxArray, int32_T oldNumel, int32_T elementSize);
+
+/*!
+ * \brief wrapper function for emxFree_char_T
+ *
+ * \param emxArray address of the array being deallocated
+ */
+EXTERN_C void emxDestroyArray_char_T(emxArray_char_T *emxArray);
 
 /*!
  * \brief wrapper function for emxFree_int32_T
