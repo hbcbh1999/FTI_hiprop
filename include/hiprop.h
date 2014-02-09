@@ -530,37 +530,43 @@ EXTERN_C void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 EXTERN_C void hpCollectAllGhostPs(hiPropMesh *mesh,
 			 	const int nbp_index,
 				int *size_send,
-				int **ppinfol);
+				int **ppinfol,
+				int8_T **ppinfos);
 
 EXTERN_C void hpCollectAllGhostTris(hiPropMesh *mesh,
 			 	  const int nbp_index,
 				  int *size_send,
-				  int **tpinfol);
+				  int **tpinfol,
+				  int8_T **tpinfos);
 
 
 EXTERN_C void hpMergeOverlayPsPInfo(hiPropMesh *mesh,
 			   	  const int rcv_id,
 				  int nump,
-				  int *ppinfol);
+				  int *ppinfol,
+				  int8_T *ppinfos);
 
 EXTERN_C void hpMergeOverlayTrisPInfo(hiPropMesh *mesh,
 			     	    const int rcv_id,
 				    int numt,
-				    int *tpinfol);
+				    int *tpinfol,
+				    int8_T *tpinfos);
 
 EXTERN_C void hpCollectAllOverlayPs(hiPropMesh *mesh,
 				  const int nbp_index,
 				  int *size_send,
 				  int **ppinfot,
 				  int **ppinfol,
-				  int **ppinfop);
+				  int **ppinfop,
+				  int8_T **ppinfos);
 
 EXTERN_C void hpCollectAllOverlayTris(hiPropMesh *mesh,
 				    const int nbp_index,
 				    int *size_send,
 				    int **tpinfot,
 				    int **tpinfol,
-				    int **tpinfop);
+				    int **tpinfop,
+				    int8_T **tpinfos);
 
 
 EXTERN_C void hpMergeGhostPsPInfo(hiPropMesh *mesh,
@@ -568,14 +574,16 @@ EXTERN_C void hpMergeGhostPsPInfo(hiPropMesh *mesh,
 				int nump,
 				int *ppinfot,
 				int *ppinfol,
-				int *ppinfop);
+				int *ppinfop,
+				int8_T *ppinfos);
 
 EXTERN_C void hpMergeGhostTrisPInfo(hiPropMesh *mesh,
 			     	  const int rcv_id,
 				  int numt,
 				  int *tpinfot,
 				  int *tpinfol,
-				  int *tpinfop);
+				  int *tpinfop,
+				  int8_T *tpinfos);
 /*!
  * \brief Calculates the high-order normal and curvature
  * \detail The unit normal of each point output to mesh->nor, the 2 main
