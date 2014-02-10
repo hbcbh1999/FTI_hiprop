@@ -11,6 +11,9 @@
 #include "util.h"
 #include "hiprop.h"
 
+static void  hpBuildEstNbFromBdbox(const hiPropMesh *mesh, const double *all_bd_box, emxArray_int32_T **new_nb_proc);
+ 
+
 //#include "metis.h"
 
 /*!
@@ -3534,6 +3537,8 @@ void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
 				    const double *bd_box,
 				    emxArray_int32_T **ps_ring_proc,
 				    emxArray_int32_T **tris_ring_proc,
+				    emxArray_int8_T **ps_shift_ring_proc,
+				    emxArray_int8_T **tris_shift_ring_proc,
 				    emxArray_real_T **buffer_ps,
 				    emxArray_int32_T **buffer_tris)
 {
@@ -5261,6 +5266,9 @@ void hpUpdatePInfo(hiPropMesh *mesh)
     hpUpdateAllPInfoFromMaster(mesh);
 }
 
+void  hpBuildEstNbFromBdbox(const hiPropMesh *mesh, const double *all_bd_box, emxArray_int32_T **new_nb_proc)
+{
+}
 
 
 void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box)
@@ -5280,30 +5288,23 @@ void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box)
     MPI_Allreduce(in_all_bd_box, all_bd_box, 6*num_proc, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     free(in_all_bd_box);
 
-    int num_nb_proc = num_proc - 1;
+    // temp change of nb_proc to all other processors
 
-    /* temp change of nb_proc to all other processors */
+    emxArray_int32_T *new_nb_proc;
 
-    emxArray_int32_T *new_nb_proc = emxCreateND_int32_T(1, &num_nb_proc);
-
-    int j = 0;
-    for (i = 0; i < cur_proc; i++)
-    {
-    	new_nb_proc->data[j] = i;
-	j++;
-    }
-    for (i = cur_proc+1; i < num_proc; i++)
-    {
-	new_nb_proc->data[j] = i;
-	j++;
-    }
+    hpBuildEstNbFromBdbox(mesh, all_bd_box, &new_nb_proc);
 
     emxFree_int32_T(&(mesh->nb_proc));
     mesh->nb_proc = new_nb_proc;
 
+    int num_nb_proc = mesh->nb_proc->size[0];
 
     emxArray_int32_T **ps_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
     emxArray_int32_T **tris_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
+
+    emxArray_int8_T **ps_shift_ring_proc = (emxArray_int8_T **) calloc(num_nb_proc, sizeof(emxArray_int8_T *));
+    emxArray_int8_T **tris_shift_ring_proc = (emxArray_int8_T **) calloc(num_nb_proc, sizeof(emxArray_int8_T *));
+
     emxArray_real_T **buffer_ps = (emxArray_real_T **) calloc(num_nb_proc, sizeof(emxArray_real_T *));
     emxArray_int32_T **buffer_tris = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
 
@@ -5312,13 +5313,38 @@ void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box)
     {
 	hpBuildBdboxGhostPsTrisForSend(mesh, i, all_bd_box,
 				  &(ps_ring_proc[I1dm(i)]),
-				  &(tris_ring_proc[I1dm(i)]), 
+				  &(tris_ring_proc[I1dm(i)]),
+				  &(ps_shift_ring_proc[I1dm(i)]),
+				  &(tris_shift_ring_proc[I1dm(i)]),
 				  &(buffer_ps[I1dm(i)]), &(buffer_tris[I1dm(i)]));
     }
 
     free(all_bd_box);
 
-    //hpCommPsTrisWithPInfo(mesh, ps_ring_proc, tris_ring_proc, buffer_ps, buffer_tris);
+    hpCommPsTrisWithPInfo(mesh, ps_ring_proc, tris_ring_proc, ps_shift_ring_proc, tris_shift_ring_proc, buffer_ps, buffer_tris);
+
+    for (i = 1; i <= num_nb_proc; i++)
+    {
+	emxFree_int32_T(&(ps_ring_proc[I1dm(i)]));
+	emxFree_int32_T(&(tris_ring_proc[I1dm(i)]));
+
+	emxFree_int8_T(&(ps_shift_ring_proc[I1dm(i)]));
+	emxFree_int8_T(&(tris_shift_ring_proc[I1dm(i)]));
+
+	emxFree_real_T(&(buffer_ps[I1dm(i)]));
+	emxFree_int32_T(&(buffer_tris[I1dm(i)]));
+    }
+
+    free(ps_ring_proc);
+    free(tris_ring_proc);
+    free(ps_shift_ring_proc);
+    free(tris_shift_ring_proc);
+    free(buffer_ps);
+    free(buffer_tris);
+
+    hpUpdatePInfo(mesh);
+
+    hpUpdateNbWithPInfo(mesh);
 }
 
 
