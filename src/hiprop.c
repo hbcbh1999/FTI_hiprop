@@ -3373,9 +3373,9 @@ void hpPrint_pinfo(hiPropMesh *mesh)
 
 	    int cur_node = next;
 
-	    printf("%d/%d(%d %d %d)-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex,
+	    printf("%d/%d(%d %d %d)[%d]-->", mesh->ps_pinfo->pdata[I1dm(cur_node)].proc, mesh->ps_pinfo->pdata[I1dm(cur_node)].lindex,
 		    mesh->ps_pinfo->pdata[I1dm(cur_node)].shift[0], mesh->ps_pinfo->pdata[I1dm(cur_node)].shift[1],
-		    mesh->ps_pinfo->pdata[I1dm(cur_node)].shift[2]);
+		    mesh->ps_pinfo->pdata[I1dm(cur_node)].shift[2], mesh->ps_pinfo->pdata[I1dm(cur_node)].next);
 	    next = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
 
 	}
@@ -4032,7 +4032,7 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
 
     int num_old_nbp = mesh->nb_proc->size[0];
 
-    unsigned char *nb_flag = (unsigned char *) calloc(num_proc, sizeof(unsigned char));
+    boolean_T *nb_flag = (boolean_T *) calloc(num_proc, sizeof(boolean_T));
 
     for (i = 1; i <= num_ps; i++)
     {
@@ -4042,7 +4042,10 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
 	    // If it is the pinfo for the point itself, jump over
 	    if ( (ps_pdata[I1dm(next_node)].proc == cur_proc ) &&
 		 (ps_pdata[I1dm(next_node)].lindex == i) )
+	    {
+		next_node = ps_pdata[I1dm(next_node)].next;
 		continue;
+	    }
 
 	    nb_flag[ps_pdata[I1dm(next_node)].proc] = 1;
 	    next_node = ps_pdata[I1dm(next_node)].next;
@@ -4054,7 +4057,7 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
     
     for (i = 0; i < num_proc; i++)
     {
-	if (nb_flag[i] == 1)
+	if (nb_flag[i])
 	    new_num_nbp++;
     }
 
@@ -4063,7 +4066,7 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
     int j = 0;
     for (i = 0; i < num_proc; i++)
     {
-	if (nb_flag[i] == 1)
+	if (nb_flag[i])
 	{
 	    new_nb_proc->data[j] = i;
 	    j++;
@@ -4075,8 +4078,9 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
 
     emxArray_int8_T **new_nb_proc_shift = (emxArray_int8_T **)calloc(new_num_nbp, sizeof(emxArray_int8_T *));
 
-    for (j = 0; j < new_num_nbp; i++)
+    for (j = 0; j < new_num_nbp; j++)
     {
+	int new_cur_nb_proc = new_nb_proc->data[j];
 	boolean_T *shift_flag = (boolean_T *) calloc(223, sizeof(boolean_T));
 
 	for (i = 1; i <= num_ps; i++)
@@ -4084,10 +4088,15 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
 	    int next_node = ps_phead[I1dm(i)];
 	    while(next_node != -1)
 	    {
-		// If it is the pinfo for the point itself, jump over
-		if ( (ps_pdata[I1dm(next_node)].proc == cur_proc ) &&
-			(ps_pdata[I1dm(next_node)].lindex == i) )
+		// If it is the pinfo for the point itself or not related to cur
+		// nb proc, jump over
+		if ( ((ps_pdata[I1dm(next_node)].proc == cur_proc) && (ps_pdata[I1dm(next_node)].lindex == i)) 
+			|| (ps_pdata[I1dm(next_node)].proc != new_cur_nb_proc) )
+		   
+		{
+		    next_node = ps_pdata[I1dm(next_node)].next;
 		    continue;
+		}
 
 		int first_d, second_d, third_d;
 
@@ -4111,6 +4120,7 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
 		shift_flag[hash_value] = 1;
 
 		next_node = ps_pdata[I1dm(next_node)].next;
+
 	    }
 	}
 
@@ -4166,9 +4176,7 @@ void hpUpdateNbWithPInfo(hiPropMesh *mesh)
 	emxFree_int8_T(&(mesh->nb_proc_shift[i]));
     free(mesh->nb_proc_shift);
     mesh->nb_proc_shift = new_nb_proc_shift;
-
     free(nb_flag);
-
 }
 
 
@@ -5673,7 +5681,7 @@ void hpBuildNRingGhost(hiPropMesh *mesh, const real_T num_ring)
 
     hpUpdatePInfo(mesh);
 
-    //hpUpdateNbWithPInfo(mesh);
+    hpUpdateNbWithPInfo(mesh);
 }
 
 

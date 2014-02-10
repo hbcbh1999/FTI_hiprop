@@ -207,7 +207,51 @@ int main(int argc, char* argv[])
 
     hpWriteUnstrMeshWithPInfo(debugname, mesh);
 
-    hpPrint_pinfo(mesh);
+    start = getTimer();
+    hpBuildOppositeHalfEdge(mesh);
+    printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
+    end = getTimer();
+    printf("Seconds used: %22.16g\n", difftime(end, start));
+
+
+    start = getTimer();
+    hpBuildIncidentHalfEdge(mesh);
+    printf("\n BuildIncidentHalfEdge passed, proc %d \n", rank);
+    end = getTimer();
+    printf("Seconds used: %22.16g\n", difftime(end, start));
+
+
+    start = getTimer();
+    hpBuildNRingGhost(mesh, 1);
+    printf("\n BuildNRingGhost passed, proc %d \n", rank);
+    end = getTimer();
+    printf("Build 1 Ring Seconds used: %22.16g\n", difftime(end, start));
+
+    char debugname2[256];
+
+    sprintf(debugname2, "debugout2-p%s.vtk", rank_str);
+
+    hpWriteUnstrMeshWithPInfo(debugname2, mesh);
+
+    //hpPrint_pinfo(mesh);
+    //
+    printf("\n AFter building n-ring \n");
+
+    printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);
+    printf("nb_proc list:\n");
+    for (i = 1; i <= mesh->nb_proc->size[0]; ++i)
+    {
+	printf("proc %d, shifting length %d\n", mesh->nb_proc->data[I1dm(i)], (mesh->nb_proc_shift[I1dm(i)]->size[0]));
+	for (j = 1; j <= (mesh->nb_proc_shift[I1dm(i)]->size[0]); j++)
+	{
+	    printf("Shifting %d: %d %d %d\n", j, 
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,1,mesh->nb_proc_shift[I1dm(i)]->size)],
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,2,mesh->nb_proc_shift[I1dm(i)]->size)],
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,3,mesh->nb_proc_shift[I1dm(i)]->size)]);
+	}
+
+    }
+
 
     /*
     hpBuildPUpdateInfo(mesh);
