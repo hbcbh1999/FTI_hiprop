@@ -173,14 +173,6 @@ int main(int argc, char* argv[])
 
     hpWriteUnstrMeshWithPInfo(debugname0, mesh);
 
-    /*
-    start = time(0);
-    hpCleanMeshByPinfo(mesh);
-    printf("\n After CleanMeshbyPinfo\n");
-    end = time(0);
-    printf("CleanMeshByPInfo seconds used: %22.16g\n", difftime(end, start));
-*/
-
     start = getTimer();
     hpBuildOppositeHalfEdge(mesh);
     printf("\n BuildOppHalfEdge passed, proc %d \n", rank);
@@ -194,7 +186,64 @@ int main(int argc, char* argv[])
     end = getTimer();
     printf("Seconds used: %22.16g\n", difftime(end, start));
 
+    double in_bd_box[6];
 
+    if (rank == 0)
+    {
+	in_bd_box[0] = -3;
+	in_bd_box[1] = 1;
+	in_bd_box[2] = -3;
+	in_bd_box[3] = 1;
+	in_bd_box[4] = -1e-10;
+	in_bd_box[5] = 1e-10;
+    }
+    else if (rank == 1)
+    {
+	in_bd_box[0] = -1;
+	in_bd_box[1] = 3;
+	in_bd_box[2] = -3;
+	in_bd_box[3] = 1;
+	in_bd_box[4] = -1e-10;
+	in_bd_box[5] = 1e-10;
+    }   
+    else if (rank == 2)
+    {
+	in_bd_box[0] = -3;
+	in_bd_box[1] = 1;
+	in_bd_box[2] = 1;
+	in_bd_box[3] = 3;
+	in_bd_box[4] = -1e-10;
+	in_bd_box[5] = 1e-10;
+    }   
+    else if (rank == 3)
+    {
+	in_bd_box[0] = 1;
+	in_bd_box[1] = 3;
+	in_bd_box[2] = 1;
+	in_bd_box[3] = 3;
+	in_bd_box[4] = -1e-10;
+	in_bd_box[5] = 1e-10;
+    }
+
+    hpBuildBoundingBoxGhost(mesh, in_bd_box);
+
+    printf("\n AFter building n-ring \n");
+
+    printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);
+    printf("nb_proc list:\n");
+    for (i = 1; i <= mesh->nb_proc->size[0]; ++i)
+    {
+	printf("proc %d, shifting length %d\n", mesh->nb_proc->data[I1dm(i)], (mesh->nb_proc_shift[I1dm(i)]->size[0]));
+	for (j = 1; j <= (mesh->nb_proc_shift[I1dm(i)]->size[0]); j++)
+	{
+	    printf("Shifting %d: %d %d %d\n", j, 
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,1,mesh->nb_proc_shift[I1dm(i)]->size)],
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,2,mesh->nb_proc_shift[I1dm(i)]->size)],
+		    mesh->nb_proc_shift[I1dm(i)]->data[I2dm(j,3,mesh->nb_proc_shift[I1dm(i)]->size)]);
+	}
+
+    }
+/*
     start = getTimer();
     hpBuildNRingGhost(mesh, 2);
     printf("\n BuildNRingGhost passed, proc %d \n", rank);
@@ -251,7 +300,7 @@ int main(int argc, char* argv[])
 	}
 
     }
-
+    */
 
     /*
     hpBuildPUpdateInfo(mesh);

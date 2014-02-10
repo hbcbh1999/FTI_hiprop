@@ -10,67 +10,12 @@
 #include "stdafx.h"
 #include "util.h"
 #include "hiprop.h"
-
-static void  hpBuildEstNbFromBdbox(const hiPropMesh *mesh, const double *all_bd_box, emxArray_int32_T **new_nb_proc);
- 
-
 //#include "metis.h"
 
-/*!
- * \brief Determine whether 2 triangles are the same base on floating point
- * comparison
- * \param ps1 points list 1
- * \param tri1 triangle list 1
- * \param tri_index1 triangle index in tri1 for comparison
- * \param ps2 points list 2
- * \param tri2 triangle list 2
- * \param tri_index2 triangle index in tri2 for comparison
- */
 
-/*
-static boolean_T sameTriangle(const emxArray_real_T* ps1,
-			      const emxArray_int32_T* tri1,
-			      const int tri_index1,
-			      const emxArray_real_T* ps2,
-			      const emxArray_int32_T* tri2,
-			      const int tri_index2,
-			      const double eps);
+static void  hpBuildEstNbFromBdbox(const hiPropMesh *mesh, const double *all_bd_box, 
+	emxArray_int32_T **new_nb_proc, emxArray_int8_T ***new_nb_shift_proc);
 
-
-
-
-static boolean_T sameTriangle(const emxArray_real_T* ps1,
-			      const emxArray_int32_T* tri1,
-			      const int tri_index1,
-			      const emxArray_real_T* ps2,
-			      const emxArray_int32_T* tri2, 
-			      const int tri_index2,
-			      const double eps)
-{
-    int p11 = tri1->data[I2dm(tri_index1,1,tri1->size)];
-    int p12 = tri1->data[I2dm(tri_index1,2,tri1->size)];
-    int p13 = tri1->data[I2dm(tri_index1,3,tri1->size)];
-
-    int p21 = tri2->data[I2dm(tri_index2,1,tri2->size)];
-    int p22 = tri2->data[I2dm(tri_index2,2,tri2->size)];
-    int p23 = tri2->data[I2dm(tri_index2,3,tri2->size)];
-
-
-    if ( (fabs(ps1->data[I2dm(p11,1,ps1->size)] - ps2->data[I2dm(p21,1,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p11,2,ps1->size)] - ps2->data[I2dm(p21,2,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p11,3,ps1->size)] - ps2->data[I2dm(p21,3,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p12,1,ps1->size)] - ps2->data[I2dm(p22,1,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p12,2,ps1->size)] - ps2->data[I2dm(p22,2,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p12,3,ps1->size)] - ps2->data[I2dm(p22,3,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p13,1,ps1->size)] - ps2->data[I2dm(p23,1,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p13,2,ps1->size)] - ps2->data[I2dm(p23,2,ps2->size)]) < eps) &&
-	 (fabs(ps1->data[I2dm(p13,3,ps1->size)] - ps2->data[I2dm(p23,3,ps2->size)]) < eps)
-       )
-	return 1;
-    else
-	return 0;
-}
-*/
 
 void hpInitMesh(hiPropMesh **pmesh)
 {
@@ -5266,8 +5211,201 @@ void hpUpdatePInfo(hiPropMesh *mesh)
     hpUpdateAllPInfoFromMaster(mesh);
 }
 
-void  hpBuildEstNbFromBdbox(const hiPropMesh *mesh, const double *all_bd_box, emxArray_int32_T **new_nb_proc)
+static void  hpBuildEstNbFromBdbox(const hiPropMesh *mesh, const double *all_bd_box,
+	emxArray_int32_T **new_nb_proc, emxArray_int8_T ***new_nb_shift_proc)
 {
+    int cur_proc;
+    int num_proc;
+    MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    int i;
+
+    double domain_len_x = mesh->domain_len[0];
+    double domain_len_y = mesh->domain_len[1];
+    double domain_len_z = mesh->domain_len[2];
+
+    boolean_T *nb_ptemp_est = (boolean_T *) calloc (num_proc, sizeof(boolean_T));
+    int num_nbp_est = 0;
+
+    int *nb_num_shift_est = (int *) calloc (num_proc, sizeof(int));
+
+    for (i = 0; i < num_proc; ++i)
+    {
+	// Iterate all possible periodic boundary conditions 
+	int x_iter = 1;
+	int y_iter = 1;
+	int z_iter = 1;
+
+	if (mesh->has_periodic_boundary[0] == true)
+	    x_iter = 3;
+	if (mesh->has_periodic_boundary[1] == true)
+	    y_iter = 3;
+	if (mesh->has_periodic_boundary[2] == true)
+	    z_iter = 3;
+
+	int j1, j2, j3;
+	double x_factor = 0.0;
+	double y_factor = 0.0;
+	double z_factor = 0.0;
+
+	int8_T sx,sy,sz;
+
+	int num_cur_shift = 0;
+
+	for (j1 = 0; j1 < x_iter; j1++)
+	{
+	    if (j1 > 1)
+	    {
+		sx = -1;
+	    }
+	    else
+		sx = (int8_T) j1;
+
+	    for (j2 = 0; j2 < y_iter; j2++)
+	    {
+		if (j2 > 1)
+		    sy = -1;
+		else
+		    sy = (int8_T) j2;
+
+		for (j3 = 0; j3 < z_iter; j3++)
+		{
+		    if (j3 > 1)
+			sz = -1;
+		    else
+			sz = (int8_T) j3;
+
+		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == cur_proc)
+			continue;
+
+		    x_factor = ((double) sx)*domain_len_x;
+		    y_factor = ((double) sx)*domain_len_y;
+		    z_factor = ((double) sx)*domain_len_z;
+
+		    // Actural loop starts here
+
+		    double comxL = hpMax(all_bd_box[cur_proc*6] - x_factor, all_bd_box[i*6]);
+		    double comxU = hpMin(all_bd_box[cur_proc*6+1] - x_factor, all_bd_box[i*6+1]);
+		    double comyL = hpMax(all_bd_box[cur_proc*6+2] - y_factor, all_bd_box[i*6+2]);
+		    double comyU = hpMin(all_bd_box[cur_proc*6+3] - y_factor, all_bd_box[i*6+3]);
+		    double comzL = hpMax(all_bd_box[cur_proc*6+4] - z_factor, all_bd_box[i*6+4]);
+		    double comzU = hpMin(all_bd_box[cur_proc*6+5] - z_factor, all_bd_box[i*6+5]);
+
+		    if ( (comxL <= comxU) && (comyL <= comyU) && (comzL <= comzU) )
+		    {
+			num_cur_shift++;
+			if (!(nb_ptemp_est[i]))
+			{
+			    nb_ptemp_est[i] = 1;
+			    num_nbp_est++;
+			}
+		    }
+		    // Actural loop ends here 
+		}
+	    }
+	}
+	nb_num_shift_est[i] = num_cur_shift;
+    }
+
+    (*new_nb_proc) = emxCreateND_int32_T(1, &num_nbp_est);
+    (*new_nb_shift_proc) = (emxArray_int8_T **) calloc(num_nbp_est, sizeof(emxArray_int8_T *));
+
+    // Set new nb_proc, allocate memory for new nb_proc_shift
+
+    int j = 0;
+    for (i = 0; i < num_proc; i++)
+    {
+	if (nb_ptemp_est[i])
+	{
+	    (*new_nb_proc)->data[j] = i;
+	    int num_shift = nb_num_shift_est[i];
+	    ((*new_nb_shift_proc)[j]) = emxCreate_int8_T(num_shift, 3);
+	    j++;
+	}
+    }
+
+    // Set new nb_proc_shift
+    
+    for (i = 0; i < num_nbp_est; ++i)
+    {
+	int cur_nb_proc = (*new_nb_proc)->data[i];
+	emxArray_int8_T *cur_nb_shift_new = (*new_nb_shift_proc)[i];
+
+	// Iterate all possible periodic boundary conditions 
+	int x_iter = 1;
+	int y_iter = 1;
+	int z_iter = 1;
+
+	if (mesh->has_periodic_boundary[0] == true)
+	    x_iter = 3;
+	if (mesh->has_periodic_boundary[1] == true)
+	    y_iter = 3;
+	if (mesh->has_periodic_boundary[2] == true)
+	    z_iter = 3;
+
+	int j1, j2, j3;
+	double x_factor = 0.0;
+	double y_factor = 0.0;
+	double z_factor = 0.0;
+
+	int8_T sx,sy,sz;
+
+	int cur_shift_iter = 1;
+
+	for (j1 = 0; j1 < x_iter; j1++)
+	{
+	    if (j1 > 1)
+	    {
+		sx = -1;
+	    }
+	    else
+		sx = (int8_T) j1;
+
+	    for (j2 = 0; j2 < y_iter; j2++)
+	    {
+		if (j2 > 1)
+		    sy = -1;
+		else
+		    sy = (int8_T) j2;
+
+		for (j3 = 0; j3 < z_iter; j3++)
+		{
+		    if (j3 > 1)
+			sz = -1;
+		    else
+			sz = (int8_T) j3;
+
+		    if (j1 == 0 && j2 == 0 && j3 == 0 && i == cur_proc)
+			continue;
+
+		    x_factor = ((double) sx)*domain_len_x;
+		    y_factor = ((double) sx)*domain_len_y;
+		    z_factor = ((double) sx)*domain_len_z;
+
+		    // Actural loop starts here
+
+		    double comxL = hpMax(all_bd_box[cur_proc*6] - x_factor, all_bd_box[cur_nb_proc*6]);
+		    double comxU = hpMin(all_bd_box[cur_proc*6+1] - x_factor, all_bd_box[cur_nb_proc*6+1]);
+		    double comyL = hpMax(all_bd_box[cur_proc*6+2] - y_factor, all_bd_box[cur_nb_proc*6+2]);
+		    double comyU = hpMin(all_bd_box[cur_proc*6+3] - y_factor, all_bd_box[cur_nb_proc*6+3]);
+		    double comzL = hpMax(all_bd_box[cur_proc*6+4] - z_factor, all_bd_box[cur_nb_proc*6+4]);
+		    double comzU = hpMin(all_bd_box[cur_proc*6+5] - z_factor, all_bd_box[cur_nb_proc*6+5]);
+
+		    if ( (comxL <= comxU) && (comyL <= comyU) && (comzL <= comzU) )
+		    {
+			cur_nb_shift_new->data[I2dm(cur_shift_iter, 1, cur_nb_shift_new->size)] = sx;
+			cur_nb_shift_new->data[I2dm(cur_shift_iter, 2, cur_nb_shift_new->size)] = sy;
+			cur_nb_shift_new->data[I2dm(cur_shift_iter, 3, cur_nb_shift_new->size)] = sz;
+			cur_shift_iter++;
+		    }
+		    // Actural loop ends here 
+		}
+	    }
+	}
+    }
+
+    free(nb_ptemp_est);
+    free(nb_num_shift_est);
 }
 
 
@@ -5291,14 +5429,20 @@ void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box)
     // temp change of nb_proc to all other processors
 
     emxArray_int32_T *new_nb_proc;
+    emxArray_int8_T **new_nb_proc_shift;
 
-    hpBuildEstNbFromBdbox(mesh, all_bd_box, &new_nb_proc);
+    hpBuildEstNbFromBdbox(mesh, all_bd_box, &new_nb_proc, &new_nb_proc_shift);
 
+    for (i = 0; i < mesh->nb_proc->size[0]; i++)
+	emxFree_int8_T(&(mesh->nb_proc_shift[i]));
+    free(mesh->nb_proc_shift);
     emxFree_int32_T(&(mesh->nb_proc));
+
     mesh->nb_proc = new_nb_proc;
+    mesh->nb_proc_shift = new_nb_proc_shift;
 
     int num_nb_proc = mesh->nb_proc->size[0];
-
+/*
     emxArray_int32_T **ps_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
     emxArray_int32_T **tris_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
 
@@ -5345,6 +5489,7 @@ void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box)
     hpUpdatePInfo(mesh);
 
     hpUpdateNbWithPInfo(mesh);
+    */
 }
 
 
@@ -8549,3 +8694,47 @@ void hpConstrPInfoFromGlobalLocalInfo(hiPropMesh *mesh,
     }
     */
     //////////////////
+/*
+static boolean_T sameTriangle(const emxArray_real_T* ps1,
+			      const emxArray_int32_T* tri1,
+			      const int tri_index1,
+			      const emxArray_real_T* ps2,
+			      const emxArray_int32_T* tri2,
+			      const int tri_index2,
+			      const double eps);
+
+
+
+
+static boolean_T sameTriangle(const emxArray_real_T* ps1,
+			      const emxArray_int32_T* tri1,
+			      const int tri_index1,
+			      const emxArray_real_T* ps2,
+			      const emxArray_int32_T* tri2, 
+			      const int tri_index2,
+			      const double eps)
+{
+    int p11 = tri1->data[I2dm(tri_index1,1,tri1->size)];
+    int p12 = tri1->data[I2dm(tri_index1,2,tri1->size)];
+    int p13 = tri1->data[I2dm(tri_index1,3,tri1->size)];
+
+    int p21 = tri2->data[I2dm(tri_index2,1,tri2->size)];
+    int p22 = tri2->data[I2dm(tri_index2,2,tri2->size)];
+    int p23 = tri2->data[I2dm(tri_index2,3,tri2->size)];
+
+
+    if ( (fabs(ps1->data[I2dm(p11,1,ps1->size)] - ps2->data[I2dm(p21,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p11,2,ps1->size)] - ps2->data[I2dm(p21,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p11,3,ps1->size)] - ps2->data[I2dm(p21,3,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,1,ps1->size)] - ps2->data[I2dm(p22,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,2,ps1->size)] - ps2->data[I2dm(p22,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p12,3,ps1->size)] - ps2->data[I2dm(p22,3,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,1,ps1->size)] - ps2->data[I2dm(p23,1,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,2,ps1->size)] - ps2->data[I2dm(p23,2,ps2->size)]) < eps) &&
+	 (fabs(ps1->data[I2dm(p13,3,ps1->size)] - ps2->data[I2dm(p23,3,ps2->size)]) < eps)
+       )
+	return 1;
+    else
+	return 0;
+}
+*/

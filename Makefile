@@ -9,11 +9,11 @@ CPPFLAGS =
 VPATH = src test
 
 test.exe: pre test.o libhiprop.a
-	$(CC) -g -o $@ test.o -lm -L./ -lhiprop
+	$(CC) -g -o $@ test.o -lm -L./ -lhiprop -lrt
 test2.exe: pre test2.o libhiprop.a
-	$(CC) -g -o $@ test2.o -lm -L./ -lhiprop
+	$(CC) -g -o $@ test2.o -lm -L./ -lhiprop -lrt
 test3.exe: pre test3.o libhiprop.a
-	$(CC) -g -o $@ test3.o -lm -L./ -lhiprop
+	$(CC) -g -o $@ test3.o -lm -L./ -lhiprop -lrt
 
 all: test.exe test2.exe test3.exe
 
