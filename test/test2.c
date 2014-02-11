@@ -210,23 +210,30 @@ int main(int argc, char* argv[])
     {
 	in_bd_box[0] = -3;
 	in_bd_box[1] = 1;
-	in_bd_box[2] = 1;
+	in_bd_box[2] = -1;
 	in_bd_box[3] = 3;
 	in_bd_box[4] = -1e-10;
 	in_bd_box[5] = 1e-10;
     }   
     else if (rank == 3)
     {
-	in_bd_box[0] = 1;
+	in_bd_box[0] = -1;
 	in_bd_box[1] = 3;
-	in_bd_box[2] = 1;
+	in_bd_box[2] = -1;
 	in_bd_box[3] = 3;
 	in_bd_box[4] = -1e-10;
 	in_bd_box[5] = 1e-10;
     }
 
+    start = getTimer();
     hpBuildBoundingBoxGhost(mesh, in_bd_box);
+    end = getTimer();
+    printf("Seconds used for hpBuildBoundingboxghost: %22.16g\n", difftime(end, start));
+    char debugname2[256];
 
+    sprintf(debugname2, "debugout2-p%s.vtk", rank_str);
+
+    hpWriteUnstrMeshWithPInfo(debugname2, mesh);
     printf("\n AFter building n-ring \n");
 
     printf("\nsize of nb_proc list: %d\n", mesh->nb_proc->size[0]);

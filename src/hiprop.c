@@ -566,7 +566,7 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
     for (i = 0; i < num_proc; i++)
     {
-	if (nb_ptemp_est[i] == true)
+	if (nb_ptemp_est[i])
 	    nb_ptemp_iter[nb_ptemp_cur++] = i;
     }
 
@@ -3487,200 +3487,304 @@ void hpBuildBdboxGhostPsTrisForSend(const hiPropMesh *mesh,
 				    emxArray_real_T **buffer_ps,
 				    emxArray_int32_T **buffer_tris)
 {
-    int i, j;
+    int i, j, is;
+
+    int target_proc = mesh->nb_proc->data[I1dm(nb_proc_index)];
+
     emxArray_int32_T *tris = mesh->tris;
     emxArray_real_T *ps = mesh->ps;
+
+    real_T *ps_data = ps->data;
+    int32_T *ps_size = ps->size;
+
+    int32_T *tris_data = tris->data;
+    int32_T *tris_size = tris->size;
+
     int num_tris = tris->size[0];
     int num_ps = ps->size[0];
+
     hpPInfoNode *tris_pdata = mesh->tris_pinfo->pdata;
     int *tris_phead = mesh->tris_pinfo->head;
 
-    int nb_proc = mesh->nb_proc->data[I1dm(nb_proc_index)];
+    double domain_len_x = mesh->domain_len[0];
+    double domain_len_y = mesh->domain_len[1];
+    double domain_len_z = mesh->domain_len[2];
 
-    double xL = bd_box[nb_proc*6];
-    double xU = bd_box[nb_proc*6+1];
-    double yL = bd_box[nb_proc*6+2];
-    double yU = bd_box[nb_proc*6+3];
-    double zL = bd_box[nb_proc*6+4];
-    double zU = bd_box[nb_proc*6+5];
+    emxArray_int8_T *nb_shift = (mesh->nb_proc_shift)[I1dm(nb_proc_index)];
+    int num_shifts = nb_shift->size[0];
 
+    // target bounding box (without shift)
+    double target_xL = bd_box[target_proc*6];
+    double target_xU = bd_box[target_proc*6+1];
+    double target_yL = bd_box[target_proc*6+2];
+    double target_yU = bd_box[target_proc*6+3];
+    double target_zL = bd_box[target_proc*6+4];
+    double target_zU = bd_box[target_proc*6+5];
 
-
-    double max_len = xU - xL;
-    if ( (yU-yL) > max_len)
-	max_len = yU-yL;
-    if ( (zU-zL) > max_len)
-	max_len = zU-zL;
+    double max_len = target_xU - target_xL;
+    if ( (target_yU-target_yL) > max_len)
+	max_len = target_yU-target_yL;
+    if ( (target_zU-target_zL) > max_len)
+	max_len = target_zU-target_zL;
 
     double eps = 1e-10*max_len;
 
-    /* relax the bounding box */
-    xL -= eps; xU += eps;
-    yL -= eps; yU += eps;
-    zL -= eps; zU += eps;
+    // relax the bounding box
+    target_xL -= eps; target_xU += eps;
+    target_yL -= eps; target_yU += eps;
+    target_zL -= eps; target_zU += eps;
 
-    unsigned char *tris_flag = (unsigned char *) calloc(mesh->tris->size[0], sizeof(unsigned char));
-    unsigned char *ps_flag = (unsigned char *) calloc(mesh->ps->size[0], sizeof(unsigned char));
+    int **ps_id_temp = (int **) calloc(num_shifts, sizeof(int *));
+    int **tris_id_temp = (int **) calloc(num_shifts, sizeof(int *));
+    int **tris_buffer_temp = (int **) calloc(num_shifts, sizeof(int *));
 
-    for (i = 1; i <= num_tris; i++)
+    int *num_ps_ring_shift = (int *) calloc(num_shifts, sizeof(int));
+    int *num_tris_ring_shift = (int *) calloc(num_shifts, sizeof(int));
+
+    int num_ps_ring_all = 0;
+    int num_tris_ring_all = 0;
+
+    for (is = 0; is < num_shifts; ++is)
     {
-	int psi = tris->data[I2dm(i,1,tris->size)]; /* first point */
-	double trixL = ps->data[I2dm(psi,1,ps->size)];
-	double trixU = trixL;
-	double triyL = ps->data[I2dm(psi,2,ps->size)];
-	double triyU = triyL;
-	double trizL = ps->data[I2dm(psi,3,ps->size)];
-	double trizU = trizL;
-	for (j = 2; j <= 3; j++)
+	boolean_T *tris_flag = (boolean_T *) calloc(num_tris, sizeof(boolean_T));
+	boolean_T *ps_flag = (boolean_T *) calloc(num_ps, sizeof(boolean_T));
+	int *ps_map = (int *) calloc(num_ps, sizeof(int));
+
+	int8_T sx, sy, sz;
+
+	sx = nb_shift->data[I2dm(is+1,1,nb_shift->size)];
+	sy = nb_shift->data[I2dm(is+1,2,nb_shift->size)];
+	sz = nb_shift->data[I2dm(is+1,3,nb_shift->size)];
+
+	double x_factor = ((double)sx*domain_len_x);
+	double y_factor = ((double)sy*domain_len_y);
+	double z_factor = ((double)sz*domain_len_z);
+
+
+	for (i = 1; i <= num_tris; i++)
 	{
-	    psi = tris->data[I2dm(i,j,tris->size)];
-	    if(ps->data[I2dm(psi,1,ps->size)] < trixL)
-		trixL = ps->data[I2dm(psi,1,ps->size)];
-	    else if(ps->data[I2dm(psi,1,ps->size)] > trixU)
-		trixU = ps->data[I2dm(psi,1,ps->size)];
-
-	    if(ps->data[I2dm(psi,2,ps->size)] < triyL)
-		triyL = ps->data[I2dm(psi,2,ps->size)];
-	    else if(ps->data[I2dm(psi,2,ps->size)] > triyU)
-		triyU = ps->data[I2dm(psi,2,ps->size)];
-
-	    if(ps->data[I2dm(psi,3,ps->size)] < trizL)
-		trizL = ps->data[I2dm(psi,3,ps->size)];
-	    else if(ps->data[I2dm(psi,3,ps->size)] > trizU)
-		trizU = ps->data[I2dm(psi,3,ps->size)];
-	}
-
-	double comxL = hpMax(xL, trixL);
-	double comxU = hpMin(xU, trixU);
-	double comyL = hpMax(yL, triyL);
-	double comyU = hpMin(yU, triyU);
-	double comzL = hpMax(zL, trizL);
-	double comzU = hpMin(zU, trizU);
-
-	/*
-	if ( ( (trixL >= xL) && (trixL <= xU) && (triyL >= yL) && (triyL <= yU) && (trizL >= zL) && (trizL <= zU) ) ||
-	     ( (trixL >= xL) && (trixL <= xU) && (triyL >= yL) && (triyL <= yU) && (trizU >= zL) && (trizU <= zU) ) ||
-	     ( (trixL >= xL) && (trixL <= xU) && (triyU >= yL) && (triyU <= yU) && (trizL >= zL) && (trizL <= zU) ) ||
-	     ( (trixL >= xL) && (trixL <= xU) && (triyU >= yL) && (triyU <= yU) && (trizU >= zL) && (trizU <= zU) ) ||
-	     ( (trixU >= xL) && (trixU <= xU) && (triyL >= yL) && (triyL <= yU) && (trizL >= zL) && (trizL <= zU) ) ||
-	     ( (trixU >= xL) && (trixU <= xU) && (triyL >= yL) && (triyL <= yU) && (trizU >= zL) && (trizU <= zU) ) ||
-	     ( (trixU >= xL) && (trixU <= xU) && (triyU >= yL) && (triyU <= yU) && (trizL >= zL) && (trizL <= zU) ) ||
-	     ( (trixU >= xL) && (trixU <= xU) && (triyU >= yL) && (triyU <= yU) && (trizU >= zL) && (trizU <= zU) )
-	   )*/
-        if ( (comxL <= comxU) && (comyL <= comyU) && (comzL <= comzU) )	
-	{
-	    tris_flag[I1dm(i)] = 1;
-	    /* Only send the tris & points not existing on the nb proc */
-
-	    int next_node = tris_phead[I1dm(i)];
-	    while (next_node != -1)
+	    int psi = tris_data[I2dm(i,1,tris_size)]; // first point
+	    double trixL = ps_data[I2dm(psi,1,ps_size)];
+	    double trixU = trixL;
+	    double triyL = ps_data[I2dm(psi,2,ps_size)];
+	    double triyU = triyL;
+	    double trizL = ps_data[I2dm(psi,3,ps_size)];
+	    double trizU = trizL;
+	    for (j = 2; j <= 3; j++)
 	    {
-		int proc_id = tris_pdata[I1dm(next_node)].proc;
-		if (proc_id == nb_proc)
-		{
-		    tris_flag[I1dm(i)] = 0;
-		    break;
-		}
-		else
-		    next_node = tris_pdata[I1dm(next_node)].next;
+		psi = tris_data[I2dm(i,j,tris_size)];
+		if(ps_data[I2dm(psi,1,ps_size)] < trixL)
+		    trixL = ps_data[I2dm(psi,1,ps_size)];
+		else if(ps_data[I2dm(psi,1,ps_size)] > trixU)
+		    trixU = ps_data[I2dm(psi,1,ps_size)];
+
+		if(ps_data[I2dm(psi,2,ps_size)] < triyL)
+		    triyL = ps_data[I2dm(psi,2,ps_size)];
+		else if(ps_data[I2dm(psi,2,ps_size)] > triyU)
+		    triyU = ps_data[I2dm(psi,2,ps_size)];
+
+		if(ps_data[I2dm(psi,3,ps_size)] < trizL)
+		    trizL = ps_data[I2dm(psi,3,ps_size)];
+		else if(ps_data[I2dm(psi,3,ps_size)] > trizU)
+		    trizU = ps_data[I2dm(psi,3,ps_size)];
 	    }
 
-	    if (tris_flag[I1dm(i)] == 1)
+	    double comxL = hpMax(target_xL + x_factor, trixL);
+	    double comxU = hpMin(target_xU + x_factor, trixU);
+	    double comyL = hpMax(target_yL + y_factor, triyL);
+	    double comyU = hpMin(target_yU + y_factor, triyU);
+	    double comzL = hpMax(target_zL + z_factor, trizL);
+	    double comzU = hpMin(target_zU + z_factor, trizU);
+
+	    if ( (comxL <= comxU) && (comyL <= comyU) && (comzL <= comzU) )	
 	    {
-		for (j = 1; j <= 3; j++)
+		tris_flag[I1dm(i)] = 1;
+		// Only send the tris & points not existing on the nb proc
+
+		int next_node = tris_phead[I1dm(i)];
+		while (next_node != -1)
 		{
-		    psi = tris->data[I2dm(i,j,tris->size)];
-		    ps_flag[I1dm(psi)] = 1;
+		    if ( (tris_pdata[I1dm(next_node)].proc == target_proc) &&
+			    (sx == tris_pdata[I1dm(next_node)].shift[0]) &&
+			    (sy == tris_pdata[I1dm(next_node)].shift[1]) &&
+			    (sz == tris_pdata[I1dm(next_node)].shift[2]) )
+		    {
+			tris_flag[I1dm(i)] = 0;
+			break;
+		    }
+		    else
+			next_node = tris_pdata[I1dm(next_node)].next;
+		}
+
+		if (tris_flag[I1dm(i)])
+		{
+		    int bufpi_x = tris_data[I2dm(i,1,tris_size)];
+		    int bufpi_y = tris_data[I2dm(i,2,tris_size)];
+		    int bufpi_z = tris_data[I2dm(i,3,tris_size)];
+		    ps_flag[I1dm(bufpi_x)] = 1;
+		    ps_flag[I1dm(bufpi_y)] = 1;
+		    ps_flag[I1dm(bufpi_z)] = 1;
 		}
 	    }
 	}
-    }
 
-    int num_buf_ps = 0;
-    int num_buf_tris = 0;
-
-    for (i = 1; i <= num_tris; i++)
-    {
-	if (tris_flag[I1dm(i)] == 1)
-	    num_buf_tris++;
-    }
-    for (i = 1; i <= num_ps; i++)
-    {
-	if (ps_flag[I1dm(i)] == 1)
-	    num_buf_ps++;
-    }
-
-    (*ps_ring_proc) = emxCreateND_int32_T(1, &num_buf_ps);
-    (*tris_ring_proc) = emxCreateND_int32_T(1, &num_buf_tris);
-
-    (*buffer_ps) = emxCreate_real_T(num_buf_ps, 3);
-    (*buffer_tris) = emxCreate_int32_T(num_buf_tris, 3);
-
-    /* fill the ps_ring_proc & tris_ring_proc */
-
-    j = 0;
-    for (i = 1; i <= num_tris; i++)
-    {
-	if (tris_flag[I1dm(i)] == 1)
+	// Get number of ps for send of current shift and the sum
+	// Set ps_map for building tris
+	for (i = 1; i <= num_ps; i++)
 	{
-	    (*tris_ring_proc)->data[j] = i;
-	    j++;
+	    if (ps_flag[I1dm(i)])
+	    {
+		(num_ps_ring_shift[is])++;
+		num_ps_ring_all++;
+
+		ps_map[I1dm(i)] = num_ps_ring_all;
+	    }
+	}
+
+	// Get number of tris for send of current shift and the sum
+	for (i = 1; i <= num_tris; i++)
+	{
+	    if (tris_flag[I1dm(i)])
+	    {
+		(num_tris_ring_shift[is])++;
+		num_tris_ring_all++;
+	    }
+	}
+
+	ps_id_temp[is] = (int *) calloc(num_ps_ring_shift[is], sizeof(int));
+	tris_id_temp[is] = (int *) calloc(num_tris_ring_shift[is], sizeof(int));
+
+	tris_buffer_temp[is] = (int *) calloc(3*num_tris_ring_shift[is], sizeof(int));
+
+	int *cur_ps_id_temp = ps_id_temp[is];
+	int *cur_tris_id_temp = tris_id_temp[is];
+	int *cur_tris_buffer_temp = tris_buffer_temp[is];
+
+	int ps_iter = 0;
+	int tris_iter = 0;
+
+	for (i = 1; i <= num_ps; i++)
+	{
+	    if (ps_flag[I1dm(i)])
+		cur_ps_id_temp[ps_iter++] = i;
+	}
+
+	for (i = 1; i <= num_tris; i++)
+	{
+	    if (tris_flag[I1dm(i)])
+	    {
+		cur_tris_id_temp[tris_iter] = i;
+
+		cur_tris_buffer_temp[tris_iter*3] = ps_map[I1dm(tris_data[I2dm(i,1,tris_size)])];
+		cur_tris_buffer_temp[tris_iter*3+1] = ps_map[I1dm(tris_data[I2dm(i,2,tris_size)])];
+		cur_tris_buffer_temp[tris_iter*3+2] = ps_map[I1dm(tris_data[I2dm(i,3,tris_size)])];
+
+		tris_iter++;
+	    }
+	}
+
+
+	free(tris_flag);
+	free(ps_flag);
+	free(ps_map);
+    }
+    // Combine ps_ring and tris_ring for each shift to get final array
+
+    int num_ps_ring_shift_all = 3*num_ps_ring_all;
+    int num_tris_ring_shift_all = 3*num_tris_ring_all;
+
+    (*ps_ring_proc) = emxCreateND_int32_T(1, &num_ps_ring_all);
+    (*tris_ring_proc) = emxCreateND_int32_T(1, &num_tris_ring_all);
+
+    (*buffer_tris) = emxCreate_int32_T(num_tris_ring_all, 3);
+    (*buffer_ps) = emxCreate_real_T(num_ps_ring_all, 3);
+
+    (*ps_shift_ring_proc) = emxCreateND_int8_T(1, &num_ps_ring_shift_all);
+    (*tris_shift_ring_proc) = emxCreateND_int8_T(1, &num_tris_ring_shift_all);
+
+    int ps_iter = 0;
+    int tris_iter = 0;
+
+    emxArray_int32_T *result_ps = *ps_ring_proc;
+    emxArray_int32_T *result_tris = *tris_ring_proc;
+
+    emxArray_int32_T *result_tris_buffer = *buffer_tris;
+    emxArray_real_T *result_ps_buffer = *buffer_ps;
+
+    emxArray_int8_T *result_ps_shift = *ps_shift_ring_proc;
+    emxArray_int8_T *result_tris_shift = *tris_shift_ring_proc;
+
+    for (is = 0; is < num_shifts; is++)
+    {
+	int8_T sx, sy, sz;
+
+	sx = nb_shift->data[I2dm(is+1,1,nb_shift->size)];
+	sy = nb_shift->data[I2dm(is+1,2,nb_shift->size)];
+	sz = nb_shift->data[I2dm(is+1,3,nb_shift->size)];
+
+	int num_ps_ring_cur_shift = num_ps_ring_shift[is];
+	int num_tris_ring_cur_shift = num_tris_ring_shift[is];
+
+	int *ps_ring_cur_shift = ps_id_temp[is];
+	int *tris_ring_cur_shift = tris_id_temp[is];
+	int *tris_buffer_ring_cur_shift = tris_buffer_temp[is];
+
+	for (i = 0; i < num_ps_ring_cur_shift; i++)
+	{
+	    result_ps->data[ps_iter] = ps_ring_cur_shift[i];
+	    result_ps_shift->data[ps_iter*3] = sx;
+	    result_ps_shift->data[ps_iter*3+1] = sy;
+	    result_ps_shift->data[ps_iter*3+2] = sz;
+
+	    result_ps_buffer->data[I2dm(ps_iter+1, 1, result_ps_buffer->size)] = ps_data[I2dm(ps_ring_cur_shift[i], 1, ps_size)] - ((double)sx*domain_len_x);
+	    result_ps_buffer->data[I2dm(ps_iter+1, 2, result_ps_buffer->size)] = ps_data[I2dm(ps_ring_cur_shift[i], 2, ps_size)] - ((double)sy*domain_len_y);
+	    result_ps_buffer->data[I2dm(ps_iter+1, 3, result_ps_buffer->size)] = ps_data[I2dm(ps_ring_cur_shift[i], 3, ps_size)] - ((double)sz*domain_len_z);
+
+	    ps_iter++;
+	}
+
+	for (i = 0; i < num_tris_ring_cur_shift; i++)
+	{
+	    result_tris->data[tris_iter] = tris_ring_cur_shift[i];
+	    result_tris_shift->data[tris_iter*3] = sx;
+	    result_tris_shift->data[tris_iter*3+1] = sy;
+	    result_tris_shift->data[tris_iter*3+2] = sz;
+
+	    tris_iter++;
+
+	    result_tris_buffer->data[I2dm(tris_iter, 1, result_tris_buffer->size)] = tris_buffer_ring_cur_shift[i*3];
+	    result_tris_buffer->data[I2dm(tris_iter, 2, result_tris_buffer->size)] = tris_buffer_ring_cur_shift[i*3+1];
+	    result_tris_buffer->data[I2dm(tris_iter, 3, result_tris_buffer->size)] = tris_buffer_ring_cur_shift[i*3+2];
 	}
     }
 
-    j = 0;
-    for (i = 1; i <= num_ps; i++)
+    for (is = 0; is < num_shifts; is++)
     {
-	if (ps_flag[I1dm(i)] == 1)
-	{
-	    (*ps_ring_proc)->data[j] = i;
-	    j++;
-	}
+	free(ps_id_temp[is]);
+	free(tris_id_temp[is]);
+	free(tris_buffer_temp[is]);
     }
 
-    /* fill the buffer_ps and buffer_tris */
+    free(ps_id_temp);
+    free(tris_id_temp);
+    free(tris_buffer_temp);
 
-    int *ps_mapping = (int *) calloc(ps->size[0], sizeof(int));
-
-    for (j = 1; j <= num_buf_ps; j++)
-    {
-	int cur_buf_ps_index = (*ps_ring_proc)->data[I1dm(j)];
-	(*buffer_ps)->data[I2dm(j,1,(*buffer_ps)->size)] =
-	    ps->data[I2dm(cur_buf_ps_index,1,ps->size)];
-	(*buffer_ps)->data[I2dm(j,2,(*buffer_ps)->size)] =
-	    ps->data[I2dm(cur_buf_ps_index,2,ps->size)];
-	(*buffer_ps)->data[I2dm(j,3,(*buffer_ps)->size)] =
-	    ps->data[I2dm(cur_buf_ps_index,3,ps->size)];
-
-	ps_mapping[I1dm(cur_buf_ps_index)] = j;
-    }
-    for (j = 1; j <= num_buf_tris; j++)
-    {
-	int cur_buf_tris_index = (*tris_ring_proc)->data[I1dm(j)];
-	(*buffer_tris)->data[I2dm(j,1,(*buffer_tris)->size)] =
-	    ps_mapping[tris->data[I2dm(cur_buf_tris_index,1,tris->size)]-1];
-	(*buffer_tris)->data[I2dm(j,2,(*buffer_tris)->size)] =
-	    ps_mapping[tris->data[I2dm(cur_buf_tris_index,2,tris->size)]-1];
-	(*buffer_tris)->data[I2dm(j,3,(*buffer_tris)->size)] =
-	    ps_mapping[tris->data[I2dm(cur_buf_tris_index,3,tris->size)]-1];
-    }
-
-    free(ps_flag);
-    free(tris_flag);
-    free(ps_mapping);
+    free(num_ps_ring_shift);
+    free(num_tris_ring_shift);
+ 
 }
 
 void hpBuildGhostPsTrisForSend(const hiPropMesh *mesh,
-			       const int nb_proc_index,
-			       const real_T num_ring,
-			       emxArray_int32_T *psid_proc,
-			       emxArray_int8_T *ps_shift_proc,
-			       emxArray_int32_T **ps_ring_proc,
-			       emxArray_int32_T **tris_ring_proc,
-			       emxArray_int8_T **ps_shift_ring_proc,
-			       emxArray_int8_T **tris_shift_ring_proc,
-			       emxArray_real_T **buffer_ps,
-			       emxArray_int32_T **buffer_tris)
+	const int nb_proc_index,
+	const real_T num_ring,
+	emxArray_int32_T *psid_proc,
+	emxArray_int8_T *ps_shift_proc,
+	emxArray_int32_T **ps_ring_proc,
+	emxArray_int32_T **tris_ring_proc,
+	emxArray_int8_T **ps_shift_ring_proc,
+	emxArray_int8_T **tris_shift_ring_proc,
+	emxArray_real_T **buffer_ps,
+	emxArray_int32_T **buffer_tris)
 {
     // Get nring nb between current proc and all nb processors  
     //
@@ -3752,10 +3856,9 @@ void hpAddProcInfoForGhostPsTris(hiPropMesh *mesh,
 	emxArray_int8_T *tris_shift_ring_proc)
 {
 
-     /* Fill and build the temp pinfo information on each master processor 
-     * Step 1, For original pinfo, the new target processor is added as a new
-     * node with proc = new_proc_id, lindex = -1 (unknown) to the tail
-     */
+     // Fill and build the temp pinfo information on each master processor 
+     // Step 1, For original pinfo, the new target processor is added as a new
+     // node with proc = new_proc_id, lindex = -1 (unknown) to the tail
 
     hpPInfoList *ps_pinfo = mesh->ps_pinfo;
     hpPInfoList *tris_pinfo = mesh->tris_pinfo;
@@ -5279,8 +5382,8 @@ static void  hpBuildEstNbFromBdbox(const hiPropMesh *mesh, const double *all_bd_
 			continue;
 
 		    x_factor = ((double) sx)*domain_len_x;
-		    y_factor = ((double) sx)*domain_len_y;
-		    z_factor = ((double) sx)*domain_len_z;
+		    y_factor = ((double) sy)*domain_len_y;
+		    z_factor = ((double) sz)*domain_len_z;
 
 		    // Actural loop starts here
 
@@ -5379,8 +5482,8 @@ static void  hpBuildEstNbFromBdbox(const hiPropMesh *mesh, const double *all_bd_
 			continue;
 
 		    x_factor = ((double) sx)*domain_len_x;
-		    y_factor = ((double) sx)*domain_len_y;
-		    z_factor = ((double) sx)*domain_len_z;
+		    y_factor = ((double) sy)*domain_len_y;
+		    z_factor = ((double) sz)*domain_len_z;
 
 		    // Actural loop starts here
 
@@ -5440,9 +5543,7 @@ void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box)
 
     mesh->nb_proc = new_nb_proc;
     mesh->nb_proc_shift = new_nb_proc_shift;
-
     int num_nb_proc = mesh->nb_proc->size[0];
-/*
     emxArray_int32_T **ps_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
     emxArray_int32_T **tris_ring_proc = (emxArray_int32_T **) calloc(num_nb_proc, sizeof(emxArray_int32_T *));
 
@@ -5489,7 +5590,6 @@ void hpBuildBoundingBoxGhost(hiPropMesh *mesh, const double *bd_box)
     hpUpdatePInfo(mesh);
 
     hpUpdateNbWithPInfo(mesh);
-    */
 }
 
 
@@ -6549,11 +6649,11 @@ void hpDebugOutput(const hiPropMesh *mesh, const emxArray_int32_T *debug_ps,
 		   const emxArray_int32_T *debug_tris, char *debug_file_name)
 {
     int j;
-    /* Build ps_mapping for vtk output of debug_ps
-     * for point i in mesh->ps, the new index in the vtk output is
-     * ps_mapping[I1dm(i)]. If point i does not have a mapped value,
-     * ps_mapping[I1dm(i)] = -1.
-     */
+    // Build ps_mapping for vtk output of debug_ps
+    //  for point i in mesh->ps, the new index in the vtk output is
+    //  ps_mapping[I1dm(i)]. If point i does not have a mapped value,
+    //  ps_mapping[I1dm(i)] = -1.
+
     int *ps_mapping = (int *) calloc(mesh->ps->size[0], sizeof(int));
 
     for (j = 1; j <= mesh->ps->size[0]; j++)
@@ -6565,7 +6665,7 @@ void hpDebugOutput(const hiPropMesh *mesh, const emxArray_int32_T *debug_ps,
 	ps_mapping[cur_ps_id-1] = j-1;
     }
 
-    /* Write the data to vtk file */
+    // Write the data to vtk file
     FILE* file = fopen(debug_file_name, "w");
 
     fprintf(file, "# vtk DataFile Version 3.0\n");
@@ -6653,17 +6753,17 @@ void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
     {
 	int ps_type;
 	if (ps_pdata[ps_head[i]-1].proc != cur_proc)
-	    ps_type = 2; /* buffer ps */
+	    ps_type = 2; // buffer ps
 	else
 	{
 	    if(ps_pdata[ps_head[i]-1].lindex != i+1)
-		ps_type = 2; /* buffer ps */
+		ps_type = 2; // buffer ps
 	    else
 	    {
 		if(ps_head[i] != ps_tail[i])
-		    ps_type = 1; /* overlay ps */
+		    ps_type = 1; // overlay ps
 		else
-		    ps_type = 0; /* interior ps */
+		    ps_type = 0; // interior ps
 	    }
 	}
 	fprintf(file, "%d\n", ps_type);
@@ -6676,17 +6776,17 @@ void hpWriteUnstrMeshWithPInfo(const char *name, const hiPropMesh *mesh)
     {
 	int tri_type;
 	if (tri_pdata[tri_head[i]-1].proc != cur_proc)
-	    tri_type = 2; /* buffer tri */
+	    tri_type = 2; // buffer tri
 	else
 	{
 	    if (tri_pdata[tri_head[i]-1].lindex != i+1)
-		tri_type = 2; /* buffer tri */
+		tri_type = 2; // buffer tri
 	    else
 	    {
 		if(tri_head[i] != tri_tail[i])
-		    tri_type = 1; /* overlay tri */
+		    tri_type = 1; // overlay tri
 		else
-		    tri_type = 0; /* interior tri */
+		    tri_type = 0; // interior tri
 	    }
 	}
 	fprintf(file, "%d\n", tri_type);
@@ -6792,7 +6892,7 @@ void hpUpdatedNorCurv(hiPropMesh *mesh)
 
     int num_nbp = nb_proc->size[0];
 
-    /* First build the buffer nor/curv and corresponding lindex for send */
+    // First build the buffer nor/curv and corresponding lindex for send
     emxArray_real_T **buf_nor = (emxArray_real_T **) calloc(num_nbp, sizeof(emxArray_real_T *));
     emxArray_real_T **buf_curv = (emxArray_real_T **) calloc(num_nbp, sizeof(emxArray_real_T *));
     int **buf_lindex = (int **) calloc(num_nbp, sizeof(int *));
@@ -6851,14 +6951,14 @@ void hpUpdatedNorCurv(hiPropMesh *mesh)
 	free(ps_flag);
     }
 
-    /* Send the information */
+    // Send the information
     MPI_Request *send_req_list = (MPI_Request *) malloc( 5*num_nbp*sizeof(MPI_Request) );
 
     MPI_Status *send_status_list = (MPI_Status *) malloc( 5*num_nbp*sizeof(MPI_Status) );
 
     MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
 
-    /* Stores the received array size */
+    // Stores the received array size
 
     int *recv_size = (int *) calloc ( 2*num_nbp, sizeof(int));
     
@@ -6957,7 +7057,7 @@ void hpUpdateEstimatedNormal(hiPropMesh *mesh)
 
     int num_nbp = nb_proc->size[0];
 
-    /* First build the buffer est_nor and corresponding lindex for send */
+    // First build the buffer est_nor and corresponding lindex for send
     emxArray_real_T **buf_enor = (emxArray_real_T **) calloc(num_nbp, sizeof(emxArray_real_T *));
     int **buf_lindex = (int **) calloc(num_nbp, sizeof(int *));
 
@@ -7011,14 +7111,14 @@ void hpUpdateEstimatedNormal(hiPropMesh *mesh)
 	free(ps_flag);
     }
 
-    /* Send the information */
+    // Send the information
     MPI_Request *send_req_list = (MPI_Request *) malloc( 3*num_nbp*sizeof(MPI_Request) );
 
     MPI_Status *send_status_list = (MPI_Status *) malloc( 3*num_nbp*sizeof(MPI_Status) );
 
     MPI_Request *recv_req_list = (MPI_Request *) malloc ( num_nbp*sizeof(MPI_Request) );
 
-    /* Stores the received array size */
+    // Stores the received array size
 
     int *recv_size = (int *) calloc ( 2*num_nbp, sizeof(int));
     
@@ -7394,11 +7494,11 @@ void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
     int *send_size = (int *) calloc(num_nbp, sizeof(int));
     int *recv_size = (int *) calloc(num_nbp, sizeof(int));
 
-    /* initialize send/recv buffer */
+    // initialize send/recv buffer
     for (i = 0; i < num_nbp; i++)
 	send_buf[i] = recv_buf[i] = (int *) NULL;
 
-    /* fill in the send buffer and allocate recv buffer */
+    // fill in the send buffer and allocate recv buffer
     for (i = 1; i <= num_nbp; i++)
     {
 	int nbp_id = mesh->nb_proc->data[I1dm(i)];
@@ -7445,7 +7545,7 @@ void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
 	}
     }
 
-    /* communicate the send buffer to recv buffer and update*/
+    // communicate the send buffer to recv buffer and update
 
     MPI_Request *send_req_list = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
 
@@ -7518,7 +7618,7 @@ void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
 
 	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status);
 
-	if (recv_index == MPI_UNDEFINED) /* means all the recv_requests are NULL */
+	if (recv_index == MPI_UNDEFINED) // means all the recv_requests are NULL
 	    break;
 
 	recv_proc = recv_status.MPI_SOURCE;
@@ -7591,11 +7691,11 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
     int *send_size = (int *) calloc(num_nbp, sizeof(int));
     int *recv_size = (int *) calloc(num_nbp, sizeof(int));
 
-    /* initialize send/recv buffer */
+    // initialize send/recv buffer
     for (i = 0; i < num_nbp; i++)
 	send_buf[i] = recv_buf[i] = (real_T *) NULL;
 
-    /* fill in the send buffer and allocate recv buffer */
+    // fill in the send buffer and allocate recv buffer
     for (i = 1; i <= num_nbp; i++)
     {
 	int nbp_id = mesh->nb_proc->data[I1dm(i)];
@@ -7642,7 +7742,7 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
 	}
     }
 
-    /* communicate the send buffer to recv buffer and update*/
+    // communicate the send buffer to recv buffer and update
 
     MPI_Request *send_req_list = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
 
@@ -7714,7 +7814,7 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
 
 	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status);
 
-	if (recv_index == MPI_UNDEFINED) /* means all the recv_requests are NULL */
+	if (recv_index == MPI_UNDEFINED) // means all the recv_requests are NULL
 	    break;
 
 	recv_proc = recv_status.MPI_SOURCE;
@@ -7786,11 +7886,11 @@ void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *arra
     int *send_size = (int *) calloc(num_nbp, sizeof(int));
     int *recv_size = (int *) calloc(num_nbp, sizeof(int));
 
-    /* initialize send/recv buffer */
+    // initialize send/recv buffer
     for (i = 0; i < num_nbp; i++)
 	send_buf[i] = recv_buf[i] = (boolean_T *) NULL;
 
-    /* fill in the send buffer and allocate recv buffer */
+    // fill in the send buffer and allocate recv buffer
     for (i = 1; i <= num_nbp; i++)
     {
 	int nbp_id = mesh->nb_proc->data[I1dm(i)];
@@ -7835,7 +7935,7 @@ void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *arra
 	}
     }
 
-    /* communicate the send buffer to recv buffer and update*/
+    // communicate the send buffer to recv buffer and update
 
     MPI_Request *send_req_list = (MPI_Request *) malloc( num_nbp*sizeof(MPI_Request) );
 
@@ -7907,7 +8007,7 @@ void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *arra
 
 	MPI_Waitany(num_nbp, recv_req_list, &recv_index, &recv_status);
 
-	if (recv_index == MPI_UNDEFINED) /* means all the recv_requests are NULL */
+	if (recv_index == MPI_UNDEFINED) // means all the recv_requests are NULL
 	    break;
 
 	recv_proc = recv_status.MPI_SOURCE;
@@ -7992,14 +8092,6 @@ void hpAdaptiveBuildGhost(hiPropMesh *mesh, const int32_T in_degree)
 
 void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method)
 {
-    /*
-    emxArray_boolean_T *in_isridge;
-    emxInit_boolean_T(&in_isridge, 1);
-    emxArray_boolean_T *in_ridgeedge;
-    emxInit_boolean_T(&in_ridgeedge, 2);
-    emxArray_int32_T *in_flabel;
-    emxInit_int32_T(&in_flabel, 1);
-*/
     int num_iter = 15;
 
     real_T in_angletol_min = 25;
@@ -8043,11 +8135,6 @@ void hpMeshSmoothing(hiPropMesh *mesh, int32_T in_degree, const char* method)
 	    mesh->ps, mesh->tris, in_degree, num_iter, in_angletol_min,
 	    in_perfolded, in_disp_alpha, in_check_trank, in_vc_flag, in_method,
 	    in_verbose, mesh);
-/*
-    emxFree_boolean_T(&in_isridge);
-    emxFree_boolean_T(&in_ridgeedge);
-    emxFree_int32_T(&in_flabel);
-    */
 }
 
 
