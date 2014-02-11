@@ -63,7 +63,7 @@ typedef struct hiPropMesh
     emxArray_real_T *curv;		/*!< point main curvatures, size num_ps */
 
     emxArray_int32_T *nb_proc;		/*!< neighbour processor list */
-    emxArray_int8_T **nb_proc_shift;	/*!< neighbour processor shift list */
+    emxArray_int8_T **nb_proc_shift;	/*!< neighbour processor shift list (for periodic B.C.) */
 
     real_T domain_len[3];		/*!< domain size in x,y,z */
     boolean_T has_periodic_boundary[3];	/*!< flag for periodic boundary in x,y,z */
@@ -78,8 +78,9 @@ typedef struct hiPropMesh
     emxArray_int32_T *inhe;		/*!< incident half edge */
     emxArray_real_T *est_nor;		/*!< estimated normal, given by tri normal average, size num_ps */
 
-    emxArray_int32_T **ps_send_index;
-    emxArray_int32_T **ps_recv_index;
+    emxArray_int32_T **ps_send_index;	/*!< master to slave send index */
+    emxArray_int32_T **ps_recv_index;	/*!< slave from master receive index */
+    emxArray_int8_T **ps_send_shift;	/*!< master to slave send shift (for periodic B.C.) */
 
     int32_T nps_clean;			/*!< number of points for the clean mesh (with no overlapping triangles) */
     int32_T ntris_clean;		/*!< number of tris for the clean mesh (with no overlapping triangles) */
@@ -87,7 +88,6 @@ typedef struct hiPropMesh
     boolean_T is_clean;			/*!< flag to denote whether current mesh is clean,
 					     0 with overlapping triangles, 1 without overlapping triangles */
 
-    
 } hiPropMesh;
 
 
@@ -658,7 +658,7 @@ EXTERN_C void hpCollectPartBdryNRingTris(const hiPropMesh *mesh,
 
 EXTERN_C void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array);
 
-EXTERN_C void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array);
+EXTERN_C void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array, boolean_T add_shift);
 
 EXTERN_C void hpUpdateGhostPointData_boolean_T(hiPropMesh *mesh, emxArray_boolean_T *array);
 

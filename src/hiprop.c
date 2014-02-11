@@ -44,6 +44,7 @@ void hpInitMesh(hiPropMesh **pmesh)
 
     mesh->ps_send_index = (emxArray_int32_T **) NULL;
     mesh->ps_recv_index = (emxArray_int32_T **) NULL;
+    mesh->ps_send_shift = (emxArray_int8_T **) NULL;
 
     mesh->opphe = (emxArray_int32_T *) NULL;
     mesh->inhe = (emxArray_int32_T *) NULL;
@@ -80,7 +81,7 @@ void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
 		emxFree_int32_T(&(pmesh->ps_send_index[i]));
 	}
 	free(pmesh->ps_send_index);
-	pmesh->ps_send_index = NULL;
+	pmesh->ps_send_index = (emxArray_int32_T **) NULL;
     }
     if (pmesh->ps_recv_index != ((emxArray_int32_T **) NULL) )
     {
@@ -90,7 +91,17 @@ void hpFreeMeshUpdateInfo(hiPropMesh *pmesh)
 		emxFree_int32_T(&(pmesh->ps_recv_index[i]));
 	}
 	free(pmesh->ps_recv_index);
-	pmesh->ps_recv_index = NULL;
+	pmesh->ps_recv_index = (emxArray_int32_T **) NULL;
+    }
+    if (pmesh->ps_send_shift != ((emxArray_int8_T **) NULL) )
+    {
+	for (i = 0; i < num_proc; i++)
+	{
+	    if (pmesh->ps_send_shift[i] != ((emxArray_int8_T *) NULL) )
+		emxFree_int8_T(&(pmesh->ps_send_shift[i]));
+	}
+	free(pmesh->ps_send_shift);
+	pmesh->ps_send_shift = (emxArray_int8_T **) NULL;
     }
 }
 
@@ -2857,7 +2868,7 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
     int num_nb_proc = mesh->nb_proc->size[0];
     int num_pt = mesh->ps->size[0];
     int num_proc;
-    int cur_head, cur_node, cur_proc;
+    int cur_head, cur_tail, cur_node;
     int master;
     int rank, i, j;
     int buffer_size[1];
@@ -2865,16 +2876,21 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
 
-    int *ps_head = mesh->ps_pinfo->head;
+    int *ps_phead = mesh->ps_pinfo->head;
+    int *ps_ptail = mesh->ps_pinfo->tail;
+
     hpPInfoNode *ps_pdata = mesh->ps_pinfo->pdata;
 
     // initialization of pointers
     mesh->ps_send_index = (emxArray_int32_T **) calloc(num_proc, sizeof(emxArray_int32_T*));
     mesh->ps_recv_index = (emxArray_int32_T **) calloc(num_proc, sizeof(emxArray_int32_T*));
+    mesh->ps_send_shift = (emxArray_int8_T **) calloc(num_proc, sizeof(emxArray_int8_T *));
+
     for (i = 0; i < num_proc; i++)
     {
 	mesh->ps_send_index[i] = (emxArray_int32_T *) NULL;
 	mesh->ps_recv_index[i] = (emxArray_int32_T *) NULL;
+	mesh->ps_send_shift[i] = (emxArray_int8_T *) NULL;
     }
 
     // compute the length of the buffers
@@ -2883,98 +2899,141 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
 
     for(i = 1; i <= num_pt; i++)
     {
-	cur_head = ps_head[I1dm(i)];
+	cur_head = ps_phead[I1dm(i)];
+	cur_tail = ps_ptail[I1dm(i)];
 	master = ps_pdata[I1dm(cur_head)].proc;
-	if (master == rank)	// the current proc is the master, send to all other
+
+	if (cur_head == cur_tail) // Interior point, do nothing
+	    continue;
+
+	if ( (master == rank) &&
+		(ps_pdata[I1dm(cur_head)].lindex == i) ) // this point is the master point, send to all other
 	{
 	    cur_node = ps_pdata[I1dm(cur_head)].next;
-	    while(cur_node!=-1)
+	    while(cur_node != -1)
 	    {
-		cur_proc = ps_pdata[I1dm(cur_node)].proc;
-		pt_send_buffer_length[cur_proc]++;
+		pt_send_buffer_length[ps_pdata[I1dm(cur_node)].proc]++;
 		cur_node = ps_pdata[I1dm(cur_node)].next;
 	    }
 	}
-	else	// the current proc is not the master, recv this point from master
+	else	// this point is not the master, recv this point from master
 	    pt_recv_buffer_length[master]++;
     }
 
-    // Here is a problem, we want the send and recv buffers have points with the same order,
+    // We want the send and recv buffers have points with the same order,
     // which means that at least one buffer should be sorted.
-    // We can see that the send buffer has points sorted with the same order on this proc,
+    // We sort the send buffer in the order master_id ---> slave_id
     // we need to sort the recv buffer corresponding to the order on the sent proc
+    // It is an insertion sort for a 2D array
 
     // remoteid is used to store the local id of the points on the send proc, we need to sort the points by this id
-    int** remoteid = (int**) calloc(num_proc, sizeof(int*));	    
+    int** remoteid_recv = (int**) calloc(num_proc, sizeof(int*));
+    int** remoteid_send = (int **) calloc(num_proc, sizeof(int*));
+    int* len_pinfo_cur_pt = (int *) calloc(num_proc, sizeof(int*));
 
     // allocate memory for index and buffer array, also for remoteid
     for (i = 0; i < num_nb_proc; i++)
     {
-	cur_proc = mesh->nb_proc->data[i];
-	if(pt_recv_buffer_length[cur_proc] != 0)	//  for the recv case. 
+	int cur_nb_proc = mesh->nb_proc->data[i];
+	if(pt_recv_buffer_length[cur_nb_proc] != 0)	//  for the recv case. 
 					 		//  In this case, we need to sort the points on this proc, 
 					 		//  so allocate memory for remoteid
 	{
-	    buffer_size[0] = pt_recv_buffer_length[cur_proc];
-	    mesh->ps_recv_index[cur_proc] = emxCreateND_int32_T(1, buffer_size);
-	    remoteid[cur_proc] = (int*) calloc(pt_recv_buffer_length[cur_proc], sizeof(int));
+	    buffer_size[0] = pt_recv_buffer_length[cur_nb_proc];
+	    mesh->ps_recv_index[cur_nb_proc] = emxCreateND_int32_T(1, buffer_size);
+	    remoteid_recv[cur_nb_proc] = (int*) calloc(pt_recv_buffer_length[cur_nb_proc], sizeof(int));
 	}
-	if(pt_send_buffer_length[cur_proc]!=0)	// for the send case
+	if(pt_send_buffer_length[cur_nb_proc]!=0)	// for the send case
 	{
-	    buffer_size[0] = pt_send_buffer_length[cur_proc];
-	    mesh->ps_send_index[cur_proc] = emxCreateND_int32_T(1, buffer_size);
+	    buffer_size[0] = pt_send_buffer_length[cur_nb_proc];
+	    mesh->ps_send_index[cur_nb_proc] = emxCreateND_int32_T(1, buffer_size);
+	    int shift_buffer_size = 3*buffer_size[0];
+	    mesh->ps_send_shift[cur_nb_proc] = emxCreateND_int8_T(1, &shift_buffer_size);
+	    remoteid_send[cur_nb_proc] = (int *) calloc(pt_send_buffer_length[cur_nb_proc], sizeof(int));
 	}
     }
-
 
     int* p_send_index = (int*) calloc(num_proc, sizeof(int));	// index to the end of the list
     int* p_recv_index = (int*) calloc(num_proc, sizeof(int));	// index to the end of the list
-    int tmp_id;
-    int tmp_pt;
+
     for(i = 0; i < num_proc; i++)
     {
-	p_send_index[i] = 1;
-	p_recv_index[i] = 1;
+	p_send_index[i] = 0;
+	p_recv_index[i] = 0;
     }
     for(i = 1; i <= num_pt; i++)
     {
-	cur_head = ps_head[I1dm(i)];
+	cur_head = ps_phead[I1dm(i)];
+	cur_tail = ps_ptail[I1dm(i)];
 	master = ps_pdata[I1dm(cur_head)].proc;
-	if (master == rank)	// the current proc is the master, send to all others
+
+	if (cur_head == cur_tail)
+	    continue;
+
+	if ( (master == rank ) &&
+		(ps_pdata[I1dm(cur_head)].lindex == i) ) // the current proc is the master, send to all others
 	{
 	    cur_node = ps_pdata[I1dm(cur_head)].next;
+	    memset(len_pinfo_cur_pt, 0, num_proc*sizeof(int));
 	    while(cur_node!=-1)
 	    {
-		cur_proc = ps_pdata[I1dm(cur_node)].proc;
+		int cur_nb_proc = ps_pdata[I1dm(cur_node)].proc;
+		int cur_send_id = p_send_index[cur_nb_proc];
 
-		mesh->ps_send_index[cur_proc]->data[I1dm(p_send_index[cur_proc])]= i;
-		p_send_index[cur_proc]++;
+		mesh->ps_send_index[cur_nb_proc]->data[cur_send_id] = i;
+		remoteid_send[cur_nb_proc][cur_send_id] = ps_pdata[I1dm(cur_node)].lindex;
+		mesh->ps_send_shift[cur_nb_proc]->data[3*cur_send_id] = ps_pdata[I1dm(cur_node)].shift[0];
+		mesh->ps_send_shift[cur_nb_proc]->data[3*cur_send_id+1] = ps_pdata[I1dm(cur_node)].shift[1];
+		mesh->ps_send_shift[cur_nb_proc]->data[3*cur_send_id+2] = ps_pdata[I1dm(cur_node)].shift[2];
+
+		for (j = cur_send_id; j > p_send_index[cur_nb_proc] - len_pinfo_cur_pt[cur_nb_proc]; j--)
+		{
+		    if (remoteid_send[cur_nb_proc][j] < remoteid_send[cur_nb_proc][j-1])
+		    {
+			int8_T tmp_shiftx = mesh->ps_send_shift[cur_nb_proc]->data[3*j];
+			int8_T tmp_shifty = mesh->ps_send_shift[cur_nb_proc]->data[3*j+1];
+			int8_T tmp_shiftz = mesh->ps_send_shift[cur_nb_proc]->data[3*j+2];
+			int tmp_id_send = remoteid_send[cur_nb_proc][j];
+
+			mesh->ps_send_shift[cur_nb_proc]->data[3*j] = mesh->ps_send_shift[cur_nb_proc]->data[3*(j-1)];
+			mesh->ps_send_shift[cur_nb_proc]->data[3*j+1] = mesh->ps_send_shift[cur_nb_proc]->data[3*(j-1)+1];
+			mesh->ps_send_shift[cur_nb_proc]->data[3*j+2] = mesh->ps_send_shift[cur_nb_proc]->data[3*(j-1)+2];
+			remoteid_send[cur_nb_proc][j] = remoteid_send[cur_nb_proc][j-1];
+
+			mesh->ps_send_shift[cur_nb_proc]->data[3*(j-1)] = tmp_shiftx;
+			mesh->ps_send_shift[cur_nb_proc]->data[3*(j-1)+1] = tmp_shifty;
+			mesh->ps_send_shift[cur_nb_proc]->data[3*(j-1)+2] = tmp_shiftz;
+			remoteid_send[cur_nb_proc][j-1] = tmp_id_send;
+		    }
+		    else
+			break;
+		}
+
+		p_send_index[cur_nb_proc]++;
+		len_pinfo_cur_pt[cur_nb_proc]++;
 		cur_node = ps_pdata[I1dm(cur_node)].next;
 	    }
 	}
 	else	// the current proc is not the master, recv this point from master, sorted by insertion sort
 	{
+	    remoteid_recv[master][p_recv_index[master]] = ps_pdata[I1dm(cur_head)].lindex;
+	    mesh->ps_recv_index[master]->data[p_recv_index[master]] = i;
 
-	    remoteid[master][I1dm(p_recv_index[master])] = ps_pdata[I1dm(cur_head)].lindex;
-	    mesh->ps_recv_index[master]->data[I1dm(p_recv_index[master])] = i;
-
-	    if(p_recv_index[master] > 1)	// sort by the key of remoteid[master], the value is mesh->ps_recv_index[master]->data[]
+	    // sort by the key of remoteid[master], the value is mesh->ps_recv_index[master]->data[]
+	    for (j = p_recv_index[master]; j > 0; j--)
 	    {
-		for (j = p_recv_index[master]; j > 1; j--)
+		if(remoteid_recv[master][j] < remoteid_recv[master][j-1])
 		{
-		    if(remoteid[master][I1dm(j)] < remoteid[master][I1dm(j-1)])
-		    {
-			tmp_pt = mesh->ps_recv_index[master]->data[I1dm(j)];
-			mesh->ps_recv_index[master]->data[I1dm(j)] = mesh->ps_recv_index[master]->data[I1dm(j-1)];
-			mesh->ps_recv_index[master]->data[I1dm(j-1)] = tmp_pt;
+		    int tmp_pt = mesh->ps_recv_index[master]->data[j];
+		    mesh->ps_recv_index[master]->data[j] = mesh->ps_recv_index[master]->data[j-1];
+		    mesh->ps_recv_index[master]->data[j-1] = tmp_pt;
 
-			tmp_id = remoteid[master][I1dm(j)];
-			remoteid[master][I1dm(j)] = remoteid[master][I1dm(j-1)];
-			remoteid[master][I1dm(j-1)] = tmp_id;
-		    }
-		    else
-			break;
+		    int tmp_id = remoteid_recv[master][j];
+		    remoteid_recv[master][j] = remoteid_recv[master][j-1];
+		    remoteid_recv[master][j-1] = tmp_id;
 		}
+		else
+		    break;
 	    }
 	    p_recv_index[master]++;
 	}
@@ -2982,12 +3041,20 @@ void hpBuildPUpdateInfo(hiPropMesh *mesh)
 
     free(pt_send_buffer_length);
     free(pt_recv_buffer_length);
+
     free(p_send_index);
     free(p_recv_index);
     for (i = 0; i < num_proc; i++)
-	if(remoteid[i] != NULL)
-	    free(remoteid[i]);
-    free(remoteid);
+    {
+	if(remoteid_send[i] != NULL)
+	    free(remoteid_send[i]);
+	if(remoteid_recv[i] != NULL)
+	    free(remoteid_recv[i]);
+    }
+
+    free(remoteid_send);
+    free(remoteid_recv);
+    free(len_pinfo_cur_pt);
 }
 
 void hpCleanMeshByPinfo(hiPropMesh* mesh)
@@ -6814,12 +6881,12 @@ void hpComputeDiffops(hiPropMesh *mesh, int32_T in_degree)
     emxArray_real_T *in_prdirs = emxCreate_real_T(num_ps, 3);
 
     hpComputeEstimatedNormal(mesh);
-    hpUpdateGhostPointData_real_T(mesh, mesh->est_nor);
+    hpUpdateGhostPointData_real_T(mesh, mesh->est_nor, 0);
 
     compute_diffops_surf_cleanmesh(num_ps_clean, mesh->ps, mesh->tris, mesh->est_nor, in_degree, in_ring, false, mesh->nor, mesh->curv, in_prdirs);
 
-    hpUpdateGhostPointData_real_T(mesh, mesh->nor);
-    hpUpdateGhostPointData_real_T(mesh, mesh->curv);
+    hpUpdateGhostPointData_real_T(mesh, mesh->nor, 0);
+    hpUpdateGhostPointData_real_T(mesh, mesh->curv, 0);
 
     emxFree_real_T(&(in_prdirs));
     emxFree_real_T(&(mesh->est_nor));
@@ -7677,13 +7744,14 @@ void hpUpdateGhostPointData_int32_T(hiPropMesh *mesh, emxArray_int32_T *array)
     
 }
 
-void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
+void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array, boolean_T add_shift)
 {
     int num_proc, rank, num_nbp;
     int i, j, k;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
     num_nbp = mesh->nb_proc->size[0];
+    double *domain_len = mesh->domain_len;
 
     real_T **send_buf = (real_T **) calloc(num_nbp, sizeof(real_T *));
     real_T **recv_buf = (real_T **) calloc(num_nbp, sizeof(real_T *));
@@ -7765,6 +7833,7 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
 	    int nbp_id = mesh->nb_proc->data[I1dm(i)];
 	    
 	    emxArray_int32_T *cur_psi = mesh->ps_send_index[nbp_id];
+	    emxArray_int8_T *cur_pss = mesh->ps_send_shift[nbp_id];
 
 	    if (array->numDimensions > 1)
 	    {
@@ -7773,7 +7842,13 @@ void hpUpdateGhostPointData_real_T(hiPropMesh *mesh, emxArray_real_T *array)
 		    for (j = 1; j <= cur_psi->size[0]; j++)
 		    {
 			int overlay_ps_id = cur_psi->data[I1dm(j)];
-			cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
+			if (add_shift)
+			{
+			    double factor = ((double)(-cur_pss->data[3*(j-1) + (k-1)])*domain_len[k-1]);
+			    cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)] + factor;
+			}
+			else
+			    cur_send_buf[cur_pos] = array->data[I2dm(overlay_ps_id, k, array->size)];
 			cur_pos++;
 		    }
 		}

@@ -951,7 +951,7 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
   /* 'async_scale_disps_tri_cleanmesh:10' [alpha_tmp,us_smooth] = rescale_displacements(xs, us_smooth, tris, tol); */
 
   MPI_Barrier(MPI_COMM_WORLD);
-  hpUpdateGhostPointData_real_T(pmesh, us_smooth);
+  hpUpdateGhostPointData_real_T(pmesh, us_smooth, 0);
   
   rescale_displacements(xs, us_smooth, tris, 0.1, alpha_tmp);
 
@@ -1042,8 +1042,8 @@ static boolean_T async_scale_disps_tri_cleanmesh(int32_T nv_clean, const
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	hpUpdateGhostPointData_real_T(pmesh, us_smooth);
-	hpUpdateGhostPointData_real_T(pmesh, alpha_tmp);
+	hpUpdateGhostPointData_real_T(pmesh, us_smooth, 0);
+	hpUpdateGhostPointData_real_T(pmesh, alpha_tmp, 0);
 
         /*  Step 3: Again check if any rescaling has to be performed or not. */
         /* 'async_scale_disps_tri_cleanmesh:32' [alpha_tmp,us_smooth] = rescale_displacements(xs, us_smooth, tris, tol, alpha_tmp); */
@@ -7560,7 +7560,7 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
   /* Step2: Communicate variable "nrms_proj" at the ghost points (>nv_clean) */
 
   MPI_Barrier(MPI_COMM_WORLD);
-  hpUpdateGhostPointData_real_T(pmesh, nrms_proj);
+  hpUpdateGhostPointData_real_T(pmesh, nrms_proj, 0);
 
   /* Step3: Compute normals from polynomial fitting */
   /* 'compute_hisurf_normals:16' [nrms] = compute_diffops_surf_cleanmesh(nv_clean, xs, int32(tris), ... */
@@ -7572,7 +7572,7 @@ static void compute_hisurf_normals(int32_T nv_clean, const emxArray_real_T *xs,
   /*  (b) Communicate variable "nrms" of ghost pnts (>nv_clean) */
 
   MPI_Barrier(MPI_COMM_WORLD);
-  hpUpdateGhostPointData_real_T(pmesh, nrms);
+  hpUpdateGhostPointData_real_T(pmesh, nrms, 0);
 
   emxFree_real_T(&nrms_proj);
   emxFree_real_T(&prdirs);
@@ -17170,7 +17170,7 @@ static void smoothing_single_iteration(int32_T nv_clean, const emxArray_real_T
 
   /*  Step 2: Communicate 'us_smooth' for ghost points */
   MPI_Barrier(MPI_COMM_WORLD);
-  hpUpdateGhostPointData_real_T(pmesh, us_smooth);
+  hpUpdateGhostPointData_real_T(pmesh, us_smooth, 0);
 }
 
 /*
@@ -17566,7 +17566,7 @@ void smooth_mesh_hisurf_cleanmesh(int32_T nv_clean, int32_T nt_clean,
     if (pnt_added) {
       /*  Step 1:  Communicate 'xs' for ghost points */
 	MPI_Barrier(MPI_COMM_WORLD);
-	hpUpdateGhostPointData_real_T(pmesh, xs);
+	hpUpdateGhostPointData_real_T(pmesh, xs, 1);
 
       /*  Step 2: Compute the normals for the new mesh */
       /* 'smooth_mesh_hisurf_cleanmesh:53' nrms = compute_hisurf_normals(nv_clean, xs, tris, degree); */
