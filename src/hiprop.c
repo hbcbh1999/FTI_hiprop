@@ -773,7 +773,6 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	    }
 	}
     }
-  
     // Size array for receiving data     
 
     int *size_info = (int *) calloc(num_nbp_est, sizeof(int));
@@ -784,7 +783,6 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	dst = nb_ptemp_iter[i];
 	
 	MPI_Isend(&(num_ps_send[i]), 1, MPI_INT, dst, 1, MPI_COMM_WORLD, &(send_req_list[i]));
-
 	if (num_ps_send[i] != 0)
 	{
 	    MPI_Isend(ps_send[i],3*num_ps_send[i], MPI_DOUBLE, dst, 2, MPI_COMM_WORLD, &(send_req_list[i+num_nbp_est])); 
@@ -809,7 +807,6 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 	MPI_Waitany(num_nbp_est, recv_req_list, &recv_index, &recv_status1);
 
 	source_id = recv_status1.MPI_SOURCE;
-
 	if (size_info[recv_index] != 0)
 	{
 	    double *ps_recv;
@@ -958,55 +955,61 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
 
 	    for (k = 0; k < 223; k++)
 	    {
-		if (shift_flag[k] == 1)
+		if (shift_flag[k])
 		    num_shift_cur_proc++;
 	    }
 
-	    nb_shift_temp[num_nbp-1] = emxCreate_int8_T(num_shift_cur_proc, 3);
-
-	    emxArray_int8_T *cur_nb_shift = nb_shift_temp[num_nbp-1];
-
-	    ki = 1;
-
-	    for (k = 0; k < 223; k++)
+	    if (num_shift_cur_proc != 0)
 	    {
-		if (shift_flag[k] == 1)
+		nb_shift_temp[num_nbp-1] = emxCreate_int8_T(num_shift_cur_proc, 3);
+
+		emxArray_int8_T *cur_nb_shift = nb_shift_temp[num_nbp-1];
+
+		ki = 1;
+
+		for (k = 0; k < 223; k++)
 		{
-		    int cur_hash_value = k;
-		    int first_digit = cur_hash_value % 10;
-		    if (first_digit == 2)
-			cur_nb_shift->data[I2dm(ki,1,cur_nb_shift->size)] = -1;
-		    else
-			cur_nb_shift->data[I2dm(ki,1,cur_nb_shift->size)] = (int8_T) first_digit;
+		    if (shift_flag[k])
+		    {
+			int cur_hash_value = k;
+			int first_digit = cur_hash_value % 10;
+			if (first_digit == 2)
+			    cur_nb_shift->data[I2dm(ki,1,cur_nb_shift->size)] = -1;
+			else
+			    cur_nb_shift->data[I2dm(ki,1,cur_nb_shift->size)] = (int8_T) first_digit;
 
-		    cur_hash_value /= 10;
-		    int second_digit = cur_hash_value % 10;
-		    if (second_digit == 2)
-			cur_nb_shift->data[I2dm(ki,2,cur_nb_shift->size)] = -1;
-		    else
-			cur_nb_shift->data[I2dm(ki,2,cur_nb_shift->size)] = (int8_T) second_digit;
+			cur_hash_value /= 10;
+			int second_digit = cur_hash_value % 10;
+			if (second_digit == 2)
+			    cur_nb_shift->data[I2dm(ki,2,cur_nb_shift->size)] = -1;
+			else
+			    cur_nb_shift->data[I2dm(ki,2,cur_nb_shift->size)] = (int8_T) second_digit;
 
-		    cur_hash_value /= 10;
-		    int third_digit = cur_hash_value;
-		    if (third_digit == 2)
-			cur_nb_shift->data[I2dm(ki,3,cur_nb_shift->size)] = -1;
-		    else
-			cur_nb_shift->data[I2dm(ki,3,cur_nb_shift->size)] = (int8_T) third_digit;
+			cur_hash_value /= 10;
+			int third_digit = cur_hash_value;
+			if (third_digit == 2)
+			    cur_nb_shift->data[I2dm(ki,3,cur_nb_shift->size)] = -1;
+			else
+			    cur_nb_shift->data[I2dm(ki,3,cur_nb_shift->size)] = (int8_T) third_digit;
 
-		    ki++;
+			ki++;
+		    }
 		}
 	    }
 
 	    free(shift_flag);
+
 	    free(flag);
+
 	    free(ps_recv);
 	    free(ps_shift_recv);
 	}
     }
+
     free(size_info);
     free(recv_req_list);
 
-    MPI_Waitall(2*num_nbp_est, send_req_list, send_status_list);
+    MPI_Waitall(3*num_nbp_est, send_req_list, send_status_list);
 
     free(send_req_list);
     free(send_status_list);
@@ -1021,7 +1024,6 @@ void hpGetNbProcListAuto(hiPropMesh *mesh)
     free(ps_shift_send);
     free(all_bd_box);
     free(nb_ptemp_iter);
-    
     mesh->nb_proc = emxCreateND_int32_T(1, &num_nbp);
     mesh->nb_proc_shift = (emxArray_int8_T **) calloc(num_nbp, sizeof(emxArray_int8_T *));
 
@@ -1595,9 +1597,9 @@ void hpInitDomainBoundaryInfo(hiPropMesh *pmesh)
 
     /* User specify domain and periodic boundary information */
 
-    pmesh->domain_len[0] = 4;
-    pmesh->domain_len[1] = 4;
-    pmesh->domain_len[2] = 0;
+    pmesh->domain_len[0] = 0.628;
+    pmesh->domain_len[1] = 0.628;
+    pmesh->domain_len[2] = 0.628;
 
     pmesh->has_periodic_boundary[0] = true;
     pmesh->has_periodic_boundary[1] = true;
