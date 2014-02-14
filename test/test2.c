@@ -71,11 +71,11 @@ int main(int argc, char* argv[])
     char in_filename[200];
     //sprintf(in_filename, "data/parallel/s19560-64p/hpmesh-t0019560-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/init-64p/hpmesh-t0000002-p%s.vtk", rank_str);
-    sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
     //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
-    //sprintf(in_filename, "data/serial/%s.vtk", argv[1]);
+    sprintf(in_filename, "data/serial/%s.vtk", argv[1]);
     //sprintf(in_filename, "data/parallel/%s-p%s.vtk",argv[1], rank_str);
     if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
     {
@@ -168,11 +168,22 @@ int main(int argc, char* argv[])
     end = getTimer();
     printf("Build Pinfo seconds used: %22.16g\n", end-start);
 
+    //hpPrint_pinfo(mesh);
+
     char debugname0[256];
 
     sprintf(debugname0, "debugout_init-p%s.vtk", rank_str);
 
     hpWriteUnstrMeshWithPInfo(debugname0, mesh);
+
+    hpCleanMeshByPinfo(mesh);
+/*
+    char debugname1[256];
+
+    sprintf(debugname1, "debugout-p%s.vtk", rank_str);
+
+    hpWriteUnstrMeshWithPInfo(debugname1, mesh);
+*/
 
     /*
     start = getTimer();

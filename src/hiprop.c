@@ -1595,14 +1595,21 @@ void hpInitDomainBoundaryInfo(hiPropMesh *pmesh)
     }
 
 
-    /* User specify domain and periodic boundary information */
+    // User specify domain and periodic boundary information */
 
+    pmesh->domain_len[0] = 4;
+    pmesh->domain_len[1] = 4;
+    pmesh->domain_len[2] = 0;
+ 
+
+    /*
     pmesh->domain_len[0] = 0.628;
     pmesh->domain_len[1] = 0.628;
     pmesh->domain_len[2] = 0.628;
+    */
 
-    pmesh->has_periodic_boundary[0] = true;
-    pmesh->has_periodic_boundary[1] = true;
+    pmesh->has_periodic_boundary[0] = false;
+    pmesh->has_periodic_boundary[1] = false;
     pmesh->has_periodic_boundary[2] = false;
 }
 
@@ -3064,339 +3071,371 @@ void hpCleanMeshByPinfo(hiPropMesh* mesh)
     int rank, num_proc;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
-    int i,j,k;
+    int i, j;
 
     emxArray_int32_T *old_tris = mesh->tris;
+    int32_T *old_tris_data = old_tris->data;
+    int32_T *old_tris_size = old_tris->size;
+
     emxArray_real_T *old_ps = mesh->ps;
+    real_T *old_ps_data = old_ps->data;
+    int32_T *old_ps_size = old_ps->size;
+
     hpPInfoList* old_ps_pinfo =  mesh->ps_pinfo;
+    hpPInfoNode* old_ps_pdata = old_ps_pinfo->pdata;
+    int *old_ps_phead = old_ps_pinfo->head;
+
     hpPInfoList* old_tris_pinfo = mesh->tris_pinfo;
+    hpPInfoNode* old_tris_pdata = old_tris_pinfo->pdata;
+    int *old_tris_phead = old_tris_pinfo->head;
 
-    /* 1. Identify the tris to be saved, save in tris_to_save[] */
+    // 1. Identify the tris to be saved, save in tris_to_save[]
 
-    int num_tri = old_tris->size[0];
-    int num_pt = old_ps->size[0];
+    int num_old_tri = old_tris->size[0];
+    int num_old_pt = old_ps->size[0];
     int num_nb_proc = mesh->nb_proc->size[0];
     
     int num_tri_to_save = 0;
 
-    int* tris_to_save = (int*) calloc(num_tri, sizeof(int));
+    int *tris_to_save = (int *) calloc(num_old_tri, sizeof(int));
 
-    int master, head;
-    for (i = 1; i<=num_tri; i++)
+    int head;
+    for (i = 1; i <= num_old_tri; i++)
     {
-	head = old_tris_pinfo->head[I1dm(i)];
-	master = old_tris_pinfo->pdata[I1dm(head)].proc;
-	if(master==rank)
+	head = old_tris_phead[I1dm(i)];
+	if( (old_tris_pdata[I1dm(head)].proc == rank) 
+		&& (old_tris_pdata[I1dm(head)].lindex == i) )
 	{
-	    tris_to_save[num_tri_to_save] = i;
-	    num_tri_to_save++;
+	    tris_to_save[num_tri_to_save++] = i;
 	}
     }
 
-    /* 2. make a new mesh->ps array, delete the old, 
-     *    use pt_new_index to save the new index, if the pt is deleted, use 0.
-     *    Also, for the ps to be saved, check the old ps_pinfo list
-     *    to see if we need to send that point to the nb procs.
-     *    Just count the number of points to be sent to each nb here.
-     */
 
-    /*  use proc_position to locate one proc in the nb_proc list easily */
-    int* proc_position = (int*) calloc(num_proc, sizeof(int));
-    for (i = 0; i<num_proc; i++)
-	proc_position[i] = -1;
 
-    for(i = 0; i<num_nb_proc; i++)
-	proc_position[mesh->nb_proc->data[i]] = i;
-
-    int* num_of_overlapping_ps = (int*) calloc(num_nb_proc, sizeof(int));
-
-    /* if current point is to be saved, save the new index here, otherwise, 0 */
-    int* pt_new_index = (int*) calloc(num_pt, sizeof(int));
+    // 2. make a new mesh->ps array, delete the old, 
+    //   use pt_new_index to save the new index, if the pt is deleted, use 0.
+    //
+   // if current point is to be saved, save the new index here, otherwise, 0
+    int *pt_new_index = (int *) calloc(num_old_pt, sizeof(int));
 
     int cur_tri;
     int cur_pt;
-    for(i = 0; i<num_tri_to_save; i++)
+    for(i = 0; i < num_tri_to_save; i++)
     {
 	cur_tri = tris_to_save[i];
-	for(j = 1; j<=3; j++)
+	for(j = 1; j <= 3; j++)
 	{
-	    cur_pt = old_tris->data[I2dm(cur_tri,j,old_tris->size)];
-	    pt_new_index[I1dm(cur_pt)] = 1;	/* initialize to 1 first, then add up to get the real index */
+	    cur_pt = old_tris_data[I2dm(cur_tri,j,old_tris_size)];
+	    pt_new_index[I1dm(cur_pt)] = 1;	// initialize to 1 first, then add up to get the real index
 	}
     }
 
+    // Make index mapping for old to new ps
     int num_pt_to_save = 0;
-    for (i = 0; i<num_pt; i++)
+    for (i = 0; i < num_old_pt; i++)
     {
-	if(pt_new_index[i]==1)
+	if( pt_new_index[i] == 1 )
     	    pt_new_index[i] = (++num_pt_to_save);
     }
 
-    emxArray_real_T* newpts = emxCreate_real_T(num_pt_to_save, 3);
+    // Allocate the storage for new ps
+    emxArray_real_T *newpts = emxCreate_real_T(num_pt_to_save, 3);
+    real_T *new_ps_data = newpts->data;
+    int32_T *new_ps_size = newpts->size;
 
-    for(i = 0; i<num_pt; i++)
+    // Fill the new ps array
+    for(i = 0; i < num_old_pt; i++)
     {
-	if(pt_new_index[i] !=0 )
+	if( pt_new_index[i] != 0 )
 	{
-	    for(j = 1; j<=3; j++)
-    		newpts->data[I2dm(pt_new_index[i], j, newpts->size)] = old_ps->data[I2dm((i+1),j, old_ps->size)];
+	    for(j = 1; j <= 3; j++)
+    		new_ps_data[I2dm(pt_new_index[i], j, new_ps_size)] = old_ps_data[I2dm((i+1), j, old_ps_size)];
+	}
+    }
 
-	    /* count the number of ps to be sent to the neighbour procs */
-	    head = old_ps_pinfo->head[i];
-	    int next = head;
+    emxFree_real_T(&mesh->ps);
+    mesh->ps = newpts;
+
+    printf("\n num_pt_to_save = %d\n", num_pt_to_save);
+
+    // 3. make a new mesh->tris array, delete the old one
+    emxArray_int32_T *newtris = emxCreate_int32_T(num_tri_to_save, 3);
+    int32_T *new_tris_data = newtris->data;
+    int32_T *new_tris_size = newtris->size;
+
+    int p, old_p;
+    for (i = 1; i <= num_tri_to_save; i++)
+    {
+	cur_tri = tris_to_save[I1dm(i)];
+	for(j = 1; j <= 3; j++)
+	{
+	    old_p = old_tris_data[I2dm(cur_tri, j, old_tris_size)];	// old point index
+	    p = pt_new_index[I1dm(old_p)];	// new point index
+	    new_tris_data[I2dm(i,j,new_tris_size)] = p;
+	}
+    }
+
+    emxFree_int32_T(&mesh->tris);
+    mesh->tris = newtris;
+
+    free(tris_to_save);
+
+    // 4. For the points remaining in the proc, search the old ps_pinfo list.
+    //    for the ps to be saved, check the old ps_pinfo list
+    //   to see if we need to send that point to the nb procs,
+    //   count the number of points to be sent to each nb here.
+
+
+    //    If the point exists on some neighbour in the old list, send it to
+    //    that neighbour.
+    //    For each nb proc, send the point new local index on the current proc, 
+    //    and also the old remote index to help the remote proc to identify the point.
+
+    //  use proc_position to locate one proc in the nb_proc list easily
+    int* proc_position = (int*) calloc(num_proc, sizeof(int));
+    for (i = 0; i < num_proc; i++)
+	proc_position[i] = -1;
+
+
+    for(i = 0; i < num_nb_proc; i++)
+	proc_position[mesh->nb_proc->data[i]] = i;
+
+    int *num_of_overlapping_ps = (int *) calloc(num_nb_proc, sizeof(int));
+
+    for(i = 0; i < num_old_pt; i++)
+    {
+	if( pt_new_index[i-1] != 0 )
+	{
+	    // count the number of ps to be sent to the neighbour procs
+	    int next = old_ps_phead[i-1];
 	    while (next != -1)
 	    {
 		int proc_rank = old_ps_pinfo->pdata[I1dm(next)].proc;
-		if(proc_rank!=rank)
-		    num_of_overlapping_ps[proc_position[proc_rank]]++;
+		if( (proc_rank != rank) || (old_ps_pdata[I1dm(next)].lindex != i) )
 
-		next = old_ps_pinfo->pdata[I1dm(next)].next;
+		    (num_of_overlapping_ps[proc_position[proc_rank]])++;
+		next = old_ps_pdata[I1dm(next)].next;
 	    }
 	}
     }
 
-    emxDestroyArray_real_T(mesh->ps);
-    mesh->ps = newpts;
-
-    /* 3. make a new mesh->tris array, delete the old one */
-    emxArray_int32_T* newtris = emxCreate_int32_T(num_tri_to_save, 3);
-    int p, old_p;
-    for (i = 1; i<=num_tri_to_save; i++)
-    {
-	cur_tri = tris_to_save[I1dm(i)];
-	for(j = 1; j<=3; j++)
-	{
-	    old_p = mesh->tris->data[I2dm(cur_tri, j, mesh->tris->size)];	/* old point index */
-	    p = pt_new_index[I1dm(old_p)];	/* new point index */
-	    newtris->data[I2dm(i,j,newtris->size)] = p;
-	}
-    }
-
-    emxDestroyArray_int32_T(mesh->tris);
-    mesh->tris = newtris;
-
-
-
-    /* 4. for the points remaining in the proc, search the old ps_pinfo list.
-     *    If the point exists on some neighbour in the old list, send it to
-     *    that neighbour.
-     *    For each nb proc, send the point new local index on the current proc, 
-     *    and also the old remote index to help the remote proc to identify the point.
-     */
-    int tag[3] = {1,2,3};
-    MPI_Request* request_send = (MPI_Request*) calloc( 3*num_nb_proc, sizeof(MPI_Request));
+    int tag[4] = {1,2,3,4};
+    MPI_Request *request_send = (MPI_Request *) calloc(4*num_nb_proc, sizeof(MPI_Request));
+    for (i = 0; i < 4*num_nb_proc; i++)
+	request_send[i] = MPI_REQUEST_NULL;
     int dest;
 
-    /* for each proc, find the overlapping points in the old ps_pinfo list */
+    // for each proc, find the overlapping points in the old ps_pinfo list
 
-    int** remote_index = (int**) calloc(num_nb_proc, sizeof(int*));
-    int** local_index = (int**) calloc(num_nb_proc, sizeof(int*));
-    for (i = 0; i<num_nb_proc; i++)
+    int **remote_index = (int **) calloc(num_nb_proc, sizeof(int *));
+    int **local_index = (int **) calloc(num_nb_proc, sizeof(int *));
+    int8_T **shift = (int8_T **) calloc(num_nb_proc, sizeof(int8_T *));
+    for (i = 0; i < num_nb_proc; i++)
     {
-	remote_index[i] = (int*) calloc( num_of_overlapping_ps[i], sizeof(int));
-	local_index[i] = (int*) calloc( num_of_overlapping_ps[i], sizeof(int));
+	printf("\nnum_of_overlapping_ps[i] = %d\n", num_of_overlapping_ps[i]);
+	remote_index[i] = (int *) calloc( num_of_overlapping_ps[i], sizeof(int));
+	local_index[i] = (int *) calloc( num_of_overlapping_ps[i], sizeof(int));
+	shift[i] = (int8_T*) calloc( 3*num_of_overlapping_ps[i], sizeof(int8_T));
     }
 
-    int* last_index = (int*) calloc(num_nb_proc, sizeof(int));
-    for(i = 1; i<=num_pt; i++)
+    int *last_index = (int *) calloc(num_nb_proc, sizeof(int));
+    
+    for(i = 1; i <= num_old_pt; i++)
     {
-	if(pt_new_index[i-1]!=0)
+	if( pt_new_index[i-1] != 0 )
 	{
-	    head = old_ps_pinfo->head[I1dm(i)];
-	    int next = head;
+	    int next = old_ps_phead[I1dm(i)];
 	    while (next != -1)
 	    {
-		int proc_rank = old_ps_pinfo->pdata[I1dm(next)].proc;
-		if(proc_rank!=rank)
+		int proc_rank = old_ps_pdata[I1dm(next)].proc;
+		if( (proc_rank != rank) || (old_ps_pdata[I1dm(next)].lindex != i) )
 		{
 		    int cur_pos = proc_position[proc_rank];
 		    int cur_last = last_index[cur_pos]++;
-		    remote_index[cur_pos][cur_last] = old_ps_pinfo->pdata[I1dm(next)].lindex;
+		    remote_index[cur_pos][cur_last] = old_ps_pdata[I1dm(next)].lindex;
 		    local_index[cur_pos][cur_last] = pt_new_index[i-1];
+		    shift[cur_pos][3*cur_last] = -old_ps_pdata[I1dm(next)].shift[0];
+		    shift[cur_pos][3*cur_last+1] = -old_ps_pdata[I1dm(next)].shift[1];
+		    shift[cur_pos][3*cur_last+2] = -old_ps_pdata[I1dm(next)].shift[2];
 		}
-		    next = old_ps_pinfo->pdata[I1dm(next)].next;
+		next = old_ps_pdata[I1dm(next)].next;
 	    }
 
 	}
     }
-    
 
-    for (i = 0; i<num_nb_proc; i++)
+    free(proc_position);
+    free(last_index);
+
+    for (i = 0; i < num_nb_proc; i++)
     {
 	dest = mesh->nb_proc->data[i];
 
 	printf("\nSend to proc %d, # ps = %d\n", dest, num_of_overlapping_ps[i]);
 
-	MPI_Isend(&num_of_overlapping_ps[i],1,MPI_INT,dest,tag[0],MPI_COMM_WORLD, &request_send[3*i]);
-	MPI_Isend(remote_index[i], num_of_overlapping_ps[i], MPI_INT, dest, tag[1], MPI_COMM_WORLD, &request_send[3*i+1]);
-	MPI_Isend(local_index[i], num_of_overlapping_ps[i], MPI_INT, dest, tag[2], MPI_COMM_WORLD, &request_send[3*i+2]);
+	MPI_Isend(&num_of_overlapping_ps[i], 1, MPI_INT, dest, tag[0], MPI_COMM_WORLD, &request_send[3*i]);
+
+	if (num_of_overlapping_ps[i] != 0)
+	{
+	    MPI_Isend(remote_index[i], num_of_overlapping_ps[i], MPI_INT, dest, tag[1], MPI_COMM_WORLD, &request_send[3*i+1]);
+	    MPI_Isend(local_index[i], num_of_overlapping_ps[i], MPI_INT, dest, tag[2], MPI_COMM_WORLD, &request_send[3*i+2]);
+	    MPI_Isend(shift[i], 3*num_of_overlapping_ps[i], MPI_SIGNED_CHAR, dest, tag[3], MPI_COMM_WORLD, &request_send[3*i+3]);
+	}
     }
 
 
 
-    /* 5. Recv cur_local_index and cur_remote_index info from all neighbours.
-     *    Note here, the received cur local index is the remote index in send,
-     *    the received cur remote index is the local index in send.
-     *    We should initialize a new pinfo list first, then put more nodes
-     *    into the ps_pinfo list using the information received.
-     */
-    int* num_pt_to_recv = (int*)calloc(num_nb_proc, sizeof(int));
+    // 5. Recv cur_local_index and cur_remote_index info from all neighbours.
+    //   Note here, the received cur local index is the remote index in send,
+    //   the received cur remote index is the local index in send.
+    //   We should initialize a new pinfo list first, then put more nodes
+    //   into the ps_pinfo list using the information received.
+
+    int *num_pt_to_recv = (int *)calloc(num_nb_proc, sizeof(int));
 
     int source;
     MPI_Status status;
+    MPI_Status status1;
+    MPI_Status status2;
+    MPI_Status status3;
 
-
-
-
-    MPI_Request* req_recv_num = (MPI_Request*) calloc(num_nb_proc,sizeof(MPI_Request));
+    MPI_Request *req_recv_num = (MPI_Request *) calloc(num_nb_proc, sizeof(MPI_Request));
     int recv_index;
-    for (i = 0; i<num_nb_proc; i++)
+    for (i = 0; i < num_nb_proc; i++)
     {
-	source = mesh->nb_proc->data[i];
-	MPI_Irecv(&num_pt_to_recv[i], 1, MPI_INT, source, tag[0], MPI_COMM_WORLD, &req_recv_num[i]);
+	MPI_Irecv(&num_pt_to_recv[i], 1, MPI_INT, mesh->nb_proc->data[i], tag[0], MPI_COMM_WORLD, &req_recv_num[i]);
     }
 
-    /* Init a new pinfo list for points and triangles, do it here to have more overlapping
-     * between computation and communication
-     */
+    // Init a new pinfo list for points and triangles, do it here to have more overlapping
+    // between computation and communication
+
     hpInitPInfo(mesh);
-    hpPInfoList* new_ps_pinfo = mesh->ps_pinfo;
+    hpPInfoList *new_ps_pinfo = mesh->ps_pinfo;
+    hpPInfoNode *new_ps_pdata = new_ps_pinfo->pdata;
+    int *new_ps_phead = new_ps_pinfo->head;
+    int *new_ps_ptail = new_ps_pinfo->tail;
 
 
-
-    for(i = 0; i<num_nb_proc; i++)
+    for(i = 0; i < num_nb_proc; i++)
     {
 	MPI_Waitany(num_nb_proc, req_recv_num, &recv_index, &status);
 	source = status.MPI_SOURCE;
 
 	int recv_num_ps = num_pt_to_recv[recv_index];
-
 	
-	int* cur_local_index = (int*) calloc(recv_num_ps, sizeof(int));
-	int* cur_remote_index = (int*) calloc(recv_num_ps, sizeof(int));
-
-	MPI_Recv(cur_local_index, recv_num_ps, MPI_INT, source, tag[1], MPI_COMM_WORLD, &status);
-	MPI_Recv(cur_remote_index, recv_num_ps, MPI_INT, source, tag[2],MPI_COMM_WORLD, &status);
-
-
-
-	for (j = 0; j<recv_num_ps; j++ )
+	if (recv_num_ps != 0)
 	{
-	    int cur_pt = pt_new_index[I1dm(cur_local_index[j])];
-	    if(cur_pt!=0)
+	    int *cur_local_index = (int *) calloc(recv_num_ps, sizeof(int));
+	    int *cur_remote_index = (int *) calloc(recv_num_ps, sizeof(int));
+	    int8_T *cur_shift = (int8_T *) calloc(3*recv_num_ps, sizeof(int8_T));
+
+	    MPI_Recv(cur_local_index, recv_num_ps, MPI_INT, source, tag[1], MPI_COMM_WORLD, &status1);
+	    MPI_Recv(cur_remote_index, recv_num_ps, MPI_INT, source, tag[2], MPI_COMM_WORLD, &status2);
+	    MPI_Recv(cur_shift, 3*recv_num_ps, MPI_SIGNED_CHAR, source, tag[3], MPI_COMM_WORLD, &status3);
+
+
+	    for (j = 0; j < recv_num_ps; j++ )
 	    {
-		hpEnsurePInfoCapacity(new_ps_pinfo);
-		new_ps_pinfo->allocated_len++;
-		int cur_head = new_ps_pinfo->head[I1dm(cur_pt)];
-		int cur_tail = new_ps_pinfo->tail[I1dm(cur_pt)];
-		int cur_master_proc = new_ps_pinfo->pdata[I1dm(cur_head)].proc;
-		if (source < cur_master_proc)
+		int cur_pt = pt_new_index[I1dm(cur_local_index[j])];
+		if(cur_pt != 0)
 		{
-		    new_ps_pinfo->head[I1dm(cur_pt)] = new_ps_pinfo->allocated_len;
-		    new_ps_pinfo->pdata[I1dm(new_ps_pinfo->allocated_len)].proc = source;
-		    new_ps_pinfo->pdata[I1dm(new_ps_pinfo->allocated_len)].lindex = cur_remote_index[j];
-		    new_ps_pinfo->pdata[I1dm(new_ps_pinfo->allocated_len)].next = cur_head;
-		}
-		else if (source > cur_master_proc)
-		{
-		    new_ps_pinfo->tail[I1dm(cur_pt)] = new_ps_pinfo->allocated_len;
-		    new_ps_pinfo->pdata[I1dm(new_ps_pinfo->allocated_len)].proc = source;
-		    new_ps_pinfo->pdata[I1dm(new_ps_pinfo->allocated_len)].lindex = cur_remote_index[j];
-		    new_ps_pinfo->pdata[I1dm(new_ps_pinfo->allocated_len)].next = -1;
-		    new_ps_pinfo->pdata[I1dm(cur_tail)].next = new_ps_pinfo->allocated_len;
-		}
-		else
-		{
-		    printf("\n Receiving element already in the PInfo list!\n");
-		    exit(0);
-		}
+		    if(hpEnsurePInfoCapacity(new_ps_pinfo))
+			new_ps_pdata = new_ps_pinfo->pdata;
+		    new_ps_pinfo->allocated_len++;
+		    int cur_head = new_ps_phead[I1dm(cur_pt)];
+		    int cur_tail = new_ps_ptail[I1dm(cur_pt)];
+		    int cur_master_proc = new_ps_pdata[I1dm(cur_head)].proc;
+		    if (source < cur_master_proc)
+		    {
+			new_ps_phead[I1dm(cur_pt)] = new_ps_pinfo->allocated_len;
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].proc = source;
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].lindex = cur_remote_index[j];
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[0] = cur_shift[3*j];
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[1] = cur_shift[3*j+1];
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[2] = cur_shift[3*j+2];
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].next = cur_head;
+		    }
+		    else if (source > cur_master_proc)
+		    {
+			new_ps_ptail[I1dm(cur_pt)] = new_ps_pinfo->allocated_len;
 
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].proc = source;
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].lindex = cur_remote_index[j];
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[0] = cur_shift[3*j];
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[1] = cur_shift[3*j+1];
+			new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[2] = cur_shift[3*j+2];
+
+			new_ps_pinfo->pdata[I1dm(new_ps_pinfo->allocated_len)].next = -1;
+			new_ps_pinfo->pdata[I1dm(cur_tail)].next = new_ps_pinfo->allocated_len;
+		    }
+		    else
+		    {
+			if (cur_remote_index[j] < cur_pt)
+			{
+			    new_ps_phead[I1dm(cur_pt)] = new_ps_pinfo->allocated_len;
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].proc = source;
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].lindex = cur_remote_index[j];
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[0] = cur_shift[3*j];
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[1] = cur_shift[3*j+1];
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[2] = cur_shift[3*j+2];
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].next = cur_head;
+			}
+			else if (cur_remote_index[j] > cur_pt)
+			{
+			    new_ps_ptail[I1dm(cur_pt)] = new_ps_pinfo->allocated_len;
+
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].proc = source;
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].lindex = cur_remote_index[j];
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[0] = cur_shift[3*j];
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[1] = cur_shift[3*j+1];
+			    new_ps_pdata[I1dm(new_ps_pinfo->allocated_len)].shift[2] = cur_shift[3*j+2];
+
+			    new_ps_pinfo->pdata[I1dm(new_ps_pinfo->allocated_len)].next = -1;
+			    new_ps_pinfo->pdata[I1dm(cur_tail)].next = new_ps_pinfo->allocated_len;
+			}
+			else
+			{
+			    printf("\n Receiving element already in the PInfo list!\n");
+			    exit(0);
+			}
+		    }
+		}
 	    }
-
+	    free(cur_local_index);
+	    free(cur_remote_index);
+	    free(cur_shift);
 	}
-
-	free(cur_local_index);
-	free(cur_remote_index);
     }
 
 
-    MPI_Status* status_send = (MPI_Status*) calloc(3*num_nb_proc, sizeof(MPI_Status));
-    MPI_Waitall(3*num_nb_proc, request_send, status_send);
+    MPI_Status *status_send = (MPI_Status *) calloc(4*num_nb_proc, sizeof(MPI_Status));
+    MPI_Waitall(4*num_nb_proc, request_send, status_send);
     free(status_send);
+    free(request_send);
 
-    free(tris_to_save);
-    free(proc_position);
     free(num_of_overlapping_ps);
     free(pt_new_index);
-    free(request_send);
-    for(i = 0; i< num_nb_proc; i++)
+    for(i = 0; i < num_nb_proc; i++)
     {
 	free(remote_index[i]);
 	free(local_index[i]);
+	free(shift[i]);
     }
     free(remote_index);
     free(local_index);
-    free(last_index);
+    free(shift);
 
     free(num_pt_to_recv);
     free(req_recv_num);
 
-
-
-    /* 6. update nb_proc list since it might change */
-
-    
-    emxDestroyArray_int32_T(mesh->nb_proc);
-    int nb_proc_size[1] = {0};
-    int* nb_proc_bool = (int*)calloc(num_proc,sizeof(int));
-    for(i = 0; i<num_proc; i++)
-	nb_proc_bool[i] = 0;
-
-    num_pt = mesh->ps->size[0];
-    int cur_head, cur_proc, cur_node;
-    for(i = 1; i<=num_pt; i++)
-    {
-	cur_head = mesh->ps_pinfo->head[I1dm(i)];
-	cur_proc = (mesh->ps_pinfo->pdata[I1dm(cur_head)]).proc;
-	nb_proc_bool[cur_proc] = 1;
-	cur_node = mesh->ps_pinfo->pdata[I1dm(cur_head)].next;
-	while(cur_node!=-1)
-	{
-	    cur_proc = mesh->ps_pinfo->pdata[I1dm(cur_node)].proc;
-	    nb_proc_bool[cur_proc] = 1;
-	    cur_node = mesh->ps_pinfo->pdata[I1dm(cur_node)].next;
-	}
-    }
-
-    for(j = 0; j<num_proc; j++)
-	nb_proc_size[0]+=nb_proc_bool[j];
-
-
-    if (nb_proc_size[0]==0)
-	printf("Current processor has NO points.\n");
-    else if(nb_proc_size[0]==1)
-    {
-	printf("Current processor has NO overlapping points with other processors.\n");
-    	nb_proc_size[0]--;		// to exclude itself 
-    }
-    else
-    	nb_proc_size[0]--;		// to exclude itself 
-    mesh->nb_proc = emxCreateND_int32_T(1,nb_proc_size);
-
-    k=0;
-    for (j = 0; j<num_proc; j++)
-	if((j!=rank)&&(nb_proc_bool[j]==1))
-	    mesh->nb_proc->data[k++] = j;
-
-    free(nb_proc_bool);
-
+    hpUpdateNbWithPInfo(mesh);
 
 
     mesh->nps_clean = mesh->ps->size[0];
     mesh->ntris_clean = mesh->tris->size[0];
     mesh->npspi_clean = mesh->ps_pinfo->allocated_len;
     mesh->is_clean = 1;
-
+    
     printf("Passed hpCleanMeshByPinfo\n");
 }
 
