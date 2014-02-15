@@ -40,49 +40,6 @@ void find_Cartesian_coordinates(
 
 int main(int argc, char* argv[])
 {
-    double start, end;
-    int i;
-    int j;
-    //int j, k;
-    int num_proc, rank;
-   // int tag = 1;
-    // int root = 0;
-
-
-    MPI_Init(&argc, &argv);
-
-    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    char runlog_filename[200];
-    char rank_str[5];
-    numIntoString(rank,4,rank_str);
-    sprintf(runlog_filename, "run-log.%s",rank_str);
-    FILE *runlog_stream;
-    if((runlog_stream = freopen(runlog_filename, "w", stdout)) == NULL)
-	exit(-1);
-
-
-    printf("\n Welcome to the test of Hi-Prop Library from proc %d\n", rank);
-
-    hiPropMesh *mesh;
-    hpInitMesh(&mesh);
-
-    char in_filename[200];
-    //sprintf(in_filename, "data/parallel/s19560-64p/hpmesh-t0019560-p%s.vtk", rank_str);
-    //sprintf(in_filename, "data/parallel/init-64p/hpmesh-t0000002-p%s.vtk", rank_str);
-    //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
-    //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
-    //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
-    //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
-    sprintf(in_filename, "data/serial/%s.vtk", argv[1]);
-    //sprintf(in_filename, "data/parallel/%s-p%s.vtk",argv[1], rank_str);
-    if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
-    {
-	printf("Reading fail!\n");
-	return 0;
-    }
-
 /*
     start = time(0);
 
@@ -137,8 +94,53 @@ int main(int argc, char* argv[])
 
 */
 
+    double start, end;
+    int i;
+    int j;
+    int num_proc, rank;
+   // int tag = 1;
+    // int root = 0;
+
+
+    MPI_Init(&argc, &argv);
+
+    MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    char runlog_filename[200];
+    char rank_str[5];
+    numIntoString(rank,4,rank_str);
+    sprintf(runlog_filename, "run-log.%s",rank_str);
+    FILE *runlog_stream;
+    if((runlog_stream = freopen(runlog_filename, "w", stdout)) == NULL)
+	exit(-1);
+
+
+    printf("\n Welcome to the test of Hi-Prop Library from proc %d\n", rank);
+
+    hiPropMesh *mesh;
+    hpInitMesh(&mesh);
+
+    char in_filename[200];
+    //sprintf(in_filename, "data/parallel/s19560-64p/hpmesh-t0019560-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/init-64p/hpmesh-t0000002-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/s6-64p/hpmesh-t0000006-p%s.vtk", rank_str);
+    //sprintf(in_filename, "data/parallel/%s-p%s.vtk", argv[1], rank_str);
+    //sprintf(in_filename, "data/parallel/sphere3_nonuni-p%s.vtk", rank_str);
+    sprintf(in_filename, "data/serial/%s.vtk", argv[1]);
+    //sprintf(in_filename, "data/parallel/%s-p%s.vtk",argv[1], rank_str);
+    if (!hpReadUnstrMeshVtk3d(in_filename, mesh))
+    {
+	printf("Reading fail!\n");
+	return 0;
+    }
+
+
     start = getTimer();
-    hpInitDomainBoundaryInfo(mesh);
+    double domain[3] = {4, 4, 0};
+    boolean_T bdry[3] = {1, 1, 0};
+    hpInitDomainBoundaryInfo(mesh, domain, bdry);
     hpGetNbProcListAuto(mesh);
     printf("\n GetNbProcInfo passed, proc %d \n", rank);
     end = getTimer();
@@ -168,7 +170,6 @@ int main(int argc, char* argv[])
     end = getTimer();
     printf("Build Pinfo seconds used: %22.16g\n", end-start);
 
-    //hpPrint_pinfo(mesh);
 
     char debugname0[256];
 
@@ -176,14 +177,27 @@ int main(int argc, char* argv[])
 
     hpWriteUnstrMeshWithPInfo(debugname0, mesh);
 
+
+    //hpPrint_pinfo(mesh);
+
     hpCleanMeshByPinfo(mesh);
-/*
+
+    //hpPrint_pinfo(mesh);
+
+    hpBuildPUpdateInfo(mesh);
+
+    mesh->ps->data[I2dm(1, 1, mesh->ps->size)] = -2.03;
+    mesh->ps->data[I2dm(1, 2, mesh->ps->size)] = -2.03;
+
+    hpUpdateGhostPointData_real_T(mesh, mesh->ps, 1);
+    
+
     char debugname1[256];
 
     sprintf(debugname1, "debugout-p%s.vtk", rank_str);
 
     hpWriteUnstrMeshWithPInfo(debugname1, mesh);
-*/
+
 
     /*
     start = getTimer();

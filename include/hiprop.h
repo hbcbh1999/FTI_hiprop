@@ -91,7 +91,7 @@ typedef struct hiPropMesh
 } hiPropMesh;
 
 
-EXTERN_C void hpInitDomainBoundaryInfo(hiPropMesh *pmesh);
+EXTERN_C void hpInitDomainBoundaryInfo(hiPropMesh *pmesh, const double *domain, const boolean_T *bdry);
 
 /*!
  * \brief Initialize a hiProp mesh and set the initial pointer to be NULL
